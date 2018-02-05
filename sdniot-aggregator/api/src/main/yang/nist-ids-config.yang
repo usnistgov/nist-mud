@@ -1,0 +1,70 @@
+module nist-ids-config {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-ids-config";
+  prefix nist-ids;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+
+  organization
+    "National Institute of Standards and Technlogoy (NIST)";
+
+  contact
+    "http://www.nist.gov/
+     mranga@nist.gov
+    ";
+
+  description
+    "IDS configuration. This supplies ODL with the mac address
+     and authentication information of the IDS. When IDS 
+     sends a UDP packet to a specified port with the authenication
+     iformation in the payload, the platform can identify the IDS
+     and the port from which it will connect.";
+
+  revision 2017-09-15 {
+    description
+      "Implementation YANG model";
+    reference
+      "NIST- Elastic IDS project.";
+  }
+
+
+
+   container ids-config-data {
+        leaf-list flow-spec {
+             description
+                    "The flows of interest. These identify the flows of interest. e.g. 
+                    flow:toaster.nist.gov:local means all the local flows from manufacturer toaster.nist.gov
+                    to go to the IDS.
+                    flow:toaster.nist.gov:remote means IDS wants all the remote flows from devices made by manufacturer 
+                    toaster.nist.gov to go to IDS.
+                    flow:toaster.nist.gov:drop means  IDS wants access to the flows from devices made by manufacturer
+ 		            toaster.nist.gov that were dropped.
+                    flow:NONE:remote means all the remote flows that do not have a MUD profile go to IDS.
+                    flow:NONE:local means all the flows that do not have a MUD profile that are local go to IDS.
+                    ";
+           type inet:uri;
+        }
+
+        leaf ids-node {
+           description
+                "The node id where the IDS will appear e.g. openflow:1 ";
+           type inet:uri;
+        }
+
+        leaf filter-duration {
+            description
+                "The duration for which to sample the flow";
+            type int32;
+            default 30000;
+        }
+
+   }
+
+}

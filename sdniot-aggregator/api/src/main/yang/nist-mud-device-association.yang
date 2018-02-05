@@ -1,0 +1,58 @@
+module nist-mud-device-association {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-mud-device-association";
+  prefix mud-device-association;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-packet-fields {
+    prefix packet;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+
+  organization
+    "NIST Advanced Networking Technologies Division.";
+
+  contact
+    "Web: http://www.nist.gov
+    email: mranga@nist.gov
+    ";
+  description
+    "A correlation between Device Identifier and MUD URL.
+     A way of telling the controller to apply a given set of MUD
+     rules to a given device.";
+
+  revision 2017-09-15 {
+    description
+      "Initial proposed standard.";
+    reference
+      "RFC XXXX: Manufacturer Usage Description
+       Specification";
+  }
+  
+  container mapping {
+
+     description
+         "Mapping between device ID and MUD URI";
+
+     leaf-list device-id {
+      	description
+           "IOT device identifier list to be associated with this MUR URI. (e.g. MAC address)";
+        type  yang:mac-address;
+     }
+
+     leaf mud-url {
+      	description
+           "MUD uri to associate with this device";
+        type inet:uri;
+        mandatory true;
+     }
+  }
+}
+

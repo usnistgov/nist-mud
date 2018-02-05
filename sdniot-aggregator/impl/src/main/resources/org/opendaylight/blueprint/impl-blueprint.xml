@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- vi: set et smarttab sw=4 tabstop=4: -->
+<!--
+Copyright © 2017 None and others. All rights reserved.
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License v1.0 which accompanies this distribution,
+and is available at http://www.eclipse.org/legal/epl-v10.html
+-->
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+  xmlns:odl="http://opendaylight.org/xmlns/blueprint/v1.0.0"
+  odl:use-default-for-reference-types="true">
+
+  <reference id="dataBroker"
+    interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
+    odl:type="default" />
+
+  <reference id="packetNotificationService"
+    interface="org.opendaylight.controller.md.sal.binding.api.NotificationService"
+    odl:type="default" />
+
+  <odl:rpc-service id="salFlowService"
+    interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
+
+  <odl:rpc-service id="packetProcessingService"
+    interface = "org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService" />
+
+   <reference id="rpcRegistry"
+     interface="org.opendaylight.controller.sal.binding.api.RpcProviderRegistry"/>
+
+
+
+  <!-- mranga: added -->
+  <reference id="mdsalUtils"
+    interface="org.opendaylight.genius.mdsalutil.interfaces.IMdsalApiManager" />
+
+  <bean id="provider"
+    class="gov.nist.antd.sdniot.impl.SdnmudProvider"
+    init-method="init" destroy-method="close">
+    <argument ref="dataBroker" />
+    <argument ref="salFlowService" />
+    <argument ref="packetProcessingService" />
+    <argument ref="packetNotificationService" />
+    <argument ref="mdsalUtils" />
+    <argument ref="rpcRegistry" />
+  </bean>
+
+</blueprint>

@@ -1,0 +1,75 @@
+module nist-mud-controllerclass-mapping {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-mud-controllerclass-mapping";
+  prefix class-mapping;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+
+  organization
+    "National Institute of Standards and Technlogoy (NIST)";
+  contact
+    "http://www.nist.gov/
+     mranga@nist.gov
+    ";
+  description
+    "Class URI and list of ipv4 addresses";
+
+  revision 2017-09-15 {
+    description
+      "Implementation YANG model";
+    reference
+      "RFC XXXX: Manufacturer Usage Description
+       Specification";
+  }
+
+
+  container controllerclass-mapping {
+     description
+         "Mapping between switch ID and controller classes defined in MUD.
+          This is scoped on a per-CPE switch basis. If a switch 
+          does not have a mapping, then no MUD rules will be
+          applied for the switch.";
+
+     leaf switch-id {
+        description
+            "URI of the CPE switch.";
+        type inet:uri;
+        mandatory true;
+     }
+
+     grouping controller-map {
+        leaf uri {
+            description
+              "The controller URI";
+            type inet:uri;
+        }
+
+        leaf-list address-list {
+            description
+               "The list of IP addresses associated with the controller URI";
+            type inet:ip-address;
+        }
+
+     }
+
+     list controller {
+        description
+            "The URI for the controller followed by a list of addresses.";
+	uses controller-map;
+     }
+
+     leaf router-address {
+         description
+            "Router MAC address for lan";
+         type yang:mac-address;
+     }
+  }
+
+}
