@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.Timer;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
@@ -19,15 +20,14 @@ import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.genius.mdsalutil.interfaces.IMdsalApiManager;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev171003.AccessLists;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.AccessLists;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev171007.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.NistFlowControllerService;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.ids.config.rev170915.IdsConfigData;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.ids.registration.rev170915.NistIdsRegistrationService;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.NistNetworkTopologyData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -36,8 +36,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.common.QName;
+import org.opendaylight.yangtools.yang.parser.stmt.reactor.CrossSourceStatementReactor;
+import org.opendaylight.yangtools.yang.parser.stmt.rfc6020.YangInferencePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.google.common.collect.ImmutableSet;
 
 public class SdnmudProvider {
 
@@ -67,6 +71,9 @@ public class SdnmudProvider {
 
   // Stores a map between node ID and its InstanceIdentifier<FlowCapableNode>
   private HashMap<String, InstanceIdentifier<FlowCapableNode>> uriToNodeMap = new HashMap<>();
+  
+  // Map between the node URI and the mud uri.
+  private HashMap<String,List<Uri>> nodeToMudUriMap = new HashMap<>();
 
   // Maps the instance identifier to the URI of the node (should not need this
   // map)
@@ -92,7 +99,8 @@ public class SdnmudProvider {
   
   // A map between the NODE uri and the Flow installer for that node.
   private HashMap<String, MudFlowsInstaller> flowInstallerMap = new HashMap<>();
-
+  
+ 
   private FlowCommitWrapper flowCommitWrapper;
 
   private IMdsalApiManager mdsalApiManager;
@@ -111,8 +119,8 @@ public class SdnmudProvider {
     int port;
 
     public IdsPort(String portUri) {
+      this.port = Integer.parseInt(portUri);
       this.portUri = portUri;
-      this.port = Integer.parseInt(portUri.split(":")[2]);
     }
 
     @Override
@@ -174,13 +182,18 @@ public class SdnmudProvider {
   private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
     return InstanceIdentifier.create(Topology.class);
   }
-
+  
+  
   /**
    * Method called when the blueprint container is created.
    */
   public void init() {
     LOG.info("SdnmudProvider Session Initiated");
 
+     Set<QName> supportedFeatures = ImmutableSet.of(QName.create( "urn:ietf:params:xml:ns:yang:ietf-access-control-list",
+        "2018-01-16","match-on-ipv4"));
+    CrossSourceStatementReactor.BuildAction reactor = YangInferencePipeline.RFC6020_REACTOR.newBuild(supportedFeatures);
+    
     this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 
     /* Register data tree change listener for Topology change */
@@ -247,13 +260,10 @@ public class SdnmudProvider {
     this.dataTreeChangeListenerRegistration =
         this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier, wakeupListener);
 
-    /*
-     * IDS filter registration. This is for authentication of the IDS and for the IDS to provide
-     * runtime data.
-     */
-
-    // this.rpcProviderRegistry.addRpcImplementation(NistIdsRegistrationService.class,
-    // new IdsRegistrationServiceImpl(this));
+    // RPC interface to communicate with the IDS to block flows.
+    
+    this.rpcProviderRegistry.addRpcImplementation(NistFlowControllerService.class, 
+        new NistFlowControllerServiceImpl(this));
 
     IdsRegistrationScanner scanner = new IdsRegistrationScanner(this);
     Timer timer = new Timer();
@@ -565,6 +575,9 @@ public class SdnmudProvider {
     return this.npeToCpeMap.keySet();
   }
 
+  
+
+  
   public boolean isCpeNode(String nodeUri) {
     for (Collection<String> cpeSwitches : this.npeToCpeMap.values()) {
       if (cpeSwitches.contains(nodeUri)) {
@@ -578,4 +591,22 @@ public class SdnmudProvider {
     return wakeupListener;
   }
 
+  public void addMudUri(String cpeNodeId, Uri mudUri) {
+    List<Uri> mudUris = this.nodeToMudUriMap.get(cpeNodeId);
+    if (mudUris == null ) {
+      mudUris = new ArrayList<Uri>();
+      this.nodeToMudUriMap.put(cpeNodeId, mudUris);
+    }
+    mudUris.add(mudUri);
+  }
+  
+  public Collection<String> getMudCpeNodeIds() {
+    return this.nodeToMudUriMap.keySet();
+  }
+  
+  public List<Uri> getRegisteredMudUrls(String cpeNodeId) {
+     return this.nodeToMudUriMap.get(cpeNodeId);
+  }
+
+ 
 }

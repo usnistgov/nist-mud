@@ -62,7 +62,7 @@ module nist-mud-controllerclass-mapping {
      list controller {
         description
             "The URI for the controller followed by a list of addresses.";
-	uses controller-map;
+        uses controller-map;
      }
 
      leaf router-address {

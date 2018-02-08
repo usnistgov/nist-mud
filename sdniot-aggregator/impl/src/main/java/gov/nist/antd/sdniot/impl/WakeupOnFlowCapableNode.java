@@ -88,6 +88,12 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
     return PacketUtils.rawMacToMac(reverseArray(rawMac));
   }
 
+  /*
+   * private synchronized void installTableMiss(InstanceIdentifier<FlowCapableNode> node) {
+   * LOG.info("installTableMiss " + node); FlowBuilder allToCtrlFlow =
+   * FlowUtils.createFwdAllToControllerFlow((short) SdnMudConstants.SDNMUD_RULES_TABLE);
+   * dataStoreAccessor.writeFlow(allToCtrlFlow, node); }
+   */
 
   private void installUnconditionalGoToTable(String nodeId,
       InstanceIdentifier<FlowCapableNode> node, short table, short destinationTable) {
@@ -129,9 +135,17 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
       InstanceIdentifier<FlowCapableNode> node) {
     FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
     FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-    LOG.info("SEND_TO_CONTROLLER_FLOW_COOKIE " + flowCookie.getValue().toString(16));
+    LOG.info("SEND_TO_CONTROLLER_FLOW " + flowCookie.getValue().toString(16));
     FlowBuilder fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
-        SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
+        SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, 
+        SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
+        flowId, flowCookie);
+    this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+    flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
+    fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
+        SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, 
+        SdnMudConstants.SDNMUD_RULES_TABLE,
+        flowId, flowCookie);
     this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
   }
 
@@ -143,7 +157,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
     }
   }
 
-  private synchronized void installUnditionalDropPacket(String nodeId,
+  private void installUnditionalDropPacket(String nodeId,
       InstanceIdentifier<FlowCapableNode> nodePath, Short dropPacketTable) {
     FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
     FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
@@ -179,14 +193,16 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
       installSendIdsHelloToControllerFlow(nodeUri, nodePath);
     }
 
-
-    // Install a passthrough pipeline for successful flow matches.
-
-    installUnconditionalGoToTable(nodeUri, nodePath,
-        SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
-        SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
-    installUnconditionalGoToTable(nodeUri, nodePath,
-        SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, SdnMudConstants.SDNMUD_RULES_TABLE);
+    // Send packet to controller flow
+    if (SdnMudConstants.CACHE_TIMEOUT > 0) {
+      installSendPacketToControllerFlow(nodeUri, nodePath);
+    } else {
+      installUnconditionalGoToTable(nodeUri, nodePath,
+          SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
+          SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
+      installUnconditionalGoToTable(nodeUri, nodePath,
+          SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, SdnMudConstants.SDNMUD_RULES_TABLE);
+    }
 
     installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SDNMUD_RULES_TABLE,
         SdnMudConstants.IDS_RULES_TABLE);
@@ -221,7 +237,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
    * @param nodePath -- the node path.
    *
    */
-  public synchronized void onFlowCapableSwitchAppeared(
+  public void onFlowCapableSwitchAppeared(
       InstanceIdentifier<FlowCapableNode> nodePath) {
 
     String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
@@ -252,7 +268,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
    * @param nodePath - the instance id of the disconnecting switch.
    */
 
-  public synchronized void onFlowCapableSwitchDisappeared(
+  public void onFlowCapableSwitchDisappeared(
       InstanceIdentifier<FlowCapableNode> nodePath) {
     String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
     LOG.info("onFlowCapableSwitchDisappeared");

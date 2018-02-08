@@ -79,15 +79,6 @@ public class InstanceIdentifierUtils {
     // hiding constructor for util class
   }
 
-  /**
-   * Creates an Instance Identifier (path) for node with specified id
-   *
-   * @param nodeId
-   * @return
-   */
-  public static final InstanceIdentifier<Node> createNodePath(final NodeId nodeId) {
-    return InstanceIdentifier.builder(Nodes.class).child(Node.class, new NodeKey(nodeId)).build();
-  }
 
   /**
    * Shorten's node child path to node path.
@@ -269,6 +260,7 @@ public class InstanceIdentifierUtils {
       models.add(model);
       index = models.indexOf(model);
     }
+    LOG.info("getModelId : model " + model + " modelId " + index);
     return index;
   }
 

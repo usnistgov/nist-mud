@@ -65,6 +65,13 @@ module nist-ids-config {
             default 30000;
         }
 
+        leaf re-registration-interval {
+            description
+                "The interval between succesive re-registrations";
+            type int32;
+            default 60000;
+        }
+
    }
 
 }

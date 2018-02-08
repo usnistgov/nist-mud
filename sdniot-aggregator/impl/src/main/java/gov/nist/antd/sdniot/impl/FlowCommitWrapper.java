@@ -127,7 +127,7 @@ public class FlowCommitWrapper {
     }
   }
 
-  public synchronized List<FlowKey> readFlows(InstanceIdentifier<FlowCapableNode> flowNodeIdent, short tableId,
+  public List<FlowKey> readFlows(InstanceIdentifier<FlowCapableNode> flowNodeIdent, short tableId,
       String uriPrefix, MacAddress sourceMacAddress) {
 
     List<FlowKey> retval = new ArrayList<FlowKey>();
@@ -190,7 +190,6 @@ public class FlowCommitWrapper {
         .child(Table.class, new TableKey(flow.getTableId())).child(Flow.class, flow.getKey());
 
     modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow.build(), true);
-
     CheckedFuture<Void, TransactionCommitFailedException> commitFuture = modification.submit();
     /* MyFutureCallback callback = new MyFutureCallback(flow);
     Futures.addCallback(commitFuture, callback);
@@ -199,7 +198,7 @@ public class FlowCommitWrapper {
       LOG.info("Commit success = " + callback.success);
     } catch (InterruptedException e) {
       LOG.error("Unexpected exception ", e);
-    } */
+    }*/
 
   }
 

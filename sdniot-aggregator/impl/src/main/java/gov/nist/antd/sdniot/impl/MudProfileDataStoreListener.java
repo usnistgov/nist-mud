@@ -8,10 +8,10 @@ import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeLis
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev171007.Mud;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev171007.access.lists.AccessLists;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev171007.access.lists.access.lists.AccessList;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev171007.mud.grouping.FromDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.access.lists.AccessLists;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.access.lists.access.lists.AccessList;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.mud.grouping.FromDevicePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +39,7 @@ public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListe
     AccessLists accessLists = fromDevicePolicy.getAccessLists();
     for (AccessList accessList : accessLists.getAccessList()) {
       LOG.info(
-          "AccessList ACL-Name " + accessList.getAclName() + " aclType " + accessList.getAclType());
-      if (accessList.getAclType() != null) {
-        LOG.info("AccessList: AclType " + accessList.getAclType());
-      }
+          "AccessList ACL-Name " + accessList.getName());
     }
     Uri uri = mud.getMudUrl();
     LOG.info("mudURI {}", uri.getValue());

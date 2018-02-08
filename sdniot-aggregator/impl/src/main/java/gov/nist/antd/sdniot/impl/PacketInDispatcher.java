@@ -30,183 +30,174 @@ import org.slf4j.LoggerFactory;
 
 public class PacketInDispatcher implements PacketProcessingListener {
 
-  private SdnmudProvider sdnmudProvider;
+	private SdnmudProvider sdnmudProvider;
 
-  private String nodeId;
+	private String nodeId;
 
-  private InstanceIdentifier<FlowCapableNode> node;
+	private InstanceIdentifier<FlowCapableNode> node;
 
-  private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
 
-  /**
-   * PacketIn dispatcher. Gets called when packet is received.
-   * 
-   * @param sdnMudHandler
-   * @param mdsalApiManager
-   * @param flowCommitWrapper
-   * @param sdnmudProvider
-   */
-  public PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode> node,
-      SdnmudProvider sdnmudProvider) {
-    this.node = node;
-    this.nodeId = nodeId;
-    LOG.info("PacketInDispatcher: " + nodeId);
-    this.sdnmudProvider = sdnmudProvider;
-  }
+	/**
+	 * PacketIn dispatcher. Gets called when packet is received.
+	 * 
+	 * @param sdnMudHandler
+	 * @param mdsalApiManager
+	 * @param flowCommitWrapper
+	 * @param sdnmudProvider
+	 */
+	public PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode> node, SdnmudProvider sdnmudProvider) {
+		this.node = node;
+		this.nodeId = nodeId;
+		LOG.info("PacketInDispatcher: " + nodeId);
+		this.sdnmudProvider = sdnmudProvider;
+	}
 
-  /**
-   * Get the Node for a given MAC address.
-   * 
-   * @param macAddress
-   * @param node
-   * @return
-   */
-  public InstanceIdentifier<FlowCapableNode> getNode() {
-    return node;
-  }
+	/**
+	 * Get the Node for a given MAC address.
+	 * 
+	 * @param macAddress
+	 * @param node
+	 * @return
+	 */
+	public InstanceIdentifier<FlowCapableNode> getNode() {
+		return node;
+	}
 
-  private void transmitPacket(byte[] payload, String outputPortUri) {
-    TransmitPacketInputBuilder tpib =
-        new TransmitPacketInputBuilder().setPayload(payload).setBufferId(OFConstants.OFP_NO_BUFFER);
-    OutputActionBuilder output = new OutputActionBuilder();
-    output.setMaxLength(Integer.valueOf(0xffff));
+	private void transmitPacket(byte[] payload, String outputPortUri) {
+		TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder().setPayload(payload)
+				.setBufferId(OFConstants.OFP_NO_BUFFER);
+		OutputActionBuilder output = new OutputActionBuilder();
+		output.setMaxLength(Integer.valueOf(0xffff));
 
-    output.setOutputNodeConnector(new Uri(outputPortUri));
-    ActionBuilder ab = new ActionBuilder();
-    ab.setAction(new OutputActionCaseBuilder().setOutputAction(output.build()).build());
-    ab.setOrder(1);
+		output.setOutputNodeConnector(new Uri(outputPortUri));
+		ActionBuilder ab = new ActionBuilder();
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(output.build()).build());
+		ab.setOrder(1);
 
-    List<Action> actionList = new ArrayList<Action>();
-    actionList.add(ab.build());
-    tpib.setAction(actionList);
+		List<Action> actionList = new ArrayList<Action>();
+		actionList.add(ab.build());
+		tpib.setAction(actionList);
 
+		sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
+	}
 
-    sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
-  }
+	@Override
+	public void onPacketReceived(PacketReceived notification) {
 
+		// Extract the src mac address from the packet.
+		byte[] srcMacRaw = PacketUtils.extractSrcMac(notification.getPayload());
+		MacAddress srcMac = PacketUtils.rawMacToMac(srcMacRaw);
 
+		byte[] dstMacRaw = PacketUtils.extractDstMac(notification.getPayload());
+		MacAddress dstMac = PacketUtils.rawMacToMac(dstMacRaw);
 
-  @Override
-  public void onPacketReceived(PacketReceived notification) {
+		short tableId = notification.getTableId().getValue();
 
-    // Extract the src mac address from the packet.
-    byte[] srcMacRaw = PacketUtils.extractSrcMac(notification.getPayload());
-    MacAddress srcMac = PacketUtils.rawMacToMac(srcMacRaw);
+		String matchInPortUri = notification.getMatch().getInPort().getValue();
 
-    byte[] dstMacRaw = PacketUtils.extractDstMac(notification.getPayload());
-    MacAddress dstMac = PacketUtils.rawMacToMac(dstMacRaw);
+		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
+				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
 
-    short tableId = notification.getTableId().getValue();
+		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
+		int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
+		String sendingNodeId = matchInPortUri;
 
-    String matchInPortUri = notification.getMatch().getInPort().getValue();
-    
-    LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  "  +  nodeId + " tableId " + tableId 
-    		+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
+		if (etherType == 0x88cc) {
+			// Here I am getting packets from another switch. We record the port
+			// to get to that
+			// other switch. Note that the MAC id will be that of the switch.
 
+			LOG.debug("onPacketReceived_LLDP : MACAddress " + srcMac + " EtherType " + Integer.toHexString(etherType)
+					+ " tableId " + tableId + " ingressUri " + matchInPortUri + " myId " + this.nodeId);
 
-    byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
-    int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
-    String sendingNodeId = matchInPortUri;
+			// Save away the ingress uri needed to send a packet from the
+			// sendingNode to this node.
+			// This tells us what port to use to send the packet.
+			this.sdnmudProvider.setNodeConnector(sendingNodeId, this.nodeId, matchInPortUri);
+			return;
+		}
 
-    if (etherType == 0x88cc) {
-      // Here I am getting packets from another switch. We record the port
-      // to get to that
-      // other switch. Note that the MAC id will be that of the switch.
+		if (notification.getFlowCookie().getValue().equals(SdnMudConstants.IDS_REGISTRATION_FLOW_COOKIE.getValue())) {
+			LOG.debug("IDS Registration seen on : " + matchInPortUri);
+			// TODO -- authenticate the IDS by checking his MAC and token.
+			this.sdnmudProvider.addIdsPort(sendingNodeId, matchInPortUri);
+			return;
+		}
 
-      if (!matchInPortUri.startsWith(nodeId)) {
-        LOG.debug("onPacketReceived_LLDP : MACAddress " + srcMac + " EtherType "
-            + Integer.toHexString(etherType) + " tableId " + tableId + " ingressUri "
-            + matchInPortUri + " myId " + this.nodeId);
-      }
+		if (tableId == SdnMudConstants.IDS_RULES_TABLE1 || tableId == SdnMudConstants.IDS_RULES_TABLE) {
+			// Ingnore packet in notifications from the bad packets table and
+			// the good packets tables (we
+			// should never see these notifcations)
+			LOG.error("Unexpected notification received -- Dropping packet");
+			return;
+		}
 
-      // Save away the ingress uri needed to send a packet from the
-      // sendingNode to this node.
-      // This tells us what port to use to send the packet.
-      this.sdnmudProvider.setNodeConnector(sendingNodeId, this.nodeId, matchInPortUri);
-      return;
-    }
+		sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
+		if (tableId == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			// We got a notification for a device that is connected to this
+			// switch.
+			Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 
+			if (mudUri != null) {
+				// MUD URI was found for this MAc adddress so install the rules
+				// to stamp the manufacturer
+				// using metadata.
+				MudFlowsInstaller.installStampSrcMacManufacturerModelFlowRules(srcMac, mudUri.getValue(),
+						sdnmudProvider, node);
+			}
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+			FlowBuilder fb = FlowUtils.createSourceMacMatchGoToTableFlow(srcMac, tableId,
+					SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
+			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
-    if (notification.getFlowCookie().getValue()
-        .equals(SdnMudConstants.IDS_REGISTRATION_FLOW_COOKIE.getValue())) {
-      LOG.debug("IDS Registration seen on : " + matchInPortUri);
-      // TODO -- authenticate the IDS by checking his MAC and token.
-      this.sdnmudProvider.addIdsPort(sendingNodeId, matchInPortUri);
-      return;
-    }
+		} else if (tableId == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+			if (mudUri != null) {
+				// MUD URI was found for this MAc adddress so install the rules
+				// to stamp the manufacturer
+				// using metadata.
+				MudFlowsInstaller.installStampDstMacManufacturerModelFlowRules(dstMac, mudUri.getValue(),
+						sdnmudProvider, node);
+			}
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+			FlowBuilder fb = FlowUtils.createDestMacMatchGoToTableFlow(dstMac, tableId,
+					SdnMudConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
+			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		} else if (tableId == SdnMudConstants.L2SWITCH_TABLE) {
+			// Install a flow for this destination MAC routed to the ingress
+			String outputPortUri = this.sdnmudProvider.getNodeConnector(this.nodeId, sendingNodeId);
+			if (outputPortUri != null) {
 
-    if (tableId == SdnMudConstants.IDS_RULES_TABLE1 || tableId == SdnMudConstants.IDS_RULES_TABLE) {
-      // Ingnore packet in notifications from the bad packets table and
-      // the good packets tables (we
-      // should never see these notifcations)
-      LOG.error("Unexpected notification received -- Dropping packet");
-      return;
-    }
+				LOG.debug("Installng BRIDGE flow rule for dstMac = " + dstMac.getValue() + " srcMac = " + srcMac
+						+ " sendingNodeId " + sendingNodeId + " myNodeId " + nodeId);
 
-    if (matchInPortUri.startsWith(nodeId)) {
-      sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
-      if (tableId == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
-        // We got a notification for a device that is connected to this
-        // switch.
-        Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+				int time = 300;
 
-        if (mudUri != null) {
-          // MUD URI was found for this MAc adddress so install the rules to stamp the manufacturer
-          // using metadata.
-          MudFlowsInstaller.installStampSrcMacManufacturerModelFlowRules(srcMac, mudUri.getValue(),
-              sdnmudProvider, node);
-        }
-        FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-        FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-        FlowBuilder fb = FlowUtils.createSourceMacMatchGoToTableFlow(srcMac, tableId,
-            SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-        this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+				if (dstMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
+						&& srcMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
+						&& !dstMac.getValue().startsWith("33:33")) {
+					// Note 48-bit MAC addresses
+					// in the range 33-33-00-00-00-00 to 33-33-FF-FF-FF-FF are
+					// used for IPv6 multicast.
+					// TODO -- extend this checck over all reserved mac
+					// addresses.
+					// TODO -- we need to check for loops before installing this
+					// rule.
 
-      } else if (tableId == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-        Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-        if (mudUri != null) {
-          // MUD URI was found for this MAc adddress so install the rules to stamp the manufacturer
-          // using metadata.
-          MudFlowsInstaller.installStampDstMacManufacturerModelFlowRules(dstMac, mudUri.getValue(),
-              sdnmudProvider, node);
-        }
-        FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-        FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-        FlowBuilder fb = FlowUtils.createDestMacMatchGoToTableFlow(dstMac, tableId,
-            SdnMudConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
-        this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-      }
+					FlowBuilder flow = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, srcMac, tableId,
+							outputPortUri, time);
+					sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+					// Forward the packet.
+					transmitPacket(notification.getPayload(), outputPortUri);
 
-    } else if ( tableId == SdnMudConstants.L2SWITCH_TABLE) {
-      // Install a flow for this destination MAC routed to the ingress
-      String outputPortUri = this.sdnmudProvider.getNodeConnector(this.nodeId, sendingNodeId);
-      if (outputPortUri != null) {
+				}
+			}
 
-        LOG.debug("Installng BRIDGE flow rule for dstMac = " + dstMac.getValue() + " srcMac = "
-            + srcMac + " sendingNodeId " + sendingNodeId + " myNodeId " + nodeId);
-
-        FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-        int time = 300;
-
-        if (dstMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-            && srcMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-            && !dstMac.getValue().startsWith("33:33")) {
-          // Note 48-bit MAC addresses
-          // in the range 33-33-00-00-00-00 to 33-33-FF-FF-FF-FF are used for IPv6 multicast.
-          // TODO -- extend this checck over all reserved mac addresses.
-          // TODO -- we need to check for loops before installing this rule.
-
-          FlowBuilder flow = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, srcMac,
-              tableId, outputPortUri, time);
-          sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
-          // Forward the packet.
-          transmitPacket(notification.getPayload(), outputPortUri);
-
-        }
-      } else {
-        LOG.info("Cannot find mapping -- dropping");
-      }
-    }
-  }
+		}
+	}
 
 }

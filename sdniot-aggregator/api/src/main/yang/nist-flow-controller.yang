@@ -1,0 +1,100 @@
+module nist-flow-controller {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-flow-controller";
+  prefix nist-flow-controller;
+
+  import ietf-yang-types {
+    prefix yang;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+
+  revision 2017-09-15 {
+    description
+      "Implementation class.";
+    reference
+      "RFC XXXX: Manufacturer Usage Description
+       Specification";
+  }
+
+  organization
+    "NIST Advanced Networking Technologies Division.";
+
+  contact
+    "Web: http://www.nist.gov
+    email: mranga@nist.gov
+    ";
+
+  
+
+  rpc block-flow {
+     input {
+        leaf mud-uri {
+            description 
+                "The MUD URI of the device to isolate";
+            type inet:uri;
+            mandatory true;
+        }
+
+        leaf scope {
+            description
+                "The scope of the flow to block";
+            type  enumeration {
+                enum local;
+                enum remote;
+                enum local-and-remote;
+            }
+        }
+        
+        leaf node-id {
+          description 
+                "The NODE URI where the device is to be found to isolate. 
+                 If this is NULL, then all nodes are blocked.";
+          type inet:uri;
+        }
+
+        leaf block-status {
+          description
+                "The block status of the device (True means Block False means Unblock.";
+          type boolean;
+       }
+     }
+
+    output {
+        leaf  status {
+            description
+                "The status code. (0 means OK -1 means fail)";
+            type uint32;
+        }
+
+        leaf status-message {
+            description
+                 "The status message";
+            type string;
+        }
+    }
+  }
+
+
+  rpc get-registered-mud-uris {
+     output {
+        list  mud-node-mapping {
+            leaf node-id {
+                description 
+                        "The NODE URI where the device is to be found to isolate. 
+                         If this is NULL, then all nodes are blocked.";
+                type inet:uri;
+            }
+            leaf-list mud-uris {
+                description
+                    "The URIs associated with this node.";
+                type inet:uri;
+            }
+        }
+    }
+  }
+
+}

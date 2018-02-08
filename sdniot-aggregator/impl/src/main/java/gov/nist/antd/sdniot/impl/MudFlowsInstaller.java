@@ -11,7 +11,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.cont
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.aces.Ace;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.aces.ace.Matches;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.aces.ace.matches.l3.Ipv4;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Ipv41;
 //import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Matches1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Host;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
@@ -157,13 +156,11 @@ public class MudFlowsInstaller {
    */
   private static List<Ipv4Address> getMatchAddresses(Matches matches) {
 
-
     ArrayList<Ipv4Address> ipAddresses = new ArrayList<Ipv4Address>();
-    Ipv4 ipv4Acl = (Ipv4) matches.getL3();
-    Ipv41 ipv41Acl = ipv4Acl.getAugmentation(Ipv41.class);
-    
-    if (ipv41Acl != null) {
-      Host dnsName = ipv41Acl.getDstDnsname() != null ? ipv41Acl.getDstDnsname() : ipv41Acl.getSrcDnsname();
+  	org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Matches1 matches1 
+    		= matches.getAugmentation(org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Matches1.class);
+    if (matches1 != null) {
+      Host dnsName = matches1.getDstDnsname() != null ? matches1.getDstDnsname() : matches1.getSrcDnsname();
       if (dnsName != null) {
         // Get the domain name of the host.
         String domainName = dnsName.getDomainName().getValue();
@@ -176,7 +173,6 @@ public class MudFlowsInstaller {
         }
       }
     }
-
     return ipAddresses;
   }
 

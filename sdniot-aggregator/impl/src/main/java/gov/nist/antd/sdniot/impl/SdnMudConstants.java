@@ -20,6 +20,7 @@ public interface SdnMudConstants {
   public static final short ICMP_PROTOCOL = 1;
 
   // Table where SDN MUD rules are stored.
+  
   public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = 0;
   public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = 1;
   public static final Short SDNMUD_RULES_TABLE = 2;
@@ -83,6 +84,9 @@ public interface SdnMudConstants {
       InstanceIdentifierUtils.createFlowCookie("ids-registration-flow-cookie");
   public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = 
       InstanceIdentifierUtils.createFlowCookie("send-to-controller-flow-cookie");
+  
+  // 0 means no caching.
+  public static final Integer CACHE_TIMEOUT = 120;
 
 
 }
