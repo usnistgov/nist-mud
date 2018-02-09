@@ -1,0 +1,137 @@
+{
+
+  "ietf-access-control-list:access-lists": {
+    "acl": [
+      {
+        "name": "mud-25360-v4to",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "cl0-todev",
+              "matches": {
+                "ietf-acldns:src-dnsname": "www.nist.gov",
+                "ipv4": {
+                  "protocol": 6,
+                  "source-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 80
+                  }
+	         }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myctl0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "my-controller": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 6,
+                  "source-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17,
+                  "destination-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 4000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "mud-25360-v4fr",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "cl0-frdev",
+              "matches": {
+               "ietf-acldns:dst-dnsname": "www.nist.gov",
+                "ipv4": {
+                  "protocol": 6,
+                  "destination-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 80
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myctl0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "my-controller": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 6,
+                  "destination-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17,
+                  "source-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 4000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+
+

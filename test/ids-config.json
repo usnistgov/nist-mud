@@ -1,0 +1,8 @@
+{
+ 	"ids-config-data": {
+		"ids-node" : "openflow:2",
+		"filter-duration" : 3000,
+		"flow-spec": [ "flow:toaster.nist.gov:local",
+			       "flow:toaster.nist.gov:remote" ]
+	}
+}

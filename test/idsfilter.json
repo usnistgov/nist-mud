@@ -1,0 +1,12 @@
+{
+
+
+"input" : {
+   "filter-type" : "TagGoodNonMudFlows",
+   "mac-address" : "00:00:00:00:00:01",
+   "node-id" : "openflow:2",
+   "duration" : 3000
+}
+
+
+}

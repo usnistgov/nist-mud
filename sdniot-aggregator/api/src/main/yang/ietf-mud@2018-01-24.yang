@@ -274,15 +274,17 @@ module ietf-mud {
     }
   }
   augment "/acl:access-lists/acl:acl/acl:aces/" +
-     "acl:ace/acl:matches/acl:l4/acl:tcp" {
+     "acl:ace/acl:matches" {
     description
       "Adding domain names to matching";
+    case tcp {
     leaf direction-initiated {
       type direction;
       description
         "This node matches based on which direction a
          connection was initiated. The means by which that
          is determined is discussed in this document.";
+    }
     }
   }
 }
