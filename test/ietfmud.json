@@ -1,7 +1,7 @@
 {
 "ietf-mud:mud": {
     "mud-version": 1,
-    "mud-url": "https://toaster.nist.gov/.well-known/mud/super1",
+    "mud-url": "https://toaster.nist.gov/mud/super1",
     "last-update": "2018-01-31T20:07:09+01:00",
     "cache-validity": 48,
     "is-supported": true,
@@ -10,7 +10,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-25360-v4fr"
+            "name": "mud-98955-v4fr"
           }
         ]
       }
@@ -19,7 +19,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-25360-v4to"
+            "name": "mud-98955-v4to"
           }
         ]
       }

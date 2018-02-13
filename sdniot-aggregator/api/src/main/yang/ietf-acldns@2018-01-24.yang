@@ -38,6 +38,7 @@ module ietf-acldns {
 
   grouping dns-matches {
     description "Domain names for matching.";
+
     leaf src-dnsname {
       type inet:host;
       description "domain name to be matched against";
@@ -49,15 +50,15 @@ module ietf-acldns {
   }
 
   augment "/acl:access-lists/acl:acl/acl:aces/acl:ace/" +
-     "acl:matches" {
+     "acl:matches/acl:ipv4" {
     description "Adding domain names to matching";
     uses dns-matches;
   }
 
-  /* augment "/acl:access-lists/acl:acl/" +
+  augment "/acl:access-lists/acl:acl/" +
      "acl:aces/acl:ace/" +
-     "acl:matches" {
+     "acl:matches/acl:ipv6" {
     description "Adding domain names to matching";
     uses dns-matches;
-  } */
+  }
 }

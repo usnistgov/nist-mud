@@ -10,10 +10,11 @@
          	"uri" :  "urn:ietf:params:mud:ntp",
          	"address-list" : [ "10.0.0.4" ]
      	},
-	{
-    		"uri": "https://toaster.nist.gov/.well-known/mud/v1/super1",
-		"address-list" : [ "10.0.0.3" ]
-	}
-     ]
+        {
+    		"uri": "https://toaster.nist.gov/mud/super1",
+		    "address-list" : [ "10.0.0.3" ]
+        }
+   ],
+   "local-networks": [ "10.0.0.0/24" ]
  }
 }

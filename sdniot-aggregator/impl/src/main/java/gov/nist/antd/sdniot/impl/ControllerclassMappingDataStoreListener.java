@@ -50,8 +50,7 @@ public class ControllerclassMappingDataStoreListener
               + nodeId);
       this.controllerMap.put(nodeId, controllerMapping);
       // Retrieve the MUD profile if it has been registered.
-      Collection<Mud> mudProfiles =
-          sdnmudProvider.getMudProfileDataStoreListener().getMudProfiles();
+      Collection<Mud> mudProfiles = sdnmudProvider.getMudProfiles();
       MudFlowsInstaller mudFlowInstaller = sdnmudProvider.getMudFlowsInstaller(nodeId);
       for (Mud mud : mudProfiles) {
         mudFlowInstaller.installFlows(mud);
@@ -160,14 +159,16 @@ public class ControllerclassMappingDataStoreListener
     return retval;
   }
 
-  public MacAddress getRouterMac(String nodeConnectorUri) {
-    if (!controllerMap.containsKey(nodeConnectorUri))
-      return null;
-    return controllerMap.get(nodeConnectorUri).getRouterAddress();
-  }
-
   public ControllerclassMapping getControllerClass(String nodeUri) {
     return controllerMap.get(nodeUri);
+  }
+  
+  public Collection<String> getLocalNetworks(String nodeConnectorUri) {
+	  
+	  if (!controllerMap.containsKey(nodeConnectorUri)) {
+	      return null;
+	  }
+	  return  this.controllerMap.get(nodeConnectorUri).getLocalNetworks();
   }
 
 }

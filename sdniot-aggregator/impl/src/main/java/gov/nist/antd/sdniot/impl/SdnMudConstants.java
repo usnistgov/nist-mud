@@ -18,14 +18,16 @@ public interface SdnMudConstants {
   public static final short TCP_PROTOCOL = 6;
   public static final short UDP_PROTOCOL = 17;
   public static final short ICMP_PROTOCOL = 1;
+  public static final int ETHERTYPE_IPV4 = 0x0800;
+
 
   // Table where SDN MUD rules are stored.
   
   public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = 0;
   public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = 1;
   public static final Short SDNMUD_RULES_TABLE = 2;
-  public static final Short IDS_RULES_TABLE1 = (short) (SDNMUD_RULES_TABLE + 1);
-  public static final Short IDS_RULES_TABLE = (short) (SDNMUD_RULES_TABLE + 2);
+  public static final Short DROP_TABLE = (short) (SDNMUD_RULES_TABLE + 1);
+  public static final Short PASS_THRU_TABLE = (short) (SDNMUD_RULES_TABLE + 2);
   public static final Short STRIP_MPLS_RULE_TABLE = (short) (SDNMUD_RULES_TABLE + 3);
   public static final Short L2SWITCH_TABLE = (short) (SDNMUD_RULES_TABLE + 4);
   public static final short FIRST_TABLE = 0;
@@ -57,20 +59,28 @@ public interface SdnMudConstants {
   public static final int IDS_REGISTRATION_PORT = 1000;
   
   // The mask for Manufacturer and model.
-  public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFFF000000000000",16);
-  public static final int SRC_MANUFACTURER_SHIFT =                          "000000000000".length()*4;
+  public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000",16);
+  public static final int SRC_MANUFACTURER_SHIFT =                         "0000000000000".length()*4;
 
-  public static final BigInteger SRC_MODEL_MASK       =  new BigInteger("0000FFFF00000000",16);
-  public static final int SRC_MODEL_SHIFT =                                     "00000000".length()*4;
+  public static final BigInteger SRC_MODEL_MASK       =  new BigInteger("000FFFF000000000",16);
+  public static final int SRC_MODEL_SHIFT =                                    "000000000".length()*4;
 
-  public static final BigInteger DST_MANUFACTURER_MASK = new BigInteger("00000000FFFF0000",16);
-  public static final int DST_MANUFACTURER_SHIFT =                                   "0000".length()*4;
+  public static final BigInteger DST_MANUFACTURER_MASK = new BigInteger("0000000000000FFF",16);
+  public static final int DST_MANUFACTURER_SHIFT =                                   0;
   
-  public static final BigInteger DST_MODEL_MASK =        new BigInteger("000000000000FFFF",16);
-  public static final int DST_MODEL_SHIFT       =          0;
+  public static final BigInteger DST_MODEL_MASK =        new BigInteger("000000000ffff000",16);
+  public static final int DST_MODEL_SHIFT       =                                    "000".length()*4;
+  
+  public static final BigInteger SRC_NETWORK_MASK  =     new BigInteger("0000000F00000000",16);
+  public static final int SRC_NETWORK_FLAGS_SHIFT =                             "00000000".length()*4;
+  public static final BigInteger LOCAL_SRC_NETWORK_FLAG= new BigInteger("0000000100000000",16);
 
+  
+  public static final BigInteger DST_NETWORK_MASK =      new BigInteger("00000000F0000000",16);
+  public static final int DST_NETWORK_FLAGS_SHIFT =                               "0000000".length()*4;
+  public static final BigInteger LOCAL_DST_NETWORK_FLAG= new BigInteger("0000000010000000",16);
 
-
+		  
   public static final int DEFAULT_IDS_IDLE_TIMEOUT = 30;
   // GOTO instruction key. (Should not clash with other instructions).
   public static final int GOTO_INSTRUCTION_KEY = 123;

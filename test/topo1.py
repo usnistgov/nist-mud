@@ -54,7 +54,7 @@ def setupTopology(controller_addr,dns_address, interface):
 
     #BUGBUG
     h6 = net.addHost('h6')
-    s2 = net.addSwitch('s2')
+    s2 = net1.addSwitch('s2')
 
     s3 = net1.addSwitch('s3')
 

@@ -71,24 +71,12 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 				// Remove the default mapping (the next flow miss will install
 				// the right mapping).
 				// Find all the switches where this MAC address has been seen.
-				HashSet<String> npeNodes = new HashSet<String>();
 				if (this.sdnmudProvider.getNodeId(mac) != null) {
 					for (String nodeId : this.sdnmudProvider.getNodeId(mac)) {
 						InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(nodeId);
-
 						if (node != null) {
 							MudFlowsInstaller.installStampManufacturerModelFlowRules(mac, uri.getValue(),
 									sdnmudProvider, node);
-						}
-						// Get the ID of the NPE switch for this cpe switch.
-						String npeNodeId = this.sdnmudProvider.getNpeSwitchUri(nodeId);
-						if (!npeNodes.contains(npeNodeId)) {
-							npeNodes.add(npeNodeId);
-							InstanceIdentifier<FlowCapableNode> npeNode = sdnmudProvider.getNode(npeNodeId);
-							if (npeNode != null) {
-								MudFlowsInstaller.installStampManufacturerModelFlowRules(mac, uri.getValue(),
-										sdnmudProvider, npeNode);
-							}
 						}
 
 					}

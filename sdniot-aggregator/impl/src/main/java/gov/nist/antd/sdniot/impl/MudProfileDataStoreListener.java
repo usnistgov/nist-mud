@@ -22,64 +22,49 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListener<Mud> {
-  private DataBroker dataBroker;
-  private static final Logger LOG = LoggerFactory.getLogger(MudProfileDataStoreListener.class);
-  private Map<Uri, Mud> uriToMudMap = new HashMap<Uri, Mud>();
-  private SdnmudProvider sdnmudProvider;
+	private DataBroker dataBroker;
+	private static final Logger LOG = LoggerFactory.getLogger(MudProfileDataStoreListener.class);
+	private SdnmudProvider sdnmudProvider;
 
-  public MudProfileDataStoreListener(DataBroker broker, SdnmudProvider sdnMudProvider) {
-    this.dataBroker = broker;
-    this.sdnmudProvider = sdnMudProvider;
-  }
+	public MudProfileDataStoreListener(DataBroker broker, SdnmudProvider sdnMudProvider) {
+		this.dataBroker = broker;
+		this.sdnmudProvider = sdnMudProvider;
+	}
 
-  private static void printMudProfile(Mud mud) {
-    short cacheValiditySeconds = mud.getCacheValidity();
-    LOG.info("cacheValiditySeconds {} ", cacheValiditySeconds);
-    FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
-    AccessLists accessLists = fromDevicePolicy.getAccessLists();
-    for (AccessList accessList : accessLists.getAccessList()) {
-      LOG.info(
-          "AccessList ACL-Name " + accessList.getName());
-    }
-    Uri uri = mud.getMudUrl();
-    LOG.info("mudURI {}", uri.getValue());
-  }
+	private static void printMudProfile(Mud mud) {
+		short cacheValiditySeconds = mud.getCacheValidity();
+		LOG.info("cacheValiditySeconds {} ", cacheValiditySeconds);
+		FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
+		AccessLists accessLists = fromDevicePolicy.getAccessLists();
+		for (AccessList accessList : accessLists.getAccessList()) {
+			LOG.info("AccessList ACL-Name " + accessList.getName());
+		}
+		Uri uri = mud.getMudUrl();
+		LOG.info("mudURI {}", uri.getValue());
+	}
 
-  public Collection<Mud> getMudProfiles() {
-    return this.uriToMudMap.values();
-  }
 
-  /**
-   * Get the mud profile corresponding to a device URI (if a mapping exists).
-   * 
-   * @param uri
-   * @return
-   */
-  public Mud getMudProfile(Uri uri) {
-    return uriToMudMap.get(uri);
-  }
 
-  @Override
-  public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<Mud>> changes) {
-    LOG.info("onDataTreeChanged ");
-    for (DataTreeModification<Mud> change : changes) {
-      Mud mud = change.getRootNode().getDataAfter();
-      printMudProfile(mud);
-      // Put this in a map. Later when the MAC appears, we can pick it up
-      // from this map and install flow rules.
-      this.uriToMudMap.put(mud.getMudUrl(), mud);
+	
+	@Override
+	public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<Mud>> changes) {
+		LOG.info("onDataTreeChanged ");
+		for (DataTreeModification<Mud> change : changes) {
+			Mud mud = change.getRootNode().getDataAfter();
+			printMudProfile(mud);
+			// Put this in a map. Later when the MAC appears, we can pick it up
+			// from this map and install flow rules.
+			this.sdnmudProvider.addMudProfile(mud);
+			if (sdnmudProvider.getTopology() != null) {
+				for (Uri cpeNodeId : sdnmudProvider.getTopology().getCpeSwitches()) {
+					MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId.getValue());
+					if (mudFlowsInstaller != null) {
+						mudFlowsInstaller.installFlows(mud);
+					}
+				}
+			}
+		}
 
-      for (String npeNodeId: sdnmudProvider.getNpeSwitches() ) {
-          for(String cpeNodeId : sdnmudProvider.getCpeSwitches(npeNodeId)) {
-              MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId);
-              if ( mudFlowsInstaller != null) {
-                  mudFlowsInstaller.installFlows(mud);
-              }
-          }
-      }
-
-    }
-
-  }
+	}
 
 }

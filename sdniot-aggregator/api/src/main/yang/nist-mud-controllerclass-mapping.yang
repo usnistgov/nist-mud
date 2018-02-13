@@ -39,7 +39,7 @@ module nist-mud-controllerclass-mapping {
 
      leaf switch-id {
         description
-            "URI of the CPE switch.";
+            "URI of the CPE switch for which to apply this controller class mapping.";
         type inet:uri;
         mandatory true;
      }
@@ -65,11 +65,10 @@ module nist-mud-controllerclass-mapping {
         uses controller-map;
      }
 
-     leaf router-address {
-         description
-            "Router MAC address for lan";
-         type yang:mac-address;
-     }
+     leaf-list local-networks {
+       description
+          "Network address prefix for local networks.";
+       type string; 
+    }
   }
-
 }

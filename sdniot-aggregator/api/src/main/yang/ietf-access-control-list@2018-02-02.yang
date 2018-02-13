@@ -402,7 +402,6 @@ module ietf-access-control-list {
                matches are specified at all in an ACE, then any
                packet will match the ACE.";
 
-            choice l2 {
               container eth {
                 when "derived-from(../../../../type, " +
                      "'acl:eth-acl-type')";
@@ -411,12 +410,7 @@ module ietf-access-control-list {
                 description
                   "Rule set that matches ethernet headers.";
               }
-              description
-                "Match layer 2 headers, for example ethernet
-                 header fields.";
-            }
 
-            choice l3 {
               container ipv4 {
                 when "derived-from(../../../../type, " +
                      "'acl:ipv4-acl-type')";
@@ -436,33 +430,19 @@ module ietf-access-control-list {
                 description
                   "Rule set that matches IPv6 headers.";
               }
-              description
-                "Choice of either ipv4 or ipv6 headers";
-            }
 
-            choice l4 {
               container tcp {
                 if-feature match-on-tcp;
                 uses pf:acl-tcp-header-fields;
-                choice source-port {
-                  container source-port-range-or-operator {
+                container source-port-range-or-operator {
                     uses pf:port-range-or-operator;
                     description
                       "Source port definition.";
-                  }
-                  description
-                    "Choice of specifying the source port or referring to
-                     a group of source ports.";
                 }
-                choice destination-port {
-                  container destination-port-range-or-operator {
+                container destination-port-range-or-operator {
                     uses pf:port-range-or-operator;
                     description
                       "Destination port definition.";
-                  }
-                  description
-                    "Choice of specifying a destination port or referring
-                     to a group of destination ports.";
                 }
                 description
                   "Rule set that matches TCP headers.";
@@ -471,29 +451,16 @@ module ietf-access-control-list {
               container udp {
                 if-feature match-on-udp;
                 uses pf:acl-udp-header-fields;
-                choice source-port {
                   container source-port-range-or-operator {
                     uses pf:port-range-or-operator;
                     description
                       "Source port definition.";
                   }
-                  description
-                    "Choice of specifying the source port or referring to
-                     a group of source ports.";
-                }
-                choice destination-port {
                   container destination-port-range-or-operator {
                     uses pf:port-range-or-operator;
                     description
                       "Destination port definition.";
                   }
-                  description
-                    "Choice of specifying a destination port or referring
-                     to a group of destination ports.";
-                }
-                description
-                  "Rule set that matches UDP headers.";
-              }
 
               container icmp {
                 if-feature match-on-icmp;

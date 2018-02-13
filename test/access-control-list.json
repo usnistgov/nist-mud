@@ -1,17 +1,16 @@
 {
-
   "ietf-access-control-list:access-lists": {
     "acl": [
       {
-        "name": "mud-25360-v4to",
+        "name": "mud-98955-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
             {
               "name": "cl0-todev",
               "matches": {
-                "ietf-acldns:src-dnsname": "www.nist.local",
                 "ipv4": {
+                  "ietf-acldns:src-dnsname": "www.nist.local",
                   "protocol": 6
                 },
                 "tcp": {
@@ -34,9 +33,9 @@
                   ]
                 },
                 "ipv4": {
-                  "protocol": 6
+                  "protocol": 17
                 },
-                "tcp": {
+                "udp": {
                   "source-port-range-or-operator": {
                     "operator": "eq",
                     "port": 8000
@@ -59,7 +58,29 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "destination-port-range-or-operator": {
+                  "source-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port-range-or-operator": {
                     "operator": "eq",
                     "port": 4000
                   }
@@ -73,15 +94,15 @@
         }
       },
       {
-        "name": "mud-25360-v4fr",
+        "name": "mud-98955-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
             {
               "name": "cl0-frdev",
               "matches": {
-                "ietf-acldns:dst-dnsname": "www.nist.local",
                 "ipv4": {
+                  "ietf-acldns:dst-dnsname": "www.nist.local",
                   "protocol": 6
                 },
                 "tcp": {
@@ -104,9 +125,9 @@
                   ]
                 },
                 "ipv4": {
-                  "protocol": 6
+                  "protocol": 17
                 },
-                "tcp": {
+                "udp": {
                   "destination-port-range-or-operator": {
                     "operator": "eq",
                     "port": 8000
@@ -129,7 +150,29 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "source-port-range-or-operator": {
+                  "destination-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port-range-or-operator": {
                     "operator": "eq",
                     "port": 4000
                   }
@@ -145,5 +188,3 @@
     ]
   }
 }
-
-

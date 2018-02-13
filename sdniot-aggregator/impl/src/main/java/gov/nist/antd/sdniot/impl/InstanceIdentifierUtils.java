@@ -60,210 +60,206 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class InstanceIdentifierUtils {
-  private static AtomicLong flowIdInc = new AtomicLong();
-  private static String FLOW_ID_PREFIX = "sdnmud:";
-  private static ArrayList<String> manufacturers = new ArrayList<String>();
-  private static ArrayList<String> models = new ArrayList<String>();
-  
-  static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
-  
-  static {
-    // Dummy constants 
-    models.add(SdnMudConstants.NONE);
-    manufacturers.add(SdnMudConstants.NONE);
-  }
-  
+	private static AtomicLong flowIdInc = new AtomicLong();
+	private static String FLOW_ID_PREFIX = "sdnmud:";
+	private static ArrayList<String> manufacturers = new ArrayList<String>();
+	private static ArrayList<String> models = new ArrayList<String>();
+	static {
+		manufacturers.add("NONE");
+		models.add("NONE");
+	}
 
+	static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
 
-  private InstanceIdentifierUtils() {
-    // hiding constructor for util class
-  }
+	static {
+		// Dummy constants
+		models.add(SdnMudConstants.NONE);
+		manufacturers.add(SdnMudConstants.NONE);
+	}
 
+	private InstanceIdentifierUtils() {
+		// hiding constructor for util class
+	}
 
-  /**
-   * Shorten's node child path to node path.
-   *
-   * @param nodeChild child of node, from which we want node path.
-   * @return
-   */
-  public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
+	/**
+	 * Shorten's node child path to node path.
+	 *
+	 * @param nodeChild
+	 *            child of node, from which we want node path.
+	 * @return
+	 */
+	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
 
-    return nodeChild.firstIdentifierOf(Node.class);
-  }
-  
-  public static final  String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
-    return node.firstKeyOf(Node.class).getId().getValue();
+		return nodeChild.firstIdentifierOf(Node.class);
+	}
 
-  }
+	public static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
+		return node.firstKeyOf(Node.class).getId().getValue();
 
+	}
 
-  public static final InstanceIdentifier<FlowCapableNode> getFlowCapableNodePath(
-      final InstanceIdentifier<?> nodeChild) {
+	public static final InstanceIdentifier<FlowCapableNode> getFlowCapableNodePath(
+			final InstanceIdentifier<?> nodeChild) {
 
-    return nodeChild.firstIdentifierOf(FlowCapableNode.class);
-  }
+		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
+	}
 
-  /**
-   * Get an instance Identifier for the given flow table.
-   * 
-   * @param nodeId -- Instance Identifier for the node.
-   * 
-   * @param flowTableId -- flow table identifier.
-   * 
-   * @return -- instance identifier for the table.
-   */
+	/**
+	 * Get an instance Identifier for the given flow table.
+	 * 
+	 * @param nodeId
+	 *            -- Instance Identifier for the node.
+	 * 
+	 * @param flowTableId
+	 *            -- flow table identifier.
+	 * 
+	 * @return -- instance identifier for the table.
+	 */
 
-  public static final InstanceIdentifier<Table> getTableInstanceId(InstanceIdentifier<Node> nodeId,
-      Short flowTableId) {
-    // get flow table key
-    TableKey flowTableKey = new TableKey(flowTableId);
-    return nodeId.builder().augmentation(FlowCapableNode.class).child(Table.class, flowTableKey)
-        .build();
-  }
+	public static final InstanceIdentifier<Table> getTableInstanceId(InstanceIdentifier<Node> nodeId,
+			Short flowTableId) {
+		// get flow table key
+		TableKey flowTableKey = new TableKey(flowTableId);
+		return nodeId.builder().augmentation(FlowCapableNode.class).child(Table.class, flowTableKey).build();
+	}
 
-  /**
-   * Creates a path for particular flow, by appending flow-specific information to table path.
-   *
-   * @param tablePath
-   * @param flowKey
-   * @return path to flow
-   */
-  public static final InstanceIdentifier<Flow> createFlowPath(
-      final InstanceIdentifier<Table> tablePath, final FlowKey flowKey) {
-    return tablePath.child(Flow.class, flowKey);
-  }
+	/**
+	 * Creates a path for particular flow, by appending flow-specific
+	 * information to table path.
+	 *
+	 * @param tablePath
+	 * @param flowKey
+	 * @return path to flow
+	 */
+	public static final InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
+			final FlowKey flowKey) {
+		return tablePath.child(Flow.class, flowKey);
+	}
 
-  /**
-   * Create an instance Identifier for the flow.
-   * 
-   * @param tablePath -- instance Identifier for the table.
-   * 
-   * @param flowId -- the flow Id.
-   * 
-   * @return -- instance Identifier for the flow.
-   */
-  public static InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
-      final FlowId flowId) {
-    return tablePath.child(Flow.class, new FlowKey(flowId));
-  }
+	/**
+	 * Create an instance Identifier for the flow.
+	 * 
+	 * @param tablePath
+	 *            -- instance Identifier for the table.
+	 * 
+	 * @param flowId
+	 *            -- the flow Id.
+	 * 
+	 * @return -- instance Identifier for the flow.
+	 */
+	public static InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
+			final FlowId flowId) {
+		return tablePath.child(Flow.class, new FlowKey(flowId));
+	}
 
-  /**
-   * Create standard flow Instance Identifier for this application.
-   * 
-   * @param tableId -- table instance Id.
-   * 
-   * @return -- instance Identifier for the flow.
-   */
+	/**
+	 * Create standard flow Instance Identifier for this application.
+	 * 
+	 * @param tableId
+	 *            -- table instance Id.
+	 * 
+	 * @return -- instance Identifier for the flow.
+	 */
 
-  public static InstanceIdentifier<Flow> createFlowInstanceId(InstanceIdentifier<Table> tableId) {
-    // generate unique flow key
-    FlowId flowId = new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-    FlowKey flowKey = new FlowKey(flowId);
-    return tableId.child(Flow.class, flowKey);
-  }
+	public static InstanceIdentifier<Flow> createFlowInstanceId(InstanceIdentifier<Table> tableId) {
+		// generate unique flow key
+		FlowId flowId = new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
+		FlowKey flowKey = new FlowKey(flowId);
+		return tableId.child(Flow.class, flowKey);
+	}
 
+	public static final InstanceIdentifier<NodeConnector> createNodeConnectorPath(
+			final InstanceIdentifier<Node> nodeKey, final NodeConnectorKey nodeConnectorKey) {
+		return nodeKey.child(NodeConnector.class, nodeConnectorKey);
+	}
 
-  public static final InstanceIdentifier<NodeConnector> createNodeConnectorPath(
-      final InstanceIdentifier<Node> nodeKey, final NodeConnectorKey nodeConnectorKey) {
-    return nodeKey.child(NodeConnector.class, nodeConnectorKey);
-  }
+	public static FlowId createFlowId() {
+		return new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
+	}
 
-  public static FlowId createFlowId() {
-    return new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-  }
-  
- 
+	public static FlowRef buildFlowPath(final InstanceIdentifier<Node> nodePath, final short tableId,
+			final FlowId flowId) {
 
-  public static FlowRef buildFlowPath(final InstanceIdentifier<Node> nodePath, final short tableId,
-      final FlowId flowId) {
+		final KeyedInstanceIdentifier<Flow, FlowKey> flowPath = nodePath.augmentation(FlowCapableNode.class)
+				.child(Table.class, new TableKey(tableId)).child(Flow.class, new FlowKey(new FlowId(flowId)));
 
-    final KeyedInstanceIdentifier<Flow, FlowKey> flowPath =
-        nodePath.augmentation(FlowCapableNode.class).child(Table.class, new TableKey(tableId))
-            .child(Flow.class, new FlowKey(new FlowId(flowId)));
+		return new FlowRef(flowPath);
+	}
 
-    return new FlowRef(flowPath);
-  }
+	public static FlowId createFlowId(String mudUrl) {
+		return new FlowId(mudUrl + "/" + String.valueOf(flowIdInc.getAndIncrement()));
+	}
 
-  public static FlowId createFlowId(String mudUrl) {
-    return new FlowId(mudUrl + "/" + String.valueOf(flowIdInc.getAndIncrement()));
-  }
+	public static FlowCookie createFlowCookie(String flowCookieId) {
+		return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
+	}
 
-  public static FlowCookie createFlowCookie(String flowCookieId) {
-    return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
-  }
+	static String getAuthority(Uri uri) {
+		return getAuthority(uri.getValue());
+	}
 
-  static String getAuthority(Uri uri) {
-       return getAuthority(uri.getValue());
-  }
-  
-  
-  static String getAuthority(String uri) {
-    int index = uri.indexOf("//");
-    if (index == -1) {
-      LOG.error("getAuthority : Malformed URI " + uri);
-      return "";
-    }
-    String rest = uri.substring(index + 2);
-    index = rest.indexOf("/");
-    String authority = rest.substring(0, index);
-    return authority;
-  }
-  
-  static String getModel(String uri) {
-    
-    int index = uri.indexOf("//");
-    if (index == -1) {
-      LOG.error("getModel : Malformed URI " + uri);
-      return "";
-    }
-    String rest = uri.substring(index + 2);
-    index = rest.indexOf(".well-known/mud/") + ".well-known/mud/".length();
-    if (index == -1) {
-      LOG.error("getModel: malformed MUD uri" + uri);
-      return "";
-    }
-    String model = rest.substring(index);
-    return model;
-  }
-  
-  
+	static String getAuthority(String uri) {
+		int index = uri.indexOf("//");
+		if (index == -1) {
+			LOG.error("getAuthority : Malformed URI " + uri);
+			return "";
+		}
+		String rest = uri.substring(index + 2);
+		index = rest.indexOf("/");
+		String authority = rest.substring(0, index);
+		return authority;
+	}
 
-  /**
-   * Create the MPLS label from the flow spec.
-   * 
-   * @param flowSpec -- the flow spec to hash.
-   * 
-   */
-  public static int getFlowHash(String flowSpec) {
-    // Has to be within the size of an mpls label.
-    // or the flow does not appear.
-    return Math.abs(flowSpec.hashCode()) % (1 << 20);
-  }
+	/**
+	 * Create the MPLS label from the flow spec.
+	 * 
+	 * @param flowSpec
+	 *            -- the flow spec to hash.
+	 * 
+	 */
+	public static int getFlowHash(String flowSpec) {
+		// Has to be within the size of an mpls label.
+		// or the flow does not appear.
+		return Math.abs(flowSpec.hashCode()) % (1 << 20);
+	}
 
-  public static int getFlowHash(String manufacturer, String flowType) {
-    String flowSpec = "flow:" + manufacturer + ":" + flowType;
-    return getFlowHash(flowSpec);
-  }
+	public static int getFlowHash(String manufacturer, String flowType) {
+		String flowSpec = "flow:" + manufacturer + ":" + flowType;
+		return getFlowHash(flowSpec);
+	}
 
-  public synchronized static int getManfuacturerId(String manufacturer) {
-      int index = manufacturers.indexOf(manufacturer);
-      if ( index == -1) {
-        manufacturers.add(manufacturer);
-        index = manufacturers.indexOf(manufacturer);
-      }
-      return index;
-  }
-  
-  public synchronized static int getModelId(String model) {
-    int index = models.indexOf(model);
-    if (index == -1) {
-      models.add(model);
-      index = models.indexOf(model);
-    }
-    LOG.info("getModelId : model " + model + " modelId " + index);
-    return index;
-  }
+	public synchronized static int getManfuacturerId(String manufacturer) {
+		int index = -1;
+		for (int i = 0; i < manufacturers.size(); i++) {
+			if (manufacturers.get(i).compareTo(manufacturer) == 0) {
+				index = i;
+				break;
+			}
+		}
 
+		if (index == -1) {
+			manufacturers.add(manufacturer);
+			index = manufacturers.size() -1;
+		}
+		return index;
+	}
 
+	public synchronized static int getModelId(String model) {
+		int index = -1;
+		for (int i = 0; i < models.size(); i++) {
+			if (models.get(i).compareTo(model) == 0) {
+				index = i;
+				break;
+			}
+		}
+
+		if (index == -1) {
+			models.add(model);
+			index = models.size() -1;
+		}
+
+		LOG.info("getModelId : model [" + model + "] modelId " + index);
+		return index;
+	}
 
 }

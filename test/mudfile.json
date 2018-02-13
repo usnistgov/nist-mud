@@ -2,8 +2,8 @@
 {
   "ietf-mud:mud": {
     "mud-version": 1,
-    "mud-url": "https://toaster.nist.gov/.well-known/mud/super1",
-    "last-update": "2018-02-07T16:20:49+01:00",
+    "mud-url": "https://toaster.nist.gov/super1",
+    "last-update": "2018-02-13T05:38:48+01:00",
     "cache-validity": 48,
     "is-supported": true,
     "systeminfo": "https://mud.nist.gov/toaster",
@@ -11,7 +11,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-25360-v4fr"
+            "name": "mud-98955-v4fr"
           }
         ]
       }
@@ -20,7 +20,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-25360-v4to"
+            "name": "mud-98955-v4to"
           }
         ]
       }
@@ -29,7 +29,7 @@
   "ietf-access-control-list:access-lists": {
     "acl": [
       {
-        "name": "mud-25360-v4to",
+        "name": "mud-98955-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -41,7 +41,6 @@
                   "protocol": 6
                 },
                 "tcp": {
-                  "ietf-mud:direction-initiated": "from-device",
                   "source-port-range-or-operator": {
                     "operator": "eq",
                     "port": 80
@@ -61,10 +60,9 @@
                   ]
                 },
                 "ipv4": {
-                  "protocol": 6
+                  "protocol": 17
                 },
-                "tcp": {
-                  "ietf-mud:direction-initiated": "from-device",
+                "udp": {
                   "source-port-range-or-operator": {
                     "operator": "eq",
                     "port": 8000
@@ -87,7 +85,29 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "destination-port-range-or-operator": {
+                  "source-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port-range-or-operator": {
                     "operator": "eq",
                     "port": 4000
                   }
@@ -101,7 +121,7 @@
         }
       },
       {
-        "name": "mud-25360-v4fr",
+        "name": "mud-98955-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -113,7 +133,6 @@
                   "protocol": 6
                 },
                 "tcp": {
-                  "ietf-mud:direction-initiated": "from-device",
                   "destination-port-range-or-operator": {
                     "operator": "eq",
                     "port": 80
@@ -133,10 +152,9 @@
                   ]
                 },
                 "ipv4": {
-                  "protocol": 6
+                  "protocol": 17
                 },
-                "tcp": {
-                  "ietf-mud:direction-initiated": "from-device",
+                "udp": {
                   "destination-port-range-or-operator": {
                     "operator": "eq",
                     "port": 8000
@@ -159,7 +177,29 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "source-port-range-or-operator": {
+                  "destination-port-range-or-operator": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port-range-or-operator": {
                     "operator": "eq",
                     "port": 4000
                   }
