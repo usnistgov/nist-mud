@@ -193,6 +193,17 @@ usefulness of this software.
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
 
+Please acknowledge our work if you find this code useful.
+
+
+## Credits ##
+
+* The MUD Standard was primarily authored by Eliot Lear (Cisco) in the OPSAWG interest group.
+* Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
+* Design Contributors : Charif Mohammed, Doug Montgomery
+* Project Manager Doug Montgomery <dougm@nist.gov>
+* This is a product of the Advanced Networking Technologies Division.
+
 # NOTE: This project is in an early state of devlopment#
 
 This code is shared for early review. It is an implementation
