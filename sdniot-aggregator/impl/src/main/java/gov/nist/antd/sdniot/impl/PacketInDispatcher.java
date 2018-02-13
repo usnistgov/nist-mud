@@ -39,6 +39,13 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Packet in dispatcher that gets invoked on flow table miss when a packet
+ * is sent up to the controller.
+ * 
+ * @author mranga@nist.gov
+ *
+ */
 public class PacketInDispatcher implements PacketProcessingListener {
 
 	private SdnmudProvider sdnmudProvider;
@@ -48,9 +55,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private InstanceIdentifier<FlowCapableNode> node;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
-
-	private static HashMap<String, FlowBuilder> destMacMatchSetMetadataAndGoToTableFlowTable = new HashMap<>();
-	private static HashMap<String, FlowBuilder> sourceMacMatchSetMetadataAndGotoTableFlowTable = new HashMap<>();
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.

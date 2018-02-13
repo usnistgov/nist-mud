@@ -24,13 +24,13 @@ Install mininet on the virtual machine.  Install openvswitch on the mininet vm.
     sudo apt-get install openvswitch-switch
     sudo apt-get install mininet
 
-Install python prerequisites
+Install python 2.7x if you don't have it (it should already be there).
+Install python prerequisites.
 	 
 	 sudo pip install requests
 	 sudo apt install curl
 
-On the mininet vm. Install python 2.7x and whatever prerequisites
-Ryu wants.  RYU is used control portions of the test network. It is not
+On the mininet vm. RYU is used control portions of the test network. It is not
 part of the MUD implementation under test. We are using it strictly as
 a learning switch controller to set up our topology.
 
