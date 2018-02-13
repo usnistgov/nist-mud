@@ -1,4 +1,4 @@
-# IOT MUD implementation on Open Daylight with hooks for Elastic IDS #
+# IOT MUD implementation on Open Daylight #
 
 
 ## Prerequisites ##
@@ -193,5 +193,6 @@ source projects are noted in the source files as appropriate.
 
 # NOTE: This project is in an early state of devlopment#
 
-This code is shared for early review. You are requested not to
+This code is shared for early review. It is an implementation
+of an IETF draft in progress.  You are requested not to
 re-distribute it until it has been carefully tested.
