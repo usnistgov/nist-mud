@@ -3,34 +3,36 @@
 
 ## Prerequisites ##
 
-* Install JDK 1.8x and maven. 
-* Install python 2.7x and whatever prerequisites Ryu wants.
-* Install Ryu (for testing). 
-* Install openvswtich 
-* Eclipse -- highly recommended.
+On the Controller host:
+
+* Install JDK 1.8x and maven 3.5 or above.
+* Eclipse -- highly recommended if you want to look at code.
 
 ## How to build and test it it using mininet ##
 
-### Prerequisites ###
+Create a virtual machine running Ubuntu 16. 
 
-Create a virtual machine running Ubuntu 16. Install mininet on that virtual machine
-   
-    sudo apt-get install mininet
+### Pre-requisites for the Test VM ###
 
-
-Allow root privileges for user by performing the following:
+Allow root privileges for user to save yourself some typing:
 
      sudo visudo
      <username> ALL=(ALL) NOPASSWD: ALL
+
+Install mininet on the virtual machine.  Install openvswitch on the mininet vm.
+
+    sudo apt-get install openvswitch-switch
+    sudo apt-get install mininet
 
 Install python prerequisites
 	 
 	 sudo pip install requests
 	 sudo apt install curl
 
-
-RYU is used control a test router. It is not part of the MUD implementation under test. We are using it strictly 
-as a learning switch controller to set up our topology.
+On the mininet vm. Install python 2.7x and whatever prerequisites
+Ryu wants.  RYU is used control portions of the test network. It is not
+part of the MUD implementation under test. We are using it strictly as
+a learning switch controller to set up our topology.
 
      apt install gcc python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
      git clone git://github.com/osrg/ryu.git
