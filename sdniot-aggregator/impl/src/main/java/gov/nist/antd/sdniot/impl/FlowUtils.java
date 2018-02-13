@@ -995,7 +995,6 @@ public class FlowUtils {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, flowCookie.getValue());
 
-		InstructionBuilder ib = new InstructionBuilder();
 		Instruction createVlanTag = FlowUtils.createSetVlanAndOutputToPortInstructions(vlanTag, outputPortUri);
 
 		InstructionsBuilder insb = new InstructionsBuilder();

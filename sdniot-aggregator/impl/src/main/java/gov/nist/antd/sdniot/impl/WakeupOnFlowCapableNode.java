@@ -197,7 +197,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider.getNode(nodeUri);
 		if (nodePath == null ) {
 			LOG.info("Node not seen -- not installing flow " );
-		
+			return;
 		}
 		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
