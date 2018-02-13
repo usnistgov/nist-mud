@@ -193,7 +193,7 @@ usefulness of this software.
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
 
-Please acknowledge our work if you find this code useful.
+Please acknowledge our work if you re-use this code or design.
 
 
 ## Credits ##
@@ -204,8 +204,15 @@ Please acknowledge our work if you find this code useful.
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division.
 
-# NOTE: This project is in an early state of devlopment#
+## LIMITATIONS ##
 
-This code is shared for early review. It is an implementation
-of an IETF draft in progress.  You are requested not to
-re-distribute it until it has been carefully tested.
+This code is shared for early review. It is an implementation of an IETF
+draft in progress. Much more testing and validation is required.
+
+Please do not re-distribute until this repository is granted public access.
+This will happen after:
+
+1. The IETF draft has achieved an RFC status.
+2. All issues are satisfactorily resolved.
+
+
