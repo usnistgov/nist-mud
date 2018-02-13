@@ -19,6 +19,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.Accept;
@@ -286,7 +287,7 @@ public class MudFlowsInstaller {
 		String authority = InstanceIdentifierUtils.getAuthority(mudUri);
 
 		Short protocol = getProtocol(matches);
-		if ( protocol == -1 ) {
+		if (protocol == -1) {
 			LOG.error("Cannot install -- protocol field missing");
 			return;
 		}
@@ -363,7 +364,7 @@ public class MudFlowsInstaller {
 	private void installPermitFromSameManufacturerFlowRule(String mudUri, String flowUri, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowUri " + flowUri);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1 ) {
+		if (protocol == -1) {
 			LOG.error("Cannot install ");
 			return;
 		}
@@ -381,61 +382,58 @@ public class MudFlowsInstaller {
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
 		BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
 
-		installPermitFromSrcManSrcPortToDestManDestPortFlow (metadata, mask, protocol.shortValue(),
-					sourcePort, destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE,
-					SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId, getCpeNode());
-		
+		installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask, protocol.shortValue(), sourcePort,
+				destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.PASS_THRU_TABLE, flowCookie,
+				flowId, getCpeNode());
 
 	}
-	
+
 	private void installPermitFromLocalNetworksFlowRule(String mudUri, String flowUri, Matches matches) {
 		int sourcePort = getSourcePort(matches);
 		int destinationPort = getDestinationPort(matches);
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
 		Short protocol = getProtocol(matches);
-		if ( protocol == -1 ) {
+		if (protocol == -1) {
 			LOG.error("Cannot install ");
 			return;
 		}
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT)
-				             .or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT));
+				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT));
 
-	    BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.SRC_NETWORK_MASK);
-	    installPermitFromSrcManSrcPortToDestManDestPortFlow (metadata, mask, protocol.shortValue(),
-				sourcePort, destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE,
-				SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId, getCpeNode());	
+		BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.SRC_NETWORK_MASK);
+		installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask, protocol.shortValue(), sourcePort,
+				destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.PASS_THRU_TABLE, flowCookie,
+				flowId, getCpeNode());
 	}
-	
+
 	private void installPermitToLocalNetworksFlowRule(String mudUri, String flowUri, Matches matches) {
 		int sourcePort = getSourcePort(matches);
 		int destinationPort = getDestinationPort(matches);
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
 		Short protocol = getProtocol(matches);
-		if ( protocol == -1) {
+		if (protocol == -1) {
 			LOG.error("Cannot install protocol unspecified");
 			return;
 		}
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT)
-				             .or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT));
-	    BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.DST_NETWORK_MASK);
-	    
-	    installPermitFromSrcManSrcPortToDestManDestPortFlow (metadata, mask, protocol.shortValue(),
-				sourcePort, destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE,
-				SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId, getCpeNode());	
+				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT));
+		BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.DST_NETWORK_MASK);
+
+		installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask, protocol.shortValue(), sourcePort,
+				destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.PASS_THRU_TABLE, flowCookie,
+				flowId, getCpeNode());
 	}
-	
-	
-	
+
 	private void installPermitToSameManufacturerFlowRule(String mudUri, String flowUri, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowUri " + flowUri);
 		Short protocol = getProtocol(matches);
-		if ( protocol == -1 ) {
+		if (protocol == -1) {
 			LOG.error("invlid protocol -- cannot install ");
 			return;
 		}
@@ -453,17 +451,14 @@ public class MudFlowsInstaller {
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 		BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
 
-	    installPermitFromSrcManSrcPortToDestManDestPortFlow (metadata, mask, protocol.shortValue(),
-					sourcePort, destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE,
-					SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId, getCpeNode());
+		installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask, protocol.shortValue(), sourcePort,
+				destinationPort, SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.PASS_THRU_TABLE, flowCookie,
+				flowId, getCpeNode());
 	}
 
-	
-	
-	private void installPermitFromSrcManSrcPortToDestManDestPortFlow(BigInteger metadata,
-			BigInteger metadataMask, short protocol, int srcPort, int destinationPort, 
-			short tableId, short targetTableId,
-			FlowCookie flowCookie, FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
+	private void installPermitFromSrcManSrcPortToDestManDestPortFlow(BigInteger metadata, BigInteger metadataMask,
+			short protocol, int srcPort, int destinationPort, short tableId, short targetTableId, FlowCookie flowCookie,
+			FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
 
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 				srcPort, destinationPort, tableId, targetTableId, flowId, flowCookie);
@@ -687,62 +682,9 @@ public class MudFlowsInstaller {
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	public static void installStampSrcMacManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
-			String mudUri, SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
-		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		int flag = 0;
-		if (isLocalAddress) flag = 1;
-		
-		LOG.info("installStampSrcManufacturerModelFlowRules : dstMac = " + srcMac.getValue()
-		+ " isLocalAddress " + isLocalAddress + " mudUri " + mudUri);
-		
-		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT))
-				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+	
 
-		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK
-				.or(SdnMudConstants.SRC_MODEL_MASK)
-				.or(SdnMudConstants.SRC_NETWORK_MASK);
-
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("stamp-src-mac-manufactuer-model-flow");
-
-		FlowBuilder fb = FlowUtils.createSourceMacMatchSetMetadataAndGoToTable(srcMac, metadata, metadataMask,
-				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-	}
-
-	public static void installStampDstMacManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
-			String mudUri,SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
-
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
-		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
-		int flag = 0;
-		if (isLocalAddress) flag = 1;
-		
-		LOG.info("installStampDstManufacturerModelFlowRules : dstMac = " + dstMac.getValue()
-		+ " isLocalAddress " + isLocalAddress + " mudUri " + mudUri);
-		
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
-				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
-		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK
-				.or(SdnMudConstants.DST_MODEL_MASK)
-				.or(SdnMudConstants.DST_NETWORK_MASK);
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("stamp-dst-mac-manufactuer-model-flow");
-
-		FlowBuilder fb = FlowUtils.createDestMacMatchSetMetadataAndGoToTable(dstMac, metadata, metadataMask,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, SdnMudConstants.SDNMUD_RULES_TABLE, flowId,
-				flowCookie);
-
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-	}
+	
 
 	/**
 	 * Retrieve and install flows for a device of a given MAC address.

@@ -12,31 +12,31 @@
 
 ## How to build and test it it using mininet ##
 
-### Prereqs for easier time ###
+### Prerequisites ###
 
-Create a virtual machine running Ubuntu 16.
-On that virtual machine, allow root privileges for user by performing the following:
+Create a virtual machine running Ubuntu 16. Install mininet on that virtual machine
+   
+    sudo apt-get install mininet
+
+
+Allow root privileges for user by performing the following:
 
      sudo visudo
      <username> ALL=(ALL) NOPASSWD: ALL
 
-Install prerequisites
+Install python prerequisites
 	 
 	 sudo pip install requests
 	 sudo apt install curl
 
 
-
-### Installing RYU Controller from source ###
-
-RYU is used control a test router. It is not part of the implementation under test. We are using it strictly 
-as a learning switch controller.
+RYU is used control a test router. It is not part of the MUD implementation under test. We are using it strictly 
+as a learning switch controller to set up our topology.
 
      apt install gcc python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
      git clone git://github.com/osrg/ryu.git
      cd ryu; pip install .
      pip install -r tools/optional-requires
-
 
 
 ### Building ###
@@ -48,7 +48,7 @@ Run maven
       cd sdniot-aggregator
       mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
-### Testing ###
+### Manual Testing ###
 
 You should run the test environment on a separate VM. Mininet settings may interfere with
 your settings on your host otherwise.
@@ -134,42 +134,23 @@ The following will work because mud rules have not been installed at yet:
 
      h1 ping h2 
 
-Install MUD rules and configure the IDS.
+Install MUD rules 
 
       sh postit1.sh
 
 Dump flows again. You should see table 0 and table 1 is populated to set metadata.
 
-Now configure IDS
-
-     sh postit2.sh
-
-
-You should see the flows corresponding to flow diversion to the IDS installed at this point. Check it:
-
-      ovs-ofctl dump-flows s1 -O openflow13
-      ovs-ofctl dump-flows s2 -O openflow13
-
-
-You should see mpls flows if all went well for example, in s1 look for a flow like this:
-
-      cookie=0xa2d5e, duration=15.918s, table=2, n_packets=0, n_bytes=0, hard_timeout=3000, priority=35,metadata=0xa2d5e actions=push_mpls:0x8847,set_field:666974->mpls_label,goto_table:4
-
-This means the IDS script registered itself successfully.
-
-Now from mininnet you can exercise MUD. The following should time out:
-
-     h1 ping h2 
-
-Now tail the capture file of the IDS:
-
-    tail -f capture.txt
 
 Next try the following:
 
-     h1 same-man-test.py --client
+     h1 udpping.py --client --port 4000 --host 10.0.0.2
 
-This will send udp packets from h1 to h2 on port 4000.
+This will send udp packets from h1 to h2 on port 4000. This is allowed by the access-control rules
 
-Verify that the packets were captured in capture.txt (you should see packets from 10.0.0.1 to 10.0.0.2 and back).
+
+Next try the following
+
+     h1 udpping.py --client --port 8002 --host 10.0.0.6
+
+This will send udp packets from h1 to h2 on port 8002. This is allowed by the access-control rules
 

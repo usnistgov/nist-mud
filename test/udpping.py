@@ -7,7 +7,7 @@ import argparse
 from socket import *
 
 
-def udp_client() :
+def udp_client(host, port) :
     # Create a UDP socket
     # Notice the use of SOCK_DGRAM for UDP packets
     clientSocket = socket(AF_INET, SOCK_DGRAM)
@@ -15,9 +15,9 @@ def udp_client() :
     # To set waiting time of one second for reponse from server
     clientSocket.settimeout(1)
     # Declare server's socket address
-    remoteAddr = ("10.0.0.2", 4000)
+    remoteAddr = (host, port)
     # Ping ten times
-    clientSocket.bind(('',4000))
+    clientSocket.bind(('',port))
     for i in range(10):
         sendTime = time.time()
         message = 'PING ' + str(i + 1) + " " + str(time.strftime("%H:%M:%S"))
@@ -35,13 +35,13 @@ def udp_client() :
             print
 
 
-def udp_server() :
+def udp_server(port) :
 
     # Create a UDP socket
     # Notice the use of SOCK_DGRAM for UDP packets
     serverSocket = socket(AF_INET, SOCK_DGRAM)
     # Assign IP address and port number to socket
-    serverSocket.bind(('', 4000))
+    serverSocket.bind(('', port))
 
     while True:
         # Receive the client packet along with the address it is coming from
@@ -55,24 +55,6 @@ def put_request(url,payloadFile):
     payload = json.load(f)
     requests.put(url,auth=('admin','admin'),data=json.dumps(payload), headers={"Content-Type":"application/json"})
 
-def setUp():
-    url = "http://localhost:8181/restconf/config/ietf-mud:mud"
-    payloadFile = "ietfmud.json"
-    put_request(url,payloadFile)
-
-    url = "http://localhost:8181/restconf/config/ietf-access-control-list:access-lists"
-    payloadFile = "access-control-list.json"
-    put_request(url,payloadFile)
-
-    url = "http://localhost:8181/restconf/config/nist-mud-device-association:mapping"
-    payloadFile =  "device-association.json"
-    put_request(url,payloadFile)
-
-    time.sleep(10)
-
-    url = "http://localhost:8181/restconf/config/nist-mud-controllerclass-mapping:controllerclass-mapping"
-    payloadFile = "controllerclass-mapping.json"
-    put_request(url,payloadFile)
 
 
 if __name__ == "__main__":
@@ -80,9 +62,14 @@ if __name__ == "__main__":
     print("start ...")
     parser = argparse.ArgumentParser('argument parser')
 
-    parser.add_argument("--setup", 
-			action="store_true",dest='setup', 
-                    help='setup flow rules')
+    parser.add_argument("--port", 
+			type=int, default=None,
+            required=True,
+                    help='listening port')
+
+    parser.add_argument("--host", default=None,
+                    help='server host (required if Client flag is True)')
+        
 
     parser.add_argument("--client",  
 			action="store_true",dest='client', 
@@ -92,19 +79,19 @@ if __name__ == "__main__":
 			action="store_true",dest='server', 
                     help='server respond to ping')
 
-    parser.set_defaults(setup=False)
     parser.set_defaults(client=False)
     parser.set_defaults(server=False)
 
     args  = parser.parse_args()
 
     print args
+
+    port = args.port
+    host = args.host
+    
     
     count = 0
     
-    if args.setup:
-        count = count+1
-
     if args.client:
         count = count+1
 
@@ -115,18 +102,12 @@ if __name__ == "__main__":
         print "Need one argument. Specify --client or --server"
         sys.exit()
 
-    if args.setup:
-        setUp()
-    elif args.client:
-        udp_client()
+    if args.client:
+        if host is None:
+           print("Missing a required argument --host")
+           sys.exit()
+        udp_client(host,port)
     elif args.server:
-        udp_server()
+        udp_server(port)
 
     
-       
-
-
-
- 
-    
-

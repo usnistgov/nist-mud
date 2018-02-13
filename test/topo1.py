@@ -50,10 +50,9 @@ def setupTopology(controller_addr,dns_address, interface):
     s1.linkTo(h4)
     # The non-iot client runs here
     s1.linkTo(h5)
-    
-
-    #BUGBUG
     h6 = net.addHost('h6')
+
+    # Switch s2 is the "multiplexer".
     s2 = net1.addSwitch('s2')
 
     s3 = net1.addSwitch('s3')
@@ -65,9 +64,7 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # This is our fake www.nist.local host.
     h9 = net1.addHost('h9')
-    #203.0.113.13 www.nist.local
    
-    # Go through the NAT.Packets routed through h7
     s2.linkTo(h6)
     #h7 is the router -- no direct link between S2 and S3
     # h7 linked to both s2 and s3
@@ -145,6 +142,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h5.cmdPrint('ip route del default')
     h5.cmdPrint('ip route add default via 10.0.0.7 dev h5-eth0')
 
+    # h6 is a localhost.
     h6.cmdPrint('ip route del default')
     h6.cmdPrint('ip route add default via 10.0.0.7 dev h6-eth0')
 
@@ -152,7 +150,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h8.cmdPrint('ip route del default')
     h8.cmdPrint('ip route add default via 10.0.0.7 dev h8-eth0')
 
-    # h9 is our fake host.
+    # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
     h9.cmdPrint('python http-server.py -H 203.0.113.13&')
@@ -167,7 +165,9 @@ def setupTopology(controller_addr,dns_address, interface):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     #h2 is our peer same manufacturer host.
-    h2.cmdPrint("python same-man-test.py --server &")
+    h2.cmdPrint("python udpping.py --port 4000 --server &")
+    # h6 is a localhost peer.
+    h6.cmdPrint("python udpping.py --port 8002 --server &")
     
     # Start the IDS on node 8
 
@@ -180,7 +180,8 @@ def setupTopology(controller_addr,dns_address, interface):
 
     print "register IDS python register-ids.sh"
 
-    print "Exercise system python samem-man-test.py --client"
+    print "Exercise system python udpping.py --client --host 10.0.0.2 --port 4000"
+    print "Exercise system python udpping.py --client --host 10.0.0.6 --port 8002"
 
 
     cli = CLI( net )
