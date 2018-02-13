@@ -1,1 +1,0 @@
-curl -v -X PUT -u admin:admin --header "Accept:application/xml"  --header "Content-Type:application/xml" --data @pop-mpls.xml  http://localhost:8181/restconf/config/opendaylight-inventory:nodes/node/openflow:1/table/0

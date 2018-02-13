@@ -1,9 +1,0 @@
-{
-    "input" : {
-            "flow-spec" : [ "flow:toaster.nist.gov:local" ],
-            "node-id" : "openflow:2",
-	    "ports" : [1,2,3],
-	    "filter-duration" : 3000
-    }
-}
-                
