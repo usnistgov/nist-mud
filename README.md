@@ -55,7 +55,7 @@ You should run the test environment on a separate VM. Mininet settings may inter
 your settings on your host otherwise. We assume that OpenDaylight is on another host 
 (it can be co-resident if you wish).
 
-#### Test enviornment setup ####
+#### Configure the Mininet VM ####
 
 Edit /etc/dnsmasq.conf.  Include the following:
 
@@ -84,7 +84,9 @@ Add the following line to /etc/resolv.conf on the virtual machine.
  
       nameserver 10.0.0.5
 
-Add the following to /etc/hosts on the girtual machine so the java library can look up our fake host.
+### Configure the Controller Host ###
+
+Add the following to /etc/hosts so the java library can look up our fake host.
 
       203.0.113.13   www.nist.local
 
