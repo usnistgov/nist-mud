@@ -136,7 +136,9 @@ public class SdnmudProvider {
 
 		@Override
 		public boolean equals(Object that) {
-			if (!that.getClass().equals(IdsPort.class)) {
+			if ( that == null) {
+				return false;
+			} else if (!that.getClass().equals(IdsPort.class)) {
 				return false;
 			} else {
 				return ((IdsPort) that).portUri.equals(this.portUri);
