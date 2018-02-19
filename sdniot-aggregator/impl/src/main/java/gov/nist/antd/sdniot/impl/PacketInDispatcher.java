@@ -248,8 +248,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			LOG.info("Source IP  " + sourceIpAddress + " dest IP  " + destIpAddress);
 
 			String sendingNodeId = matchInPortUri;
-
-			if (!sdnmudProvider.getTopology().getCpeSwitches().contains(new Uri(nodeId))) {
+			
+			if (!sdnmudProvider.isCpeNode(nodeId)) {
 				LOG.error("THIS SHOULD NOT HAPPEN. Ignoring packet -- not meant for us");
 				return;
 			}
@@ -263,7 +263,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			}
 
 			sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
-			if (tableId == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE || tableId == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			if (tableId == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE || 
+                tableId == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				// We got a notification for a device that is connected to this
 				// switch.
 				Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
@@ -314,38 +315,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				}
 				// transmitPacket(notification.getPayload(), matchInPortUri);
 
-			} else if (tableId == SdnMudConstants.L2SWITCH_TABLE) {
-				// Install a flow for this destination MAC routed to the ingress
-				String outputPortUri = this.sdnmudProvider.getNodeConnector(this.nodeId, sendingNodeId);
-				if (outputPortUri != null) {
-
-					LOG.debug("Installng BRIDGE flow rule for dstMac = " + dstMac.getValue() + " srcMac = " + srcMac
-							+ " sendingNodeId " + sendingNodeId + " myNodeId " + nodeId);
-
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-					int time = 300;
-
-					if (dstMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-							&& srcMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-							&& !dstMac.getValue().startsWith("33:33")) {
-						// Note 48-bit MAC addresses
-						// in the range 33-33-00-00-00-00 to 33-33-FF-FF-FF-FF
-						// are used for IPv6 multicast.
-						// TODO -- extend this checck over all reserved
-						// macaddresses.
-						// TODO -- we need to check for loops before installing
-						// this rule.
-
-						FlowBuilder flow = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, srcMac, tableId,
-								outputPortUri, time);
-						sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
-						// Forward the packet.
-						transmitPacket(notification.getPayload(), outputPortUri);
-
-					}
-				}
-			}
-
+			} 
 		}
 	}
 

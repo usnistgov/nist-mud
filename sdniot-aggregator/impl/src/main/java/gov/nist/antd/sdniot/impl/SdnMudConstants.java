@@ -98,11 +98,6 @@ public interface SdnMudConstants {
   public static final int DST_NETWORK_FLAGS_SHIFT =                               "0000000".length()*4;
   public static final BigInteger LOCAL_DST_NETWORK_FLAG= new BigInteger("0000000010000000",16);
 
-		  
-  public static final int DEFAULT_IDS_IDLE_TIMEOUT = 30;
-  // GOTO instruction key. (Should not clash with other instructions).
-  public static final int GOTO_INSTRUCTION_KEY = 123;
-
   // Drop mud flow.
   public static final String MUD_FLOW_MISS = "drop";
 

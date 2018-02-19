@@ -27,27 +27,34 @@ module nist-network-topology {
        Specification";
   }
 
-  grouping link {
-      leaf npe-switch {
+  grouping accounts {
+      description
+          "A list of accounts";
+      list link {
+         leaf account-name  {
+            description 
+                "Account name";
+            type string;
+        }
+        leaf npe-switch {
            description 
                 "NPE switch associated with several CPE switches. ";
            type inet:uri;
-      }
+        }
 
-
-      leaf-list cpe-switches {
+        leaf-list cpe-switches {
           description 
              "CPE switch ID's associated with this NPE switch";
           type inet:uri;
+        }
       }
-
   }
 
   container topology {
       description
           "Network topology gives an association between npe switches and 
           sets of CPE switches";
-      uses link;
+      uses accounts;
   }
 
 }

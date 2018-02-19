@@ -224,16 +224,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.PASS_THRU_TABLE,
 				SdnMudConstants.L2SWITCH_TABLE);
 
-		if (sdnmudProvider.getTopology() != null
-				&& sdnmudProvider.getTopology().getCpeSwitches().contains(new Uri(nodeUri))) {
+		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		}
 
-		// Install an unconditional packet drop in IDS_RULES_TABLE1 (this is
-		// where MUD packets that do not match
-		// go. The default action is to drop the packet. This is a placeholder
-		// for subsequent
+		// Install an unconditional packet drop in the DROP_TABLE (this is
+		// where MUD packets that do not match go. 
+        // The default action is to drop the packet. This is a placeholder for subsequent
 		// packet inspection.
 
 		installUnditionalDropPacket(nodeUri, nodePath, SdnMudConstants.DROP_TABLE);

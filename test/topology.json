@@ -1,8 +1,10 @@
 {
-
  "topology" : {
-	"npe-switch" : "openflow:2",
-	"cpe-switches" : [ "openflow:1" ]
-  }
-
+     "link" : [ 
+         {
+	            "npe-switch" : "openflow:2",
+	            "cpe-switches" : [ "openflow:1" ]
+         } 
+     ]
+    }
 }

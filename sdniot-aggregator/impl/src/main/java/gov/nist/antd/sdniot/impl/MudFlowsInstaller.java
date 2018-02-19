@@ -461,42 +461,7 @@ public class MudFlowsInstaller {
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	private void installPermitPacketsFromToServer(String mudUri, Ipv4Address address, int port) {
-
-		LOG.info("installPermitPacketsFromToServer :  dnsAddress " + address.getValue());
-
-		String authority = InstanceIdentifierUtils.getAuthority(mudUri);
-		BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getModelId(mudUri))
-				.shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT);
-		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
-
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(createFlowUri(authority, address));
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-
-		FlowBuilder flowBuilder = FlowUtils.createPermitPacketsToServerFlow(metadata, metadataMask, address, port,
-				SdnMudConstants.UDP_PROTOCOL, flowId, flowCookie);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, getCpeNode());
-
-		flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		flowBuilder = FlowUtils.createPermitPacketsToServerFlow(metadata, metadataMask, address, port,
-				SdnMudConstants.TCP_PROTOCOL, flowId, flowCookie);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, getCpeNode());
-
-		metadata = BigInteger.valueOf(InstanceIdentifierUtils.getModelId(mudUri))
-				.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT);
-		metadataMask = SdnMudConstants.DST_MODEL_MASK;
-		try {
-			InstanceIdentifier<FlowCapableNode> node = getCpeNode();
-			for (short protocol : new Short[] { SdnMudConstants.UDP_PROTOCOL, SdnMudConstants.TCP_PROTOCOL }) {
-				flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-				flowBuilder = FlowUtils.createPermitPacketsFromServerFlow(metadata, metadataMask, address, protocol,
-						flowId, flowCookie);
-				sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
-			}
-		} catch (Exception ex) {
-			LOG.error("Error resolving address " + address.getValue());
-		}
-	}
+	
 
 	public static void installPermitPacketsFromToServer(SdnmudProvider sdnmudProvider,
 			InstanceIdentifier<FlowCapableNode> node, Ipv4Address address, short protocol, int port) {
@@ -554,19 +519,6 @@ public class MudFlowsInstaller {
 				SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.PASS_THRU_TABLE, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
-	}
-
-	private void installDenyToMacFlow(String mudUri, MacAddress destinationMacAddress, FlowCookie flowCookie) {
-
-		LOG.info("installDropPacketsToMacFlow " + mudUri + " destination " + destinationMacAddress.getValue());
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
-		BigInteger metadata = createSrcModelMetadata(mudUri);
-
-		FlowBuilder flow = FlowUtils.createMetadataAndDestMacMatchGoToTableFlow(metadata, metadataMask,
-				destinationMacAddress, SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.DROP_TABLE, flowCookie,
-				flowId);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, getCpeNode());
 	}
 
 	public static void installAllowToDnsAndNtpFlowRules(SdnmudProvider sdnmudProvider,
@@ -640,11 +592,6 @@ public class MudFlowsInstaller {
 	private static BigInteger createSrcManufacturerMetadata(String manufacturer) {
 		return BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(manufacturer))
 				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
-	}
-
-	private static BigInteger createDstManufacturerMetadata(String manufacturer) {
-		return BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(manufacturer))
-				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
 	}
 
 	public static void installStampManufacturerModelFlowRules(MacAddress srcMac, String mudUri,

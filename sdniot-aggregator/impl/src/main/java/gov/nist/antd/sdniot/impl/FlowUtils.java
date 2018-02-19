@@ -386,7 +386,7 @@ public class FlowUtils {
 	 * Goto table and set the metadata.
 	 * 
 	 * @param targetTable
-	 *            -- the IDS table
+	 *            -- the target table table
 	 * @param metadata
 	 *            -- the metadata tag.
 	 * @return -- the instructions builder.

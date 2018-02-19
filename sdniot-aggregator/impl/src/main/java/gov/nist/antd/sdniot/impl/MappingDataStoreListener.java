@@ -17,7 +17,8 @@
 * representations regarding the use of the software or the results thereof,
 * including but not limited to the correctness, accuracy, reliability or
 * usefulness of this software.
- */
+*
+*/
 package gov.nist.antd.sdniot.impl;
 
 import java.util.Collection;
@@ -38,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Data Store listener for MappingData store (Mapping of MAC addresses to MUD URLs).
  * 
- * @author mranga
+ * @author mranga@nist.gov
  *
  */
 
@@ -52,7 +53,6 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	private static final Logger LOG = LoggerFactory.getLogger(MappingDataStoreListener.class);
 
 	private static String getAuthority(Uri uri) {
-
 		int index = uri.getValue().indexOf("//") + 2;
 		String rest = uri.getValue().substring(index);
 		index = rest.indexOf("/");
@@ -83,7 +83,9 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			List<MacAddress> macAddresses = mapping.getDeviceId();
 			Uri uri = mapping.getMudUrl();
 			LOG.info("mudUri = " + uri.getValue());
-
+            String manufacturer = InstanceIdentifierUtils.getAuthority(uri.getValue());
+	        int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
+            int modelId = InstanceIdentifierUtils.getModelId(uri.getValue());
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {
 				removeMacAddress(mac);
@@ -96,8 +98,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 				}
 				macs.add(mac);
 				// Remove the default mapping (the next flow miss will install
-				// the right mapping).
-				// Find all the switches where this MAC address has been seen.
+				// the right mapping). Find all the switches where this MAC address has been seen.
 				if (this.sdnmudProvider.getNodeId(mac) != null) {
 					for (String nodeId : this.sdnmudProvider.getNodeId(mac)) {
 						InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(nodeId);

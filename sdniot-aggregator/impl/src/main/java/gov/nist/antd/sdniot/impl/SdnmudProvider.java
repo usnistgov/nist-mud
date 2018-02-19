@@ -1,7 +1,7 @@
 /*
  * Copyright © 2017 None.
  *
- *This file includes code developed by employees of the National Institute of
+ * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
  * This software was developed by employees of the National Institute of
@@ -44,6 +44,7 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.contro
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -79,9 +80,8 @@ public class SdnmudProvider {
 	private MudProfileDataStoreListener mudProfileDataStoreListener;
 
 	private ControllerclassMappingDataStoreListener controllerClassMappingDataStoreListener;
-	
+
 	private Map<Uri, Mud> uriToMudMap = new HashMap<Uri, Mud>();
-	
 
 	// Stores a set of NodeIds for a given mac address (identifies the switches
 	// that have seen the mac addr).
@@ -136,7 +136,7 @@ public class SdnmudProvider {
 
 		@Override
 		public boolean equals(Object that) {
-			if ( that == null) {
+			if (that == null) {
 				return false;
 			} else if (!that.getClass().equals(IdsPort.class)) {
 				return false;
@@ -491,17 +491,44 @@ public class SdnmudProvider {
 		this.topology = topology;
 
 	}
-	
+
 	public Topology getTopology() {
 		return topology;
 	}
-	
+
 	public Collection<Mud> getMudProfiles() {
 		return this.uriToMudMap.values();
 	}
 
 	public void addMudProfile(Mud mud) {
 		this.uriToMudMap.put(mud.getMudUrl(), mud);
+	}
+
+	public boolean isCpeNode(String nodeId) {
+		if (this.getTopology() == null) {
+			return false;
+		}
+
+		for (Link link : this.getTopology().getLink()) {
+			for (Uri cpeNode : link.getCpeSwitches()) {
+				if (nodeId.equals(cpeNode.getValue())) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public boolean isNpeNode(String nodeId) {
+		if (this.getTopology() == null) {
+			return false;
+		}
+
+		for (Link link : this.getTopology().getLink()) {
+			if (nodeId.equals(link.getNpeSwitch().getValue()))
+				return true;
+		}
+		return false;
 	}
 
 }
