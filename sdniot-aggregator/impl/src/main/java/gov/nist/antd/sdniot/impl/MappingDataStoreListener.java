@@ -106,12 +106,9 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 							MudFlowsInstaller.installStampManufacturerModelFlowRules(mac, uri.getValue(),
 									sdnmudProvider, node);
 						}
-
 					}
 				}
-
 			}
-
 		}
 	}
 
@@ -131,43 +128,6 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 		} else {
 			return null;
 		}
-	}
-
-	/**
-	 * Get all the MAC addresses for the same manufacturer.
-	 * 
-	 * @param mudUri
-	 * @return
-	 */
-	public Collection<MacAddress> getSameManufacturerMacs(Uri mudUri) {
-		HashSet<MacAddress> macs = new HashSet<MacAddress>();
-		String authority = getAuthority(mudUri);
-		LOG.info("getSameManufacturerMacs for " + mudUri.getValue() + " manufacturer " + authority);
-		for (Uri uri : uriToMacs.keySet()) {
-			if (authority.equals(getAuthority(uri))) {
-				macs.addAll(uriToMacs.get(uri));
-			}
-		}
-		LOG.info("getSameManufacturerMacs : Found " + macs.size() + " macs = " + macs);
-		return macs;
-	}
-
-	/**
-	 * Get all mac addresses for the same manufacturer.
-	 * 
-	 * @param manufacturer
-	 *            -- the manufacturer.
-	 * 
-	 * @return -- a set containing the mac addresses for the manufactuer.
-	 */
-	public Collection<MacAddress> getSameManufactuerMacs(String manufacturer) {
-		HashSet<MacAddress> macs = new HashSet<MacAddress>();
-		for (Uri uri : uriToMacs.keySet()) {
-			if (manufacturer.equals(getAuthority(uri))) {
-				macs.addAll(uriToMacs.get(uri));
-			}
-		}
-		return macs;
 	}
 
 }
