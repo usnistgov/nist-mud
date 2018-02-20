@@ -71,11 +71,6 @@ public interface SdnMudConstants {
   public static final String REMOTE = "remote";
   public static final String NONE = "NONE";
 
-  // The "well known" IDS registration message.
-
-  public static final String IDS_REGISTRATION_ADDRESS = "255.255.255.255";
-  public static final int IDS_REGISTRATION_PORT = 1000;
-  
   // The mask for Manufacturer and model.
   public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000",16);
   public static final int SRC_MANUFACTURER_SHIFT =                         "0000000000000".length()*4;
