@@ -31,6 +31,9 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotificationBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.MappingInfoBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -86,6 +89,16 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
             String manufacturer = InstanceIdentifierUtils.getAuthority(uri.getValue());
 	        int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
             int modelId = InstanceIdentifierUtils.getModelId(uri.getValue());
+            MappingNotificationBuilder mnb = new MappingNotificationBuilder();
+            mnb.setManufacturerId(Long.valueOf(manufacturerId));
+            mnb.setModelId(Long.valueOf(modelId));
+            MappingInfoBuilder mib = new MappingInfoBuilder();
+            mib.setMudUrl(uri);
+            mib.setDeviceId(macAddresses);
+            MappingNotification mappingNotification = mnb.setMappingInfo(mib.build()).build();
+            // Publish that we just saw a new device 
+            sdnmudProvider.getNotificationPublishService().offerNotification(mappingNotification);
+            
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {
 				removeMacAddress(mac);

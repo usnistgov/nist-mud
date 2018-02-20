@@ -19,6 +19,10 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     interface="org.opendaylight.controller.md.sal.binding.api.NotificationService"
     odl:type="default" />
 
+  <reference id="notificationPublishService"
+    interface="org.opendaylight.controller.md.sal.binding.api.NotificationPublishService" 
+   />
+
   <odl:rpc-service id="salFlowService"
     interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
 
@@ -43,6 +47,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     <argument ref="packetNotificationService" />
     <argument ref="mdsalUtils" />
     <argument ref="rpcRegistry" />
+    <argument ref="notificationPublishService" />
   </bean>
 
 </blueprint>

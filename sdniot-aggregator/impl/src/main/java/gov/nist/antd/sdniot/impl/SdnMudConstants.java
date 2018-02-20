@@ -96,14 +96,10 @@ public interface SdnMudConstants {
   // Drop mud flow.
   public static final String MUD_FLOW_MISS = "drop";
 
-  // Metadata for IDS registration.
-  public static final BigInteger IDS_REGISTRATION_METADATA = BigInteger.valueOf(0xdeadbeefL);
-  public static final FlowCookie IDS_REGISTRATION_FLOW_COOKIE =
-      InstanceIdentifierUtils.createFlowCookie("ids-registration-flow-cookie");
   public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = 
       InstanceIdentifierUtils.createFlowCookie("send-to-controller-flow-cookie");
   
-  // 0 means no caching.
+  // Cache timeout for network and model stamping flow rules.
   public static final Integer CACHE_TIMEOUT = 120;
 
 

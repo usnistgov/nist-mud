@@ -29,11 +29,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Timer;
+
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.genius.mdsalutil.interfaces.IMdsalApiManager;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.AccessLists;
@@ -57,6 +58,7 @@ import org.opendaylight.yangtools.yang.parser.stmt.reactor.CrossSourceStatementR
 import org.opendaylight.yangtools.yang.parser.stmt.rfc6020.YangInferencePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.ImmutableSet;
 
 public class SdnmudProvider {
@@ -119,6 +121,8 @@ public class SdnmudProvider {
 
 	private Topology topology;
 
+	private NotificationPublishService notificationPublishService;
+
 	class IdsPort {
 		String portUri;
 		long time = System.currentTimeMillis();
@@ -152,13 +156,15 @@ public class SdnmudProvider {
 
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
-			IMdsalApiManager mdsalApiManager, RpcProviderRegistry rpcProviderRegistry) {
+			IMdsalApiManager mdsalApiManager, RpcProviderRegistry rpcProviderRegistry,
+			NotificationPublishService notificationPublishService) {
 		this.dataBroker = dataBroker;
 		this.flowService = flowService;
 		this.packetProcessingService = packetProcessingService;
 		this.notificationService = notificationService;
 		this.mdsalApiManager = mdsalApiManager;
 		this.rpcProviderRegistry = rpcProviderRegistry;
+		this.notificationPublishService = notificationPublishService;
 
 	}
 
@@ -191,11 +197,6 @@ public class SdnmudProvider {
 	 */
 	public void init() {
 		LOG.info("SdnmudProvider Session Initiated");
-
-		Set<QName> supportedFeatures = ImmutableSet.of(
-				QName.create("urn:ietf:params:xml:ns:yang:ietf-access-control-list", "2018-01-16", "match-on-ipv4"));
-		CrossSourceStatementReactor.BuildAction reactor = YangInferencePipeline.RFC6020_REACTOR
-				.newBuild(supportedFeatures);
 
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 
@@ -461,6 +462,10 @@ public class SdnmudProvider {
 	public SalFlowService getFlowService() {
 		return flowService;
 	}
+	
+	public NotificationPublishService getNotificationPublishService() {
+		return notificationPublishService;
+	}
 
 	public PacketProcessingService getPacketProcessingService() {
 		return packetProcessingService;
@@ -508,7 +513,6 @@ public class SdnmudProvider {
 		if (this.getTopology() == null) {
 			return false;
 		}
-
 		for (Link link : this.getTopology().getLink()) {
 			for (Uri cpeNode : link.getCpeSwitches()) {
 				if (nodeId.equals(cpeNode.getValue())) {
