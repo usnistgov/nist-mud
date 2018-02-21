@@ -7,10 +7,6 @@ module nist-mud-device-association {
     prefix inet;
   }
 
-  import ietf-packet-fields {
-    prefix packet;
-  }
-
   import ietf-yang-types {
     prefix yang;
   }
