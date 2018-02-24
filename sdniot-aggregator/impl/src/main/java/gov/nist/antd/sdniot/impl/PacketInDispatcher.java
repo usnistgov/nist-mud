@@ -242,12 +242,19 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			return;
 		}
 
+		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
+			LLDP lldp = new LLDP();
+			lldp.deserialize(notification.getPayload(), 0, notification.getPayload().length);
+			LOG.info("LLDP packet seen -- " + lldp.toString());
+			return;
+		}
 		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) {
 			String sourceIpAddress = PacketUtils.extractSrcIpStr(notification.getPayload());
 			String destIpAddress = PacketUtils.extractDstIpStr(notification.getPayload());
 			LOG.info("Source IP  " + sourceIpAddress + " dest IP  " + destIpAddress);
 
 			String sendingNodeId = matchInPortUri;
+			
 			
 			if (!sdnmudProvider.isCpeNode(nodeId)) {
 				LOG.error("THIS SHOULD NOT HAPPEN. Ignoring packet -- not meant for us");

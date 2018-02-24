@@ -42,6 +42,7 @@
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+<!--
 		<dependency>
 			<groupId>org.opendaylight.genius</groupId>
 			<artifactId>genius-features</artifactId>
@@ -79,5 +80,6 @@
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+-->
 	</dependencies>
 </project>
