@@ -16,7 +16,7 @@
 	</parent>
 
 	<groupId>gov.nist.antd</groupId>
-	<artifactId>sdniot-impl</artifactId>
+	<artifactId>ids-impl</artifactId>
 	<version>0.1.0</version>
 	<!-- <name> formatting is used by autorelease to parse and notify projects 
 		on build failure. Please do not modify this unless you have a good reason. -->
@@ -53,7 +53,7 @@
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>sdniot-api</artifactId>
+			<artifactId>ids-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

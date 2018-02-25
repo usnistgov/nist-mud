@@ -15,7 +15,7 @@
 	</parent>
 
 	<groupId>gov.nist.antd</groupId>
-	<artifactId>features-sdniot</artifactId>
+	<artifactId>features-ids</artifactId>
 	<version>0.1.0</version>
 	<packaging>feature</packaging>
 	<!-- <name> formatting is used by autorelease to parse and notify projects 
@@ -37,17 +37,57 @@
 	<dependencies>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>odl-sdniot</artifactId>
-			<version>${project.version}</version>
-			<type>xml</type>
-			<classifier>features</classifier>
-		</dependency>
-		<dependency>
-			<groupId>${project.groupId}</groupId>
 			<artifactId>odl-ids</artifactId>
 			<version>${project.version}</version>
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-ids-api</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+
+<!--
+		<dependency>
+			<groupId>org.opendaylight.genius</groupId>
+			<artifactId>genius-features</artifactId>
+			<version>${genius.version}</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opendaylight.genius</groupId>
+			<artifactId>genius-features</artifactId>
+			<version>0.3.1</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opendaylight.l2switch</groupId>
+			<artifactId>odl-l2switch-all</artifactId>
+			<version>${l2switch.version}</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.opendaylight.dlux</groupId>
+			<artifactId>odl-dlux-core</artifactId>
+			<version>${dlux.version}</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+		</dependency>
+		<dependency>
+			<groupId>org.opendaylight.dluxapps</groupId>
+			<artifactId>odl-dluxapps-applications</artifactId>
+			<version>${dluxapps.version}</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+		</dependency>
+-->
 	</dependencies>
 </project>

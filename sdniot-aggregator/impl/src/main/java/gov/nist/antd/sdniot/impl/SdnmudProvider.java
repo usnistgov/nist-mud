@@ -94,11 +94,6 @@ public class SdnmudProvider {
 	// Map between the node URI and the mud uri.
 	private HashMap<String, List<Uri>> nodeToMudUriMap = new HashMap<>();
 
-	// Maps the instance identifier to the URI of the node (should not need this
-	// map)
-
-	private HashMap<String, HashMap<String, String>> nodeConnectorMap = new HashMap<>();
-
 	// A map between a mac address and the associated FlowCapableNodes where MUD
 	// profiles were installed.
 	// This is used to retrieve a set of nodes where MUD rules have been
@@ -255,6 +250,7 @@ public class SdnmudProvider {
 	 */
 	public void close() {
 		LOG.info("SdnmudProvider Closed");
+		this.uriToMudMap.clear();
 	}
 
 	public MudProfileDataStoreListener getMudProfileDataStoreListener() {
@@ -351,17 +347,6 @@ public class SdnmudProvider {
 			}
 		}
 
-		// Clean up the node connector map;
-		this.nodeConnectorMap.remove(nodeUri);
-		for (Iterator<String> nodeConnectorMapIterator = this.nodeConnectorMap.keySet()
-				.iterator(); nodeConnectorMapIterator.hasNext();) {
-			String sourceNodeUri = nodeConnectorMapIterator.next();
-			this.nodeConnectorMap.get(sourceNodeUri).remove(nodeUri);
-			if (nodeConnectorMap.get(sourceNodeUri).isEmpty()) {
-				nodeConnectorMapIterator.remove();
-			}
-		}
-
 		// clean up the mudNodesMap
 		for (Iterator<String> mudNodesIterator = this.mudNodesMap.keySet().iterator(); mudNodesIterator.hasNext();) {
 			String manufacturer = mudNodesIterator.next();
@@ -373,46 +358,7 @@ public class SdnmudProvider {
 
 	}
 
-	/**
-	 * Set the node connector to send packets from a sourceNodeUri to a
-	 * destinationNodeUri.
-	 * 
-	 * @param sourceNodeUri
-	 *            -- the node URI of the source node.
-	 * @param destinationNodeUri
-	 *            -- the node URI of the destination node.
-	 * @param nodeConnectorUri
-	 *            -- the connector URI (to install in a flow rule for packet
-	 *            diversion).
-	 */
-	public void setNodeConnector(String sourceNodeUri, String destinationNodeUri, String nodeConnectorUri) {
-		LOG.debug("setNodeConnector : sourceNodeUri = " + sourceNodeUri + " destinationNodeUri = " + destinationNodeUri
-				+ " nodeConnectorUri " + nodeConnectorUri);
-		HashMap<String, String> nodeMap = this.nodeConnectorMap.get(sourceNodeUri);
-		if (nodeMap == null) {
-			nodeMap = new HashMap<String, String>();
-			nodeConnectorMap.put(sourceNodeUri, nodeMap);
-		}
-		nodeMap.put(destinationNodeUri, nodeConnectorUri);
-	}
-
-	/**
-	 * Get the node connector URI to send packets from sourceNodeUri to
-	 * destinationNodeUri.
-	 * 
-	 * @param sourceNodeUri
-	 *            -- the source node URI.
-	 * @param destinationNodeUri
-	 *            -- the destinationNodeUri
-	 * @return -- the connectorUri
-	 */
-	public String getNodeConnector(String sourceNodeUri, String destinationNodeUri) {
-		if (this.nodeConnectorMap.get(sourceNodeUri) == null) {
-			return null;
-		} else {
-			return this.nodeConnectorMap.get(sourceNodeUri).get(destinationNodeUri);
-		}
-	}
+	
 
 	/**
 	 * Add a MUD node for this device MAC address.

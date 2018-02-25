@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<l2switch-config xmlns="urn:opendaylight:l2switch:l2switch-config">
+	<is-install-dropall-flow>false</is-install-dropall-flow>
+  	<reactive-flow-table-id>6</reactive-flow-table-id>
+</l2switch-config>
+

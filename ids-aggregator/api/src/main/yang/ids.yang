@@ -1,0 +1,9 @@
+module ids {
+    yang-version 1.1;
+    namespace "urn:opendaylight:params:xml:ns:yang:ids";
+    prefix "ids";
+
+    revision "2017-08-30" { // TODO change revision to date of model creation
+        description "Initial revision of ids model";
+    }
+}

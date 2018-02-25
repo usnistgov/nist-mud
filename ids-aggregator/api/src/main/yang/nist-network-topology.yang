@@ -1,0 +1,61 @@
+module nist-network-topology {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-network-topology";
+  prefix network-topology;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  
+  organization
+    "NIST Advanced Networking Technologies Division.";
+
+  contact
+    "Web: http://www.nist.gov
+    email: mranga@nist.gov
+    ";
+  description
+    "Description of the topology of the system. 
+     This identifies the npe and cpe devices associated
+     with those NPE devices.";
+
+  revision 2017-09-15 {
+    description
+      "Initial proposed standard.";
+    reference
+      "RFC XXXX: Manufacturer Usage Description
+       Specification";
+  }
+
+  grouping accounts {
+      description
+          "A list of accounts";
+      list link {
+         leaf account-name  {
+            description 
+                "Account name";
+            type string;
+        }
+        leaf npe-switch {
+           description 
+                "NPE switch associated with several CPE switches. ";
+           type inet:uri;
+        }
+
+        leaf-list cpe-switches {
+          description 
+             "CPE switch ID's associated with this NPE switch";
+          type inet:uri;
+        }
+      }
+  }
+
+  container topology {
+      description
+          "Network topology gives an association between npe switches and 
+          sets of CPE switches";
+      uses accounts;
+  }
+
+}
+
