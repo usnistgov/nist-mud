@@ -8,7 +8,7 @@ import org.opendaylight.yangtools.yang.binding.NotificationListener;
 
 public class MappingNotificationListener implements NistMudDeviceAssociationListener,NotificationListener {
 	
-	private IdsProvider idsProvider;;
+	private IdsProvider idsProvider;
 
 	private static Logger LOG = Logger.getLogger(MappingNotificationListener.class.getName());
 	

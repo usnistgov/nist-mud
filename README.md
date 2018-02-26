@@ -1,5 +1,9 @@
 # IOT MUD implementation on Open Daylight #
 
+This includes two features:
+ 
+- features-sdniot is the scalable MUD implementation. 
+- features-ids is IDS support that allows flows to be sampled from the CPE switch.
 
 ## Prerequisites ##
 

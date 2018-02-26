@@ -1,0 +1,9 @@
+module sdnmud {
+    yang-version 1.1;
+    namespace "urn:opendaylight:params:xml:ns:yang:sdnmud";
+    prefix "sdnmud";
+
+    revision "2017-08-30" { // TODO change revision to date of model creation
+        description "Initial revision of sdnmud model";
+    }
+}

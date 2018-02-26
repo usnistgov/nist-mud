@@ -59,7 +59,7 @@
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
-			<artifactId>sdniot-api</artifactId>
+			<artifactId>sdnmud-api</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 

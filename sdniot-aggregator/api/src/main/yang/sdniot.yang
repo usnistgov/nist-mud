@@ -1,9 +1,0 @@
-module sdniot {
-    yang-version 1.1;
-    namespace "urn:opendaylight:params:xml:ns:yang:sdniot";
-    prefix "sdniot";
-
-    revision "2017-08-30" { // TODO change revision to date of model creation
-        description "Initial revision of sdniot model";
-    }
-}

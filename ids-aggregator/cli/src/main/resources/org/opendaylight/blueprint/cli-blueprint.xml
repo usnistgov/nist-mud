@@ -24,7 +24,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
 
   <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
     <command>
-        <action class="gov.nist.antd.sdniot.cli.commands.IdsCliTestCommand">
+        <action class="gov.nist.antd.sdnmud.cli.commands.IdsCliTestCommand">
             <argument ref="cliCommandsImpl"/>
         </action>
     </command>

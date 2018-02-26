@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Copyright © 2017 MIST and others. All rights reserved.
+
+This program and the accompanying materials are made available under the
+terms of the Eclipse Public License v1.0 which accompanies this distribution,
+and is available at http://www.eclipse.org/legal/epl-v10.html
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.opendaylight.controller</groupId>
+    <artifactId>mdsal-it-parent</artifactId>
+    <version>1.6.1</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>gov.nist.antd</groupId>
+  <artifactId>sdnmud-it</artifactId>
+  <version>0.1.0</version>
+  <!-- <name> formatting is used by autorelease to parse and notify projects on
+       build failure. Please do not modify this unless you have a good reason. -->
+  <name>ODL :: gov.nist.antd :: ${project.artifactId}</name>
+  <packaging>bundle</packaging>
+
+  <properties>
+    <skipITs>false</skipITs>
+    <karaf.distro.groupId>gov.nist.antd</karaf.distro.groupId>
+    <karaf.distro.artifactId>sdnmud-karaf</karaf.distro.artifactId>
+    <karaf.distro.version>0.1.0</karaf.distro.version>
+    <karaf.distro.type>zip</karaf.distro.type>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>${project.groupId}</groupId>
+      <artifactId>features-sdnmud</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+</project>
