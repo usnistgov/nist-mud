@@ -12,13 +12,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
-import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
-import org.opendaylight.controller.md.sal.common.api.notify.NotificationSubscriptionService;
-import org.opendaylight.controller.md.sal.binding.api.NotificationService;
+import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.ids.config.rev170915.IdsConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
@@ -26,9 +23,9 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.top
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
-
-
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class IdsProvider {
 
@@ -61,6 +58,8 @@ public class IdsProvider {
 	
 	private RpcProviderRegistry  rpcProviderRegistry;
 
+	private gov.nist.antd.ids.impl.TopologyDataStoreListener topoDataStoreListener;
+
 
 	class IdsPort {
 		String portUri;
@@ -90,6 +89,10 @@ public class IdsProvider {
 			this.time = System.currentTimeMillis();
 		}
 	}
+	
+	private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
+		return InstanceIdentifier.create(Topology.class);
+	}
 
 	public IdsProvider(final DataBroker dataBroker, 
 		PacketProcessingService packetProcessingService, 
@@ -99,6 +102,8 @@ public class IdsProvider {
 		this.packetProcessingService = packetProcessingService;
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 		this.notificationService = notificationService;
+		
+		
 	}
 
 	/**
@@ -107,6 +112,12 @@ public class IdsProvider {
 	public void init() {
 		LOG.info("IdsProvider Session Initiated");
 		this.notificationService.registerNotificationListener( new MappingNotificationListener(this));
+		InstanceIdentifier<Topology> topoWildCardPath = getTopologyWildCardPath();
+		final DataTreeIdentifier<Topology> topoId = new DataTreeIdentifier<Topology>(LogicalDatastoreType.CONFIGURATION,
+				topoWildCardPath);
+		this.topoDataStoreListener = new TopologyDataStoreListener(this);
+		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
+
 	}
 
 	/**

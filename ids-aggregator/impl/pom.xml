@@ -58,6 +58,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>sdniot-api</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
 			<artifactId>sal-binding-api</artifactId>
 		</dependency>
