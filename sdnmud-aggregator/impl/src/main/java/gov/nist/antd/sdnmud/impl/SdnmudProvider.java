@@ -41,10 +41,10 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.cont
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -100,6 +100,7 @@ public class SdnmudProvider {
 	// installed for a given MAC address.
 	private HashMap<String, HashSet<InstanceIdentifier<FlowCapableNode>>> mudNodesMap = new HashMap<>();
 
+	
 	// A map between the NODE uri and the Flow installer for that node.
 	private HashMap<String, MudFlowsInstaller> flowInstallerMap = new HashMap<>();
 
@@ -109,11 +110,11 @@ public class SdnmudProvider {
 
 	private RpcProviderRegistry rpcProviderRegistry;
 
-	private TopologyDataStoreListener topoDataStoreListener;
+	private CpeCollectionsDataStoreListener topoDataStoreListener;
 
 	private WakeupOnFlowCapableNode wakeupListener;
 
-	private Topology topology;
+	private CpeCollections topology;
 
 	private NotificationPublishService notificationPublishService;
 
@@ -182,8 +183,8 @@ public class SdnmudProvider {
 		return InstanceIdentifier.create(ControllerclassMapping.class);
 	}
 
-	private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
-		return InstanceIdentifier.create(Topology.class);
+	private static InstanceIdentifier<CpeCollections> getTopologyWildCardPath() {
+		return InstanceIdentifier.create(CpeCollections.class);
 	}
 
 	/**
@@ -195,10 +196,10 @@ public class SdnmudProvider {
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 
 		/* Register data tree change listener for Topology change */
-		InstanceIdentifier<Topology> topoWildCardPath = getTopologyWildCardPath();
-		final DataTreeIdentifier<Topology> topoId = new DataTreeIdentifier<Topology>(LogicalDatastoreType.CONFIGURATION,
+		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
+		final DataTreeIdentifier<CpeCollections> topoId = new DataTreeIdentifier<CpeCollections>(LogicalDatastoreType.CONFIGURATION,
 				topoWildCardPath);
-		this.topoDataStoreListener = new TopologyDataStoreListener(this);
+		this.topoDataStoreListener = new CpeCollectionsDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
 
 		/* Register a data tree change listener for MUD profiles */
@@ -250,6 +251,7 @@ public class SdnmudProvider {
 	 */
 	public void close() {
 		LOG.info("SdnmudProvider Closed");
+		this.dataTreeChangeListenerRegistration.close();
 		this.uriToMudMap.clear();
 	}
 
@@ -358,8 +360,6 @@ public class SdnmudProvider {
 
 	}
 
-	
-
 	/**
 	 * Add a MUD node for this device MAC address.
 	 * 
@@ -378,6 +378,8 @@ public class SdnmudProvider {
 		}
 		nodes.add(node);
 	}
+
+	
 
 	/**
 	 * Get the MUD nodes where flow rules were installed.
@@ -401,7 +403,7 @@ public class SdnmudProvider {
 	public SalFlowService getFlowService() {
 		return flowService;
 	}
-	
+
 	public NotificationPublishService getNotificationPublishService() {
 		return notificationPublishService;
 	}
@@ -431,12 +433,12 @@ public class SdnmudProvider {
 		return this.nodeToMudUriMap.get(cpeNodeId);
 	}
 
-	public void setTopology(Topology topology) {
+	public void setTopology(CpeCollections topology) {
 		this.topology = topology;
 
 	}
 
-	public Topology getTopology() {
+	public CpeCollections getTopology() {
 		return topology;
 	}
 
@@ -452,24 +454,12 @@ public class SdnmudProvider {
 		if (this.getTopology() == null) {
 			return false;
 		}
-		for (Link link : this.getTopology().getLink()) {
+		for (MudNodes link : this.getTopology().getMudNodes()) {
 			for (Uri cpeNode : link.getCpeSwitches()) {
 				if (nodeId.equals(cpeNode.getValue())) {
 					return true;
 				}
 			}
-		}
-		return false;
-	}
-
-	public boolean isNpeNode(String nodeId) {
-		if (this.getTopology() == null) {
-			return false;
-		}
-
-		for (Link link : this.getTopology().getLink()) {
-			if (nodeId.equals(link.getNpeSwitch().getValue()))
-				return true;
 		}
 		return false;
 	}

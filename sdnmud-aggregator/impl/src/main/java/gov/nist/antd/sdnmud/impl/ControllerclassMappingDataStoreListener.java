@@ -53,7 +53,7 @@ public class ControllerclassMappingDataStoreListener
       Collection<Mud> mudProfiles = sdnmudProvider.getMudProfiles();
       MudFlowsInstaller mudFlowInstaller = sdnmudProvider.getMudFlowsInstaller(nodeId);
       for (Mud mud : mudProfiles) {
-        mudFlowInstaller.installFlows(mud);
+        mudFlowInstaller.tryInstallFlows(mud);
       }
       InstanceIdentifier<FlowCapableNode> nodePath = sdnmudProvider.getNode(nodeId);
       // Install allow all devices to access DNS and NTP.

@@ -21,6 +21,7 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -37,10 +38,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 
 /**
  * Class that gets invoked when a switch connects.
@@ -56,7 +57,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private FlowCommitWrapper dataStoreAccessor;
 
-	private Set<String> switches = new HashSet<>();
+	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
 
 	// PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode>
 	// node,
@@ -192,23 +193,23 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 				SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
-	
+
 	public void installSendToControllerFlows(String nodeUri) {
 		InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider.getNode(nodeUri);
-		if (nodePath == null ) {
-			LOG.info("Node not seen -- not installing flow " );
+		if (nodePath == null) {
+			LOG.info("Node not seen -- not installing flow ");
 			return;
 		}
 		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 	}
 
-	private void installInitialFlows(String nodeUri) {
-		InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider.getNode(nodeUri);
+	private void installInitialFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
 		if (nodePath == null) {
 			LOG.info("FlowCapableNode not found. Not installing inital flows");
 			return;
 		}
+		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 		uninstallDefaultFlows(nodeUri);
 
 		// Send packet to controller flow
@@ -230,8 +231,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 
 		// Install an unconditional packet drop in the DROP_TABLE (this is
-		// where MUD packets that do not match go. 
-        // The default action is to drop the packet. This is a placeholder for subsequent
+		// where MUD packets that do not match go.
+		// The default action is to drop the packet. This is a placeholder for
+		// subsequent
 		// packet inspection.
 
 		installUnditionalDropPacket(nodeUri, nodePath, SdnMudConstants.DROP_TABLE);
@@ -247,6 +249,22 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 	}
 
+	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
+
+		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, sdnmudProvider);
+		ListenerRegistration<PacketInDispatcher> registration = sdnmudProvider.getNotificationService()
+				.registerNotificationListener(packetInDispatcher);
+		packetInDispatcher.setListenerRegistration(registration);
+		this.installInitialFlows(nodePath);
+	}
+
+	public synchronized void installDefaultFlows() {
+		for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
+			String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+			this.installDefaultFlows(nodeId, node);
+		}
+	}
+
 	/**
 	 * This gets invoked when a switch appears and connects.
 	 * 
@@ -254,21 +272,24 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 *            -- the node path.
 	 *
 	 */
-	public void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
+	public synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
+		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
 		LOG.info("onFlowCapableSwitchAppeared");
 		// The URI identifies the node instance.
 		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
 		// Stash away the URI to node path so we can reference it later.
-		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
-		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, sdnmudProvider);
-		sdnmudProvider.getNotificationService().registerNotificationListener(packetInDispatcher);
 
-		switches.add(nodeUri);
-		this.uninstallDefaultFlows(nodeUri);
-		this.installInitialFlows(nodeUri);
+		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
+
+		if (this.sdnmudProvider.getTopology() == null) {
+			LOG.info("put in pending node list");
+			this.pendingNodes.add(nodePath);
+		} else if ( sdnmudProvider.isCpeNode(nodeUri)) {
+			// If this is a CPE node install the default permits.
+			this.installDefaultFlows(nodeUri, nodePath);
+		}
 
 	}
 
@@ -287,8 +308,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		// Remove the node URI from the uriToNodeMap.
 		this.sdnmudProvider.removeNode(nodeUri);
 		// Remove the node URI from our switches table.
-		this.switches.remove(nodeUri);
-
 	}
 
 }

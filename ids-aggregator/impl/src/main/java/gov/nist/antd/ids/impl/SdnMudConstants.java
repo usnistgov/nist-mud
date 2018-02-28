@@ -111,4 +111,7 @@ public interface SdnMudConstants {
   
   // 0 means no caching.
   public static final Integer CACHE_TIMEOUT = 120;
+  
+  public static final int ETHERTYPE_LLDP = 0x88cc;
+
 }

@@ -117,6 +117,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class FlowUtils {
 
 	static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
@@ -1335,6 +1336,47 @@ public class FlowUtils {
 
 	}
 
+	public static FlowBuilder createDestMacAddressMatchSetMplsTagAndSendToPort(FlowCookie flowCookie,
+			MacAddress destinationMacAddress, Short tableId, long mplsTag, String outputPortUri, int time) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId();
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
+		Instruction sendToPort = FlowUtils.createSetMplsAndOutputToPortInstructions(mplsTag, outputPortUri);
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(sendToPort);
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName("OnDestinationMacAddressMatchSendToPort").setId(flowId).setKey(new FlowKey(flowId))
+				.setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
+	}
+	public static FlowBuilder createDestMacAddressMatchSetVlanTagAndSendToPort(FlowCookie flowCookie,
+			MacAddress destinationMacAddress, Short tableId, int vlanTag, String outputPortUri, int time) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId();
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
+		Instruction instruction = FlowUtils.createSetVlanAndOutputToPortInstructions(vlanTag, outputPortUri);
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		instructions.add(instruction);
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName("OnDestinationMacAddressMatchSendToPort").setId(flowId).setKey(new FlowKey(flowId))
+				.setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
+	}
+	
 	public static FlowBuilder createDestMacAddressMatchSendToPort(FlowCookie flowCookie,
 			MacAddress destinationMacAddress, Short tableId, String outputPortUri, int time) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId();

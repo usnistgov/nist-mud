@@ -32,9 +32,12 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +56,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private String nodeId;
 
 	private InstanceIdentifier<FlowCapableNode> node;
+
+	private ListenerRegistration<PacketInDispatcher> listenerRegistration;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
 
@@ -197,6 +202,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
+	
+	public void setListenerRegistration(ListenerRegistration<PacketInDispatcher> registration) {
+		this.listenerRegistration = registration;
+		
+	}
 
 	// installDstMacMatchStampDstLocalAddressFlowRules
 	public static void installDstMacMatchStampDstLocalAddressFlowRules(MacAddress dstMac, SdnmudProvider sdnmudProvider,
@@ -237,17 +247,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
 		int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
 
-		if (etherType == 0x88cc) {
-			LOG.debug("LLDP Packet received -- ignoring it");
-			return;
-		}
 
-		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
-			LLDP lldp = new LLDP();
-			lldp.deserialize(notification.getPayload(), 0, notification.getPayload().length);
-			LOG.info("LLDP packet seen -- " + lldp.toString());
+		if ( etherType == SdnMudConstants.ETHERTYPE_LLDP) {
+			LOG.info("LLDP Pakcet -- dropping it");
 			return;
 		}
+		
+		
 		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) {
 			String sourceIpAddress = PacketUtils.extractSrcIpStr(notification.getPayload());
 			String destIpAddress = PacketUtils.extractDstIpStr(notification.getPayload());
@@ -257,7 +263,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			
 			
 			if (!sdnmudProvider.isCpeNode(nodeId)) {
-				LOG.error("THIS SHOULD NOT HAPPEN. Ignoring packet -- not meant for us");
 				return;
 			}
 
@@ -326,5 +331,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			} 
 		}
 	}
+
+	
 
 }

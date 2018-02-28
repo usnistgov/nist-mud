@@ -27,25 +27,41 @@ module nist-network-topology {
        Specification";
   }
 
-  grouping accounts {
+  grouping links {
       description
           "A list of accounts";
       list link {
-         leaf account-name  {
+         key tag;
+         leaf tag  {
             description 
-                "Account name";
+                "Account tag. This is the MPLS / VLAN tag assigned to the packet.
+                 when it leaves the CPE switch. Uniquely identifies the CPE.";
+            type uint32;
+        }
+
+        leaf descriptive-name {
+            description 
+                "Descriptive name for this link";
             type string;
         }
+        
+
+        leaf vnf-switch {
+           description
+                "VNF switch ID";
+            type inet:uri;
+        }
+
         leaf npe-switch {
            description 
                 "NPE switch associated with several CPE switches. ";
            type inet:uri;
         }
 
-        leaf-list cpe-switches {
+        leaf cpe-switches-id {
           description 
-             "CPE switch ID's associated with this NPE switch";
-          type inet:uri;
+             "ID of the set of CPE switches associated with this NPE switch.";
+          type string;
         }
       }
   }
@@ -54,7 +70,7 @@ module nist-network-topology {
       description
           "Network topology gives an association between npe switches and 
           sets of CPE switches";
-      uses accounts;
+      uses links;
   }
 
 }

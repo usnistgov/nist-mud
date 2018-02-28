@@ -643,7 +643,7 @@ public class MudFlowsInstaller {
 	 * @param nodeUri
 	 *            -- the URI of the node.
 	 */
-	public synchronized void installFlows(Mud mud) {
+	public synchronized void tryInstallFlows(Mud mud) {
 		try {
 			Uri mudUri = mud.getMudUrl();
 
@@ -665,7 +665,7 @@ public class MudFlowsInstaller {
 
 			// Remove the flow rules for the given device for this MUD url.
 			InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(cpeNodeId);
-			if (cpeNodeId == null) {
+			if (node == null) {
 				LOG.info("installFlows -- cpe Node is null -- skipping MUD install.");
 				return;
 			}

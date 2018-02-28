@@ -1,6 +1,7 @@
 package gov.nist.antd.ids.impl;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -16,6 +17,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +27,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private IdsProvider idsProvider;
 
-	private Set<String> switches = new HashSet<>();
+	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes;
 
 	// PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode>
 	// node,
@@ -76,6 +78,27 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 	}
 
+	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
+		if (idsProvider.isNpeSwitch(nodeUri)) {
+			this.installSendIdsHelloToControllerFlow(nodeUri, nodePath);
+			// Set the MPLS label to VPN label matches.
+			// TODO
+		}
+		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, idsProvider);
+		idsProvider.getNotificationService().registerNotificationListener(packetInDispatcher);
+		ListenerRegistration<PacketInDispatcher> registration = idsProvider.getNotificationService()
+				.registerNotificationListener(packetInDispatcher);
+		packetInDispatcher.setListenerRegistration(registration);
+	}
+
+	public synchronized void installDefaultFlows() {
+		for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
+			String nodeUri = InstanceIdentifierUtils.getNodeUri(node);
+			this.installDefaultFlows(nodeUri, node);
+		}
+		this.pendingNodes.clear();
+	}
+
 	/**
 	 * This gets invoked when a switch appears and connects.
 	 * 
@@ -92,12 +115,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
 		// Stash away the URI to node path so we can reference it later.
 		this.idsProvider.putInUriToNodeMap(nodeUri, nodePath);
-		switches.add(nodeUri);
 
-		if (this.idsProvider.isNpeSwitch(nodeUri)) {
-			this.installSendIdsHelloToControllerFlow(nodeUri, nodePath);
-			PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, idsProvider);
-			idsProvider.getNotificationService().registerNotificationListener(packetInDispatcher);
+		if (idsProvider.getTopology() != null) {
+			this.installDefaultFlows(nodeUri, nodePath);
+		} else {
+			this.pendingNodes.add(nodePath);
 		}
 
 	}
@@ -116,7 +138,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("node URI " + nodeUri);
 		// Remove the node URI from the uriToNodeMap.
 		// Remove the node URI from our switches table.
-		this.switches.remove(nodeUri);
 	}
 
 }

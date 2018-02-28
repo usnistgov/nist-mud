@@ -1,8 +1,8 @@
 {
- "topology" : {
-     "link" : [ 
+ "cpe-collections" : {
+     "mud-nodes" : [ 
          {
-	            "npe-switch" : "openflow:2",
+	            "name" : "test-topo-1",
 	            "cpe-switches" : [ "openflow:1" ]
          } 
      ]

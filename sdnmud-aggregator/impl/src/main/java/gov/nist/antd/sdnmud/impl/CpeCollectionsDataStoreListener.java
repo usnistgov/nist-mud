@@ -23,12 +23,13 @@ package gov.nist.antd.sdnmud.impl;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Mud;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 
 /**
  * Data store listener for changes in topology. The topology determines the CPE
@@ -37,22 +38,24 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.top
  * @author mranga
  *
  */
-public class TopologyDataStoreListener implements DataTreeChangeListener<Topology> {
+public class CpeCollectionsDataStoreListener implements DataTreeChangeListener<CpeCollections> {
 
 	private SdnmudProvider sdnmudProvider;
 
-	public TopologyDataStoreListener(SdnmudProvider sdnmudProvider) {
+	public CpeCollectionsDataStoreListener(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 	}
 
 	@Override
-	public void onDataTreeChanged(Collection<DataTreeModification<Topology>> changes) {
+	public void onDataTreeChanged(Collection<DataTreeModification<CpeCollections>> changes) {
 
-		for (DataTreeModification<Topology> change : changes) {
-			Topology topology = change.getRootNode().getDataAfter();
+		for (DataTreeModification<CpeCollections> change : changes) {
+			CpeCollections topology = change.getRootNode().getDataAfter();
 			sdnmudProvider.setTopology(topology);
-
-			for (Link link : topology.getLink()) {
+			
+			sdnmudProvider.getWakeupListener().installDefaultFlows();
+			
+			for (MudNodes link : topology.getMudNodes()) {
 				List<Uri> cpeSwitches = link.getCpeSwitches();
 				HashSet<String> cpeSwitchSet = new HashSet<String>();
 
@@ -64,7 +67,7 @@ public class TopologyDataStoreListener implements DataTreeChangeListener<Topolog
 					MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeSwitch.getValue());
 					if (mudFlowsInstaller != null) {
 						for (Mud mud : sdnmudProvider.getMudProfiles()) {
-							mudFlowsInstaller.installFlows(mud);
+							mudFlowsInstaller.tryInstallFlows(mud);
 						}
 					}
 				}

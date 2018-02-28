@@ -17,12 +17,17 @@ import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.ids.config.rev170915.IdsConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +37,7 @@ public class IdsProvider {
 	private static final Logger LOG = LoggerFactory.getLogger(IdsProvider.class);
 
 	private PacketProcessingService packetProcessingService;
-	
+
 	private final DataBroker dataBroker;
 
 	private FlowCommitWrapper flowCommitWrapper;
@@ -49,17 +54,22 @@ public class IdsProvider {
 	// map)
 
 	private HashMap<String, HashMap<String, String>> nodeConnectorMap = new HashMap<>();
-	
-	private HashMap<String,MappingNotification> mappingNotificationMap = new HashMap<>();
+
+	private HashMap<String, MappingNotification> mappingNotificationMap = new HashMap<>();
 
 	private Topology topology;
 
 	private NotificationService notificationService;
-	
-	private RpcProviderRegistry  rpcProviderRegistry;
+
+	private RpcProviderRegistry rpcProviderRegistry;
 
 	private gov.nist.antd.ids.impl.TopologyDataStoreListener topoDataStoreListener;
 
+	private WakeupOnFlowCapableNode wakeupListener;
+
+	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;
+
+	private CpeCollections cpeCollections;
 
 	class IdsPort {
 		String portUri;
@@ -89,21 +99,22 @@ public class IdsProvider {
 			this.time = System.currentTimeMillis();
 		}
 	}
-	
+
 	private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
 		return InstanceIdentifier.create(Topology.class);
 	}
 
-	public IdsProvider(final DataBroker dataBroker, 
-		PacketProcessingService packetProcessingService, 
-		RpcProviderRegistry rpcProviderRegistry,
-		NotificationService notificationService) {
+	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
+		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
+	}
+
+	public IdsProvider(final DataBroker dataBroker, PacketProcessingService packetProcessingService,
+			RpcProviderRegistry rpcProviderRegistry, NotificationService notificationService) {
 		this.dataBroker = dataBroker;
 		this.packetProcessingService = packetProcessingService;
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 		this.notificationService = notificationService;
-		
-		
+
 	}
 
 	/**
@@ -111,12 +122,18 @@ public class IdsProvider {
 	 */
 	public void init() {
 		LOG.info("IdsProvider Session Initiated");
-		this.notificationService.registerNotificationListener( new MappingNotificationListener(this));
+		this.notificationService.registerNotificationListener(new MappingNotificationListener(this));
 		InstanceIdentifier<Topology> topoWildCardPath = getTopologyWildCardPath();
 		final DataTreeIdentifier<Topology> topoId = new DataTreeIdentifier<Topology>(LogicalDatastoreType.CONFIGURATION,
 				topoWildCardPath);
 		this.topoDataStoreListener = new TopologyDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
+
+		this.wakeupListener = new WakeupOnFlowCapableNode(this);
+		final DataTreeIdentifier<FlowCapableNode> dataTreeIdentifier = new DataTreeIdentifier<FlowCapableNode>(
+				LogicalDatastoreType.OPERATIONAL, getWildcardPath());
+		this.wakeupOnFlowCapableNodeRegistration = this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier,
+				wakeupListener);
 
 	}
 
@@ -124,6 +141,7 @@ public class IdsProvider {
 	 * Method called when the blueprint container is destroyed.
 	 */
 	public void close() {
+		this.wakeupOnFlowCapableNodeRegistration.close();
 		LOG.info("IdsProvider Closed");
 	}
 
@@ -206,7 +224,7 @@ public class IdsProvider {
 	 */
 	public Collection<InstanceIdentifier<FlowCapableNode>> getCpeNodes() {
 		Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
-		for (Link link : topology.getLink()) {
+		for (MudNodes link : this.cpeCollections.getMudNodes()) {
 			for (Uri cpeUri : link.getCpeSwitches()) {
 				if (this.uriToNodeMap.containsKey(cpeUri.getValue())) {
 					retval.add(this.uriToNodeMap.get(cpeUri.getValue()));
@@ -215,6 +233,8 @@ public class IdsProvider {
 		}
 		return retval;
 	}
+
+	// RESUME HERE
 
 	public Collection<InstanceIdentifier<FlowCapableNode>> getNpeNodes() {
 		Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
@@ -286,7 +306,7 @@ public class IdsProvider {
 
 		ports.add(port);
 	}
-	
+
 	public NotificationService getNotificationService() {
 		return this.notificationService;
 	}
@@ -295,20 +315,76 @@ public class IdsProvider {
 		if (this.topology == null) {
 			return false;
 		}
-		for (Link link : this.topology.getLink() ) {
-			if ( link.getNpeSwitch().getValue().equals(nodeUri)) return true;
+		for (Link link : this.topology.getLink()) {
+			if (link.getNpeSwitch().getValue().equals(nodeUri))
+				return true;
+		}
+		return false;
+	}
+
+	public boolean isCpeNode(String nodeId) {
+		if (this.cpeCollections == null) {
+			return false;
+		}
+		for (MudNodes mudNodes : this.cpeCollections.getMudNodes()) {
+			for (Uri uri : mudNodes.getCpeSwitches()) {
+				if (uri.getValue().equals(nodeId))
+					return true;
+			}
 		}
 		return false;
 	}
 
 	public void addMappingNotification(MappingNotification notification) {
-		 String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
-		 mappingNotificationMap.put(mudUrl, notification);
+		String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
+		mappingNotificationMap.put(mudUrl, notification);
 	}
 
 	public MappingNotification getMappingNotification(String mudUrl) {
 		return this.mappingNotificationMap.get(mudUrl);
 	}
-	
+
+	public WakeupOnFlowCapableNode getWakeupListener() {
+		return this.wakeupListener;
+	}
+
+	public void setCpeCollections(CpeCollections cpeCollections) {
+		this.cpeCollections = cpeCollections;
+	}
+
+	public long getCpeTag(String nodeId) {
+		String nodeKey = null;
+		for (MudNodes mudNodes : this.cpeCollections.getMudNodes()) {
+			for (Uri cpeUri : mudNodes.getCpeSwitches()) {
+				if (cpeUri.getValue().equals(nodeId)) {
+					nodeKey = mudNodes.getKey().getName();
+					break;
+				}
+			}
+		}
+		for (Link link: this.topology.getLink()) {
+			if ( link.getCpeSwitchesId().equals(nodeKey)) {
+				return link.getTag();
+			}
+		}
+		return -1;
+	}
+
+	public long getNpeTag(String nodeId) {
+		for(Link link: this.topology.getLink()) {
+			if (link.getNpeSwitch().getValue().equals(nodeId)) {
+				return link.getTag();
+			}
+		}
+		return -1;
+	}
+
+	public Collection<Uri> getCpeNodeIds() {
+		ArrayList<Uri> retval = new ArrayList<>();
+		for (MudNodes mudNode : this.cpeCollections.getMudNodes()) {
+			retval.addAll(mudNode.getCpeSwitches());
+		}
+		return retval;
+	}
 
 }

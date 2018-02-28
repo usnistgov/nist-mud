@@ -15,7 +15,7 @@ import java.util.TimerTask;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.ids.config.rev170915.IdsConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.accounts.Link;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -112,16 +112,11 @@ public class IdsRegistrationScanner extends TimerTask {
 			if (idsPorts == null) {
 				LOG.debug("No IDS registrations found for " + idsNodeId);
 				for (Uri uri : flowSpec) {
-
-					
-					Topology topology = idsProvider.getTopology();
-					for (Link link : topology.getLink()) {
-						for (Uri cpeSwitch : link.getCpeSwitches()) {
-							InstanceIdentifier<FlowCapableNode> node = idsProvider.getNode(cpeSwitch.getValue());
-							flowCommitWrapper.deleteFlows(node, uri.getValue(), SdnMudConstants.PASS_THRU_TABLE, null);
-							flowCommitWrapper.deleteFlows(idsNode, uri.getValue(), SdnMudConstants.SDNMUD_RULES_TABLE,
-									null);
-						}
+					for (Uri cpeSwitch : idsProvider.getCpeNodeIds()) {
+						InstanceIdentifier<FlowCapableNode> node = idsProvider.getNode(cpeSwitch.getValue());
+						flowCommitWrapper.deleteFlows(node, uri.getValue(), SdnMudConstants.PASS_THRU_TABLE, null);
+						flowCommitWrapper.deleteFlows(idsNode, uri.getValue(), SdnMudConstants.SDNMUD_RULES_TABLE,
+								null);
 					}
 				}
 				return;

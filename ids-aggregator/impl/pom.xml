@@ -81,6 +81,18 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.opendaylight.openflowplugin.applications</groupId>
+			<artifactId>lldp-speaker</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opendaylight.openflowplugin.applications</groupId>
+			<artifactId>topology-lldp-discovery</artifactId>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>org.opendaylight.mdsal.model</groupId>
 			<artifactId>ietf-topology</artifactId>
 			<scope>compile</scope>
