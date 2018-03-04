@@ -261,7 +261,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	public synchronized void installDefaultFlows() {
 		for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
 			String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-			this.installDefaultFlows(nodeId, node);
+			if (sdnmudProvider.isCpeNode(nodeId)) {
+				this.installDefaultFlows(nodeId, node);
+			}
 		}
 	}
 
@@ -286,7 +288,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		if (this.sdnmudProvider.getTopology() == null) {
 			LOG.info("put in pending node list");
 			this.pendingNodes.add(nodePath);
-		} else if ( sdnmudProvider.isCpeNode(nodeUri)) {
+		} else if (sdnmudProvider.isCpeNode(nodeUri)) {
 			// If this is a CPE node install the default permits.
 			this.installDefaultFlows(nodeUri, nodePath);
 		}

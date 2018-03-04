@@ -1,0 +1,56 @@
+module nist-cpe-nodes {
+  yang-version 1.1;
+  namespace "urn:nist:params:xml:ns:yang:nist-cpe-nodes";
+  prefix mud-nodes;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  
+  organization
+    "NIST Advanced Networking Technologies Division.";
+
+  contact
+    "Web: http://www.nist.gov
+    email: mranga@nist.gov
+    ";
+  description
+    "Description of the topology of the system. 
+     This identifies the npe and cpe devices associated
+     with those NPE devices.";
+
+  revision 2017-09-15 {
+    description
+      "Initial proposed standard.";
+    reference
+      "RFC XXXX: Manufacturer Usage Description
+       Specification";
+  }
+
+  grouping accounts {
+      description
+          "A grouping of accounts. This identifies the switches on MUD flow rules are installed.";
+      list mud-nodes {
+        key "name";
+        leaf name {
+          description
+                "unique identifier for this set of cpe switches";
+          type string;
+        }
+        leaf-list cpe-switches {
+          description 
+             "CPE switch ID's associated with this NPE switch";
+          type inet:uri;
+        }
+      }
+  }
+
+  container cpe-collections {
+      description
+          "Network topology gives an association between npe switches and 
+          sets of CPE switches";
+      uses accounts;
+  }
+
+}
+

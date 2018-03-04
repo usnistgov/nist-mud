@@ -249,7 +249,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 
 		if ( etherType == SdnMudConstants.ETHERTYPE_LLDP) {
-			LOG.info("LLDP Pakcet -- dropping it");
+			LOG.debug("LLDP Pakcet -- dropping it");
 			return;
 		}
 		

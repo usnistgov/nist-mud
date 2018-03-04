@@ -62,6 +62,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+<!-- 
             <dependency>
                 <groupId>org.opendaylight.l2switch</groupId>
                 <artifactId>l2switch-artifacts</artifactId>
@@ -69,6 +70,7 @@
 		        <version>${l2switch.version}</version>
                 <scope>import</scope>
             </dependency>
+-->
         </dependencies>
     </dependencyManagement>
 
@@ -112,6 +114,7 @@
 			<classifier>features</classifier>
 		</dependency>
 
+<!--
 		<dependency>
 			<groupId>org.opendaylight.l2switch</groupId>
 			<artifactId>odl-l2switch-all</artifactId>
@@ -119,6 +122,7 @@
 			<classifier>features</classifier>
 		    <version>${l2switch.version}</version>
 		</dependency>
+-->
 
 		<dependency>
 			<groupId>org.opendaylight.dlux</groupId>

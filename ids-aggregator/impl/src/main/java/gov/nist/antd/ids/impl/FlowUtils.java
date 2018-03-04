@@ -97,6 +97,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instru
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.Instruction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.VlanId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetDestination;
@@ -117,7 +119,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class FlowUtils {
 
 	static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
@@ -136,6 +137,11 @@ public class FlowUtils {
 
 	private static int getActionKey() {
 		return 0;
+	}
+
+	private static MatchBuilder createInPortMatch(MatchBuilder matchBuilder, NodeConnectorId nodeConnectorId) {
+		matchBuilder.setInPort(nodeConnectorId);
+		return matchBuilder;
 	}
 
 	private static MatchBuilder createEthernetSourceAndDestinationMatch(MatchBuilder matchBuilder,
@@ -281,6 +287,10 @@ public class FlowUtils {
 		return matchBuilder;
 	}
 
+	private static MatchBuilder createArpTypeMatch(MatchBuilder matchBuilder) {
+		return createEthernetTypeMatch(matchBuilder, 0x806);
+	}
+
 	/**
 	 * Match on a vlan label.
 	 * 
@@ -297,6 +307,22 @@ public class FlowUtils {
 		VlanIdBuilder vlanIdBuilder = new VlanIdBuilder();
 		vlanIdBuilder.setVlanId(new VlanId(vlanLabel));
 		vlanIdBuilder.setVlanIdPresent(true);
+		vlanMatchBuilder.setVlanId(vlanIdBuilder.build());
+
+		matchBuilder.setVlanMatch(vlanMatchBuilder.build());
+		return matchBuilder;
+	}
+
+	/**
+	 * Match packet if no vlan ID is present.
+	 * 
+	 * @param matchBuilder
+	 * @return
+	 */
+	private static MatchBuilder createNoVlanPresentMatch(MatchBuilder matchBuilder) {
+		VlanMatchBuilder vlanMatchBuilder = new VlanMatchBuilder();
+		VlanIdBuilder vlanIdBuilder = new VlanIdBuilder();
+		vlanIdBuilder.setVlanIdPresent(false);
 		vlanMatchBuilder.setVlanId(vlanIdBuilder.build());
 
 		matchBuilder.setVlanMatch(vlanMatchBuilder.build());
@@ -781,7 +807,7 @@ public class FlowUtils {
 		return ib.build();
 	}
 
-	private static Instruction createSetMplsAndOutputToPortInstructions(long mplsTag, String outputPortUri) {
+	private static Instruction createPushMplsAndOutputToPortInstructions(long mplsTag, String outputPortUri) {
 		List<Action> actionList = new ArrayList<Action>();
 		ActionBuilder ab = new ActionBuilder();
 
@@ -855,6 +881,49 @@ public class FlowUtils {
 		ib.setInstruction(new ApplyActionsCaseBuilder().setApplyActions(aab.build()).build());
 		ib.setOrder(0);
 		ib.setKey(new InstructionKey(getInstructionKey()));
+		return ib.build();
+	}
+
+	/**
+	 * Create a set vlan ID instruction. This pushes the first vlan tag.
+	 * 
+	 */
+	private static Instruction createSetVlanInstructions(int vlanId) {
+		List<Action> actionList = new ArrayList<>();
+
+		Integer VLAN_ETHERTYPE = 0x8100;
+		ActionBuilder actionBuilder = new ActionBuilder();
+
+		// push vlan
+		Action pushVlanAction = actionBuilder.setOrder(0)
+				.setAction(new PushVlanActionCaseBuilder()
+						.setPushVlanAction(
+								new PushVlanActionBuilder().setTag(vlanId).setEthernetType(VLAN_ETHERTYPE).build())
+						.build())
+				.build();
+		actionList.add(pushVlanAction);
+
+		// set vlan id
+		Action setVlanIdAction = actionBuilder.setOrder(1)
+				.setAction(
+						new SetFieldCaseBuilder()
+								.setSetField(new SetFieldBuilder()
+										.setVlanMatch(new VlanMatchBuilder().setVlanId(new VlanIdBuilder()
+												.setVlanId(new VlanId(vlanId)).setVlanIdPresent(true).build()).build())
+										.build())
+								.build())
+				.build();
+
+		actionList.add(setVlanIdAction);
+		ApplyActionsBuilder aab = new ApplyActionsBuilder();
+		aab.setAction(actionList);
+
+		InstructionBuilder ib = new InstructionBuilder();
+		ib.setOrder(0);
+
+		ib.setKey(new InstructionKey(0));
+		ib.setInstruction(new ApplyActionsCaseBuilder().setApplyActions(aab.build()).build());
+
 		return ib.build();
 	}
 
@@ -1037,7 +1106,7 @@ public class FlowUtils {
 		createMetadataMatch(matchBuilder, flowCookie.getValue());
 
 		InstructionBuilder ib = new InstructionBuilder();
-		Instruction createMplsTag = FlowUtils.createSetMplsAndOutputToPortInstructions(label, outputPortUri);
+		Instruction createMplsTag = FlowUtils.createPushMplsAndOutputToPortInstructions(label, outputPortUri);
 
 		InstructionsBuilder insb = new InstructionsBuilder();
 
@@ -1101,6 +1170,43 @@ public class FlowUtils {
 		return fb;
 	}
 
+	public static FlowBuilder createPushMplsTagGoToTableFlow(FlowCookie flowCookie, FlowId flowId, Short tableId,
+			Short targetTable, int mplsTag, int duration) {
+		LOG.info("FlowUtils: createPushMplsTagGoToTable " + flowCookie.getValue().toString(16) + " tableId " + tableId
+				+ " targetTable " + targetTable + " mplsTag " + Integer.toHexString(mplsTag));
+
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createIpV4Match(matchBuilder);
+		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
+
+		Instruction createMplsTag = FlowUtils.createPushMplsTagInstruction(mplsTag);
+
+		instructions.add(createMplsTag);
+
+		Instruction goToTableInstruction = new InstructionBuilder().setInstruction(new GoToTableCaseBuilder()
+				.setGoToTable(new GoToTableBuilder().setTableId(SdnMudConstants.L2SWITCH_TABLE).build()).build())
+				.setKey(new InstructionKey(2)).setOrder(2).build();
+
+		instructions.add(goToTableInstruction);
+
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);
+
+		FlowBuilder fb = new FlowBuilder();
+		fb.setStrict(false);
+		fb.setBarrier(true);
+
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchMplsTagGoToTable").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(duration).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return fb;
+	}
+
 	public static FlowBuilder createMetadataMatchGoToTableFlow(FlowCookie flowCookie, BigInteger metadata,
 			BigInteger metadataMask, FlowId flowId, Short tableId, Short targetTable, int duration) {
 		LOG.info("FlowUtils: createMetadataMatchGoToTable " + flowCookie.getValue().toString(16) + " metadata "
@@ -1122,34 +1228,6 @@ public class FlowUtils {
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
-	}
-
-	public static FlowBuilder createVlanMatchPopVlanTagAndGoToL2SwitchFlow(FlowCookie flowCookie, FlowId flowId,
-			short tableId, int label) {
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createVlanMatch(matchBuilder, label);
-
-		FlowBuilder stripTagFlow = new FlowBuilder().setTableId(tableId).setFlowName("vlanMatchPopVlanTagGoToL2Switch")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		Instruction popVlanTagInstruction = createPopVlanActionInstruction(0, 0);
-		Instruction goToTableInstruction = new InstructionBuilder().setInstruction(new GoToTableCaseBuilder()
-				.setGoToTable(new GoToTableBuilder().setTableId(SdnMudConstants.L2SWITCH_TABLE).build()).build())
-				.setKey(new InstructionKey(getInstructionKey())).setOrder(1).build();
-
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(popVlanTagInstruction);
-		instructions.add(goToTableInstruction);
-		insb.setInstruction(instructions);
-
-		stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
-				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return stripTagFlow;
-
 	}
 
 	public static FlowBuilder createMplsMatchPopMplsLabelAndGoToTable(FlowCookie flowCookie, FlowId flowId,
@@ -1341,7 +1419,7 @@ public class FlowUtils {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId();
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
-		Instruction sendToPort = FlowUtils.createSetMplsAndOutputToPortInstructions(mplsTag, outputPortUri);
+		Instruction sendToPort = FlowUtils.createPushMplsAndOutputToPortInstructions(mplsTag, outputPortUri);
 		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(sendToPort);
 		InstructionsBuilder insb = new InstructionsBuilder();
@@ -1356,9 +1434,9 @@ public class FlowUtils {
 		return flowBuilder;
 
 	}
-	public static FlowBuilder createDestMacAddressMatchSetVlanTagAndSendToPort(FlowCookie flowCookie,
+
+	public static FlowBuilder createDestMacAddressMatchSetVlanTagAndSendToPort(FlowCookie flowCookie, FlowId flowId,
 			MacAddress destinationMacAddress, Short tableId, int vlanTag, String outputPortUri, int time) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId();
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
 		Instruction instruction = FlowUtils.createSetVlanAndOutputToPortInstructions(vlanTag, outputPortUri);
@@ -1376,10 +1454,86 @@ public class FlowUtils {
 		return flowBuilder;
 
 	}
-	
-	public static FlowBuilder createDestMacAddressMatchSendToPort(FlowCookie flowCookie,
+
+	public static FlowBuilder createVlanMatchPopVlanTagAndGoToTable(FlowCookie flowCookie, FlowId flowId, short tableId,
+			short targetTableId, int label) {
+
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createVlanMatch(matchBuilder, label);
+
+		FlowBuilder stripTagFlow = new FlowBuilder().setTableId(tableId).setFlowName("vlanMatchPopVlanTagGoToL2Switch")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		Instruction popVlanTagInstruction = createPopVlanActionInstruction(0, 0);
+		Instruction goToTableInstruction = new InstructionBuilder()
+				.setInstruction(new GoToTableCaseBuilder()
+						.setGoToTable(new GoToTableBuilder().setTableId(targetTableId).build()).build())
+				.setKey(new InstructionKey(getInstructionKey())).setOrder(1).build();
+
+		InstructionsBuilder insb = new InstructionsBuilder();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(popVlanTagInstruction);
+		instructions.add(goToTableInstruction);
+		insb.setInstruction(instructions);
+
+		stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
+				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return stripTagFlow;
+
+	}
+
+	public static FlowBuilder createSetVlanTagAndGoToTable(FlowCookie flowCookie, FlowId flowId, short tableId,
+			short targetTableId, int vlanId) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createNoVlanPresentMatch(matchBuilder);
+		Instruction setVlanInstruction = FlowUtils.createSetVlanInstructions(vlanId);
+		Instruction goToTableInstruction = new InstructionBuilder()
+				.setInstruction(new GoToTableCaseBuilder()
+						.setGoToTable(new GoToTableBuilder().setTableId(targetTableId).build()).build())
+				.setKey(new InstructionKey(getInstructionKey())).setOrder(1).build();
+		InstructionsBuilder insb = new InstructionsBuilder();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(setVlanInstruction);
+		instructions.add(goToTableInstruction);
+		insb.setInstruction(instructions);
+		FlowBuilder setTagFlow = new FlowBuilder().setTableId(tableId).setFlowName("setVlanTagGoToTable").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		setTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
+				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return setTagFlow;
+
+	}
+
+	/**
+	 * Unconditionally set vlan tag and send to port.
+	 * 
+	 */
+	public static FlowBuilder createSetVlanTagAndSendToPort(FlowCookie flowCookie, FlowId flowId,
+			MacAddress destinationMacAddress, Short tableId, int vlanTag, String outputPortUri, int time) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		Instruction instruction = FlowUtils.createSetVlanAndOutputToPortInstructions(vlanTag, outputPortUri);
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		instructions.add(instruction);
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName("OnDestinationMacAddressMatchSendToPort").setId(flowId).setKey(new FlowKey(flowId))
+				.setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
+	}
+
+	public static FlowBuilder createDestMacAddressMatchSendToPort(FlowCookie flowCookie,FlowId flowId,
 			MacAddress destinationMacAddress, Short tableId, String outputPortUri, int time) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId();
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
 		Instruction sendToPort = createSendToPortInstruction(outputPortUri);
@@ -2270,8 +2424,8 @@ public class FlowUtils {
 	 * @param flowCookie
 	 * @return
 	 */
-	public static FlowBuilder createPermitPacketsToServerFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, short nextTable, FlowId flowId, FlowCookie flowCookie) {
+	public static FlowBuilder createDstHostPortMatchGoToTableFlow(Ipv4Address dnsAddress, int port, short protocol,
+			short tableId, short targetTable, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsToServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -2287,7 +2441,7 @@ public class FlowUtils {
 		FlowUtils.createDestIpv4Match(matchBuilder, dnsAddress);
 		Match match = matchBuilder.build();
 
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, flowCookie.getValue());
+		InstructionsBuilder isb = createGoToNextTableInstruction(targetTable, flowCookie.getValue());
 
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
@@ -2305,10 +2459,10 @@ public class FlowUtils {
 	 * @param flowCookie
 	 * @return
 	 */
-	public static FlowBuilder createPermitPacketsFromServerFlow(Ipv4Address dnsAddress, int port, short protocol,
+	public static FlowBuilder createSrcHostPortMatchGoToTableFlow(Ipv4Address dnsAddress, int port, short protocol,
 			short tableId, short nextTable, FlowId flowId, FlowCookie flowCookie) {
 
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsFromServerFlow")
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("srcHostPortMatchGoTo")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		MatchBuilder matchBuilder = new MatchBuilder();
 
@@ -2328,6 +2482,29 @@ public class FlowUtils {
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
+	}
+
+	public static FlowBuilder createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(NodeConnectorId nodeConnector,
+			short tableId, short nextTable, int timeout, FlowId flowId, FlowCookie flowCookie) {
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("matchPortArpMatchSendPacketToController")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		MatchBuilder matchBuilder = new MatchBuilder();
+
+		FlowUtils.createArpTypeMatch(matchBuilder);
+		FlowUtils.createInPortMatch(matchBuilder, nodeConnector);
+		Instruction goToTableInstruction = FlowUtils.createGoToTableInstruction(nextTable);
+		Instruction sendPacketToControllerInstruction = FlowUtils.createSendPacketToControllerInstruction();
+		List<Instruction> li = new ArrayList<Instruction>();
+		li.add(sendPacketToControllerInstruction);
+		li.add(goToTableInstruction);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(li);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+				.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
 	}
 
 }

@@ -1,21 +1,15 @@
 package gov.nist.antd.ids.impl;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
-import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -27,7 +21,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private IdsProvider idsProvider;
 
-	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes;
+	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
 
 	// PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode>
 	// node,
@@ -78,15 +72,40 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 	}
 
+	private void installUnconditionalGoToTable(String nodeId, InstanceIdentifier<FlowCapableNode> node, short table,
+			short destinationTable) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, destinationTable,
+				flowId, flowCookie);
+		idsProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
+	}
+
 	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
+
 		if (idsProvider.isNpeSwitch(nodeUri)) {
-			this.installSendIdsHelloToControllerFlow(nodeUri, nodePath);
-			// Set the MPLS label to VPN label matches.
-			// TODO
+			// Send IDS registration packet to controller.
+
+			installSendIdsHelloToControllerFlow(nodeUri, nodePath);
+
+			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
+					SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
+			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
+					SdnMudConstants.SDNMUD_RULES_TABLE);
+
+			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SDNMUD_RULES_TABLE,
+					SdnMudConstants.PASS_THRU_TABLE);
+
+			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.PASS_THRU_TABLE,
+					SdnMudConstants.L2SWITCH_TABLE);
+		} else if (idsProvider.isCpeNode(nodeUri)) {
+			LOG.info("CPE node appeared");
+			
 		}
-		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, idsProvider);
-		idsProvider.getNotificationService().registerNotificationListener(packetInDispatcher);
-		ListenerRegistration<PacketInDispatcher> registration = idsProvider.getNotificationService()
+
+		PacketProcessingListenerImpl packetInDispatcher = new PacketProcessingListenerImpl(nodeUri, nodePath,
+				idsProvider);
+		ListenerRegistration<PacketProcessingListenerImpl> registration = idsProvider.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 		packetInDispatcher.setListenerRegistration(registration);
 	}

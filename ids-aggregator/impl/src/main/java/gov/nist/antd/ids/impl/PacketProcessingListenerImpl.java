@@ -1,6 +1,9 @@
 package gov.nist.antd.ids.impl;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.opendaylight.openflowplugin.api.OFConstants;
@@ -11,8 +14,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
@@ -23,7 +28,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PacketInDispatcher implements PacketProcessingListener {
+public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 	private IdsProvider idsProvider;
 
@@ -31,9 +36,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private InstanceIdentifier<FlowCapableNode> node;
 
-	private ListenerRegistration<PacketInDispatcher> listenerRegistration;
+	private ListenerRegistration<PacketProcessingListenerImpl> listenerRegistration;
 
-	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
+	private static final Logger LOG = LoggerFactory.getLogger(PacketProcessingListenerImpl.class);
+	
+	private static HashMap<FlowCookie,InstanceIdentifier<FlowCapableNode>> arpFlowCookies = new HashMap<>();
+	
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
@@ -43,7 +51,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	 * @param flowCommitWrapper
 	 * @param idsProvider
 	 */
-	public PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode> node, IdsProvider idsProvider) {
+	public PacketProcessingListenerImpl(String nodeId, InstanceIdentifier<FlowCapableNode> node,
+			IdsProvider idsProvider) {
+		LOG.info("PakcetProcessingListenerImpl : nodeId " + nodeId);
 		this.node = node;
 		this.nodeId = nodeId;
 		this.idsProvider = idsProvider;
@@ -60,7 +70,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return node;
 	}
 
-	public void setListenerRegistration(ListenerRegistration<PacketInDispatcher> registration) {
+	public void setListenerRegistration(ListenerRegistration<PacketProcessingListenerImpl> registration) {
 		this.listenerRegistration = registration;
 	}
 
@@ -97,9 +107,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		short tableId = notification.getTableId().getValue();
 
 		String matchInPortUri = notification.getMatch().getInPort().getValue();
+		NodeConnectorRef nodeConnectorRef = notification.getIngress();
 
-		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
-				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
+		String destinationId = nodeConnectorRef.getValue().firstKeyOf(Node.class).getId().getValue();
+
+		LOG.info("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " destinationId "
+				+ destinationId + " tableId " + tableId + " srcMac " + srcMac.getValue() + " dstMac "
+				+ dstMac.getValue());
 
 		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
 		int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
@@ -115,64 +129,40 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			LOG.info("Topology not yet registered -- dropping packet");
 			return;
 		}
-		NodeConnectorRef nodeConnectorRef = notification.getIngress();
-		String destinationId = nodeConnectorRef.getValue().firstKeyOf(Node.class).getId().getValue();
 
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
-			LOG.info("LLDP Packet " + matchInPortUri + " nodeId " + destinationId);
-			this.idsProvider.setNodeConnector(destinationId, this.nodeId, matchInPortUri);
-			// If the LLDP node ID matches one of the known NPE nodes then push
-			// a flow for it.
+			LOG.info("LLDP Packet matchInPortUri " + matchInPortUri + " destinationId " + destinationId + " myNodeId "
+					+ nodeId);
+			if (!destinationId.equals(this.nodeId)) {
+				this.idsProvider.setNodeConnector(destinationId, this.nodeId, matchInPortUri);
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId +":" + destinationId);
 
-		
-
+				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+						notification.getMatch().getInPort(), SdnMudConstants.PASS_THRU_TABLE,
+						SdnMudConstants.L2SWITCH_TABLE, 300, flowId, flowCookie);
+				InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
+				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+			}
 			return;
-		}
-
-		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) {
-
-			if (tableId == SdnMudConstants.L2SWITCH_TABLE) {
-				// Install a flow for this destination MAC routed to the
-				// ingress
-				String outputPortUri = this.idsProvider.getNodeConnector(this.nodeId, destinationId);
-				if (outputPortUri != null) {
-
-					LOG.debug("Installng BRIDGE flow rule for dstMac = " + dstMac.getValue() + " srcMac = " + srcMac
-							+ " sendingNodeId " + destinationId + " myNodeId " + nodeId);
-
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-					int time = 300;
-
-					if (dstMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-							&& srcMac.getValue().compareToIgnoreCase("ff:ff:ff:ff:ff:ff") != 0
-							&& !dstMac.getValue().startsWith("33:33")) {
-						/*
-						 * Note 48-bit MAC addresses in the range
-						 * 33-33-00-00-00-00 to 33-33-FF-FF-FF-FF are used for
-						 * IPv6 multicast. TODO - check for loops before
-						 * installing this rule.
-						 */
-						int mplsTag = -1;
-						if (idsProvider.isCpeNode(nodeId)) {
-						    mplsTag = (int) idsProvider.getCpeTag(nodeId);
-						} else if (idsProvider.isNpeSwitch(nodeId)) {
-							mplsTag = (int) idsProvider.getNpeTag(nodeId);
-						}
-						if (mplsTag == -1) {
-							LOG.error("Could not find MPLS tag match ");
-							return;
-						}
-						
-						// Push an MPLS tag corresponding to this CPE switch
-						// and send it.
-						FlowBuilder flow = FlowUtils.createDestMacAddressMatchSetVlanTagAndSendToPort(flowCookie,
-								srcMac, tableId, mplsTag, outputPortUri, time);
-						idsProvider.getFlowCommitWrapper().writeFlow(flow, node);
-						transmitPacket(notification.getPayload(), outputPortUri);
-					}
-				} else {
-					LOG.info("Cannot find mapping -- dropping");
+		} else if (etherType == SdnMudConstants.ETHERTYPE_ARP  && tableId == SdnMudConstants.PASS_THRU_TABLE ) {
+			if (!dstMac.getValue().equals("FF:FF:FF:FF:FF:FF")) {
+				LOG.info("ARP Response " + matchInPortUri + " destinationId " + destinationId + " myNodeId " + nodeId);
+				LOG.info("ARP response src mac = " + srcMac.getValue() + " destMac " + dstMac.getValue());
+				// Write a destination MAC flow 
+				if (! destinationId.equals(this.nodeId)) {
+					InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
+					String flowIdStr = destinationId + ":" + srcMac;
+					FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
+					idsProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
+					FlowBuilder fb = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, flowId, srcMac, 
+							SdnMudConstants.L2SWITCH_TABLE, matchInPortUri, 300);
+					idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				}
+				
+			} else {
+				LOG.info("ARP Discovery " + srcMac.getValue());
 			}
 		}
 

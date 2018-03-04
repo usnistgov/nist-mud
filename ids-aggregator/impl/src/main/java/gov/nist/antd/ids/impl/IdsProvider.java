@@ -32,6 +32,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class IdsProvider {
 
 	private static final Logger LOG = LoggerFactory.getLogger(IdsProvider.class);
@@ -64,12 +65,17 @@ public class IdsProvider {
 	private RpcProviderRegistry rpcProviderRegistry;
 
 	private gov.nist.antd.ids.impl.TopologyDataStoreListener topoDataStoreListener;
+	
+	private CpeCollectionsDataStoreListener cpeCollectionsDataStoreListener;
+
 
 	private WakeupOnFlowCapableNode wakeupListener;
 
 	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;
 
 	private CpeCollections cpeCollections;
+
+	private HashMap<String, HashSet<Uri>> cpeMap = new HashMap<>();
 
 	class IdsPort {
 		String portUri;
@@ -78,7 +84,7 @@ public class IdsProvider {
 
 		public IdsPort(String portUri) {
 			this.portUri = portUri;
-			this.port = Integer.parseInt(portUri.split(":")[2]);
+			this.port = Integer.parseInt(portUri);
 		}
 
 		@Override
@@ -88,7 +94,7 @@ public class IdsProvider {
 
 		@Override
 		public boolean equals(Object that) {
-			if (!that.getClass().equals(IdsPort.class)) {
+			if (that == null || !that.getClass().equals(IdsPort.class)) {
 				return false;
 			} else {
 				return ((IdsPort) that).portUri.equals(this.portUri);
@@ -107,6 +113,11 @@ public class IdsProvider {
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
 		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
 	}
+	
+	private static InstanceIdentifier<CpeCollections> getCpeCollectionsWildCardPath() {
+		return InstanceIdentifier.create(CpeCollections.class);
+	}
+
 
 	public IdsProvider(final DataBroker dataBroker, PacketProcessingService packetProcessingService,
 			RpcProviderRegistry rpcProviderRegistry, NotificationService notificationService) {
@@ -128,6 +139,12 @@ public class IdsProvider {
 				topoWildCardPath);
 		this.topoDataStoreListener = new TopologyDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
+		
+		final DataTreeIdentifier<CpeCollections> cpeConfigId = new DataTreeIdentifier<CpeCollections>(LogicalDatastoreType.CONFIGURATION,
+				getCpeCollectionsWildCardPath());
+		this.cpeCollectionsDataStoreListener = new CpeCollectionsDataStoreListener(this);
+		this.dataBroker.registerDataTreeChangeListener(cpeConfigId, cpeCollectionsDataStoreListener);
+
 
 		this.wakeupListener = new WakeupOnFlowCapableNode(this);
 		final DataTreeIdentifier<FlowCapableNode> dataTreeIdentifier = new DataTreeIdentifier<FlowCapableNode>(
@@ -254,19 +271,19 @@ public class IdsProvider {
 	 *            -- the node URI of the source node.
 	 * @param destinationNodeUri
 	 *            -- the node URI of the destination node.
-	 * @param nodeConnectorUri
+	 * @param port
 	 *            -- the connector URI (to install in a flow rule for packet
 	 *            diversion).
 	 */
-	public void setNodeConnector(String sourceNodeUri, String destinationNodeUri, String nodeConnectorUri) {
-		LOG.debug("setNodeConnector : sourceNodeUri = " + sourceNodeUri + " destinationNodeUri = " + destinationNodeUri
-				+ " nodeConnectorUri " + nodeConnectorUri);
+	public void setNodeConnector(String sourceNodeUri, String destinationNodeUri, String port) {
+		LOG.info("setNodeConnector : sourceNodeUri = " + sourceNodeUri + " destinationNodeUri = " + destinationNodeUri
+				+ " nodeConnectorUri " + port);
 		HashMap<String, String> nodeMap = this.nodeConnectorMap.get(sourceNodeUri);
 		if (nodeMap == null) {
 			nodeMap = new HashMap<String, String>();
 			nodeConnectorMap.put(sourceNodeUri, nodeMap);
 		}
-		nodeMap.put(destinationNodeUri, nodeConnectorUri);
+		nodeMap.put(port, destinationNodeUri);
 	}
 
 	/**
@@ -279,11 +296,12 @@ public class IdsProvider {
 	 *            -- the destinationNodeUri
 	 * @return -- the connectorUri
 	 */
-	public String getNodeConnector(String sourceNodeUri, String destinationNodeUri) {
+	public String getNodeConnector(String sourceNodeUri, String port) {
+		LOG.info("getNodeConnector " + sourceNodeUri + " port " + port);
 		if (this.nodeConnectorMap.get(sourceNodeUri) == null) {
 			return null;
 		} else {
-			return this.nodeConnectorMap.get(sourceNodeUri).get(destinationNodeUri);
+			return this.nodeConnectorMap.get(sourceNodeUri).get(port);
 		}
 	}
 
@@ -350,6 +368,13 @@ public class IdsProvider {
 
 	public void setCpeCollections(CpeCollections cpeCollections) {
 		this.cpeCollections = cpeCollections;
+		for (MudNodes mudNodes : cpeCollections.getMudNodes()) {
+			String key = mudNodes.getKey().getName();
+			HashSet<Uri> cpes = new HashSet<>();
+			cpes.addAll(mudNodes.getCpeSwitches());
+			LOG.info("setCpeCollections : key " + key);
+			this.cpeMap.put(key, cpes);
+		}
 	}
 
 	public long getCpeTag(String nodeId) {
@@ -362,8 +387,8 @@ public class IdsProvider {
 				}
 			}
 		}
-		for (Link link: this.topology.getLink()) {
-			if ( link.getCpeSwitchesId().equals(nodeKey)) {
+		for (Link link : this.topology.getLink()) {
+			if (link.getCpeSwitchesId().equals(nodeKey)) {
 				return link.getTag();
 			}
 		}
@@ -371,7 +396,7 @@ public class IdsProvider {
 	}
 
 	public long getNpeTag(String nodeId) {
-		for(Link link: this.topology.getLink()) {
+		for (Link link : this.topology.getLink()) {
 			if (link.getNpeSwitch().getValue().equals(nodeId)) {
 				return link.getTag();
 			}
@@ -385,6 +410,40 @@ public class IdsProvider {
 			retval.addAll(mudNode.getCpeSwitches());
 		}
 		return retval;
+	}
+
+	public boolean isProviderLink(String nodeId1, String nodeId2) {
+		if (this.isNpeSwitch(nodeId1)) {
+			for (Link link : this.topology.getLink()) {
+				if (link.getNpeSwitch().getValue().equals(nodeId1)) {
+					String cpeId = link.getCpeSwitchesId();
+					HashSet<Uri> cpes = this.cpeMap.get(cpeId);
+					if (cpes == null)
+						return false;
+					if (cpes.contains(new Uri(nodeId2)))
+						return true;
+					else return false;
+				}
+			}
+			return false;
+		} else if (this.isCpeNode(nodeId1)) {
+			for (String cpeId : this.cpeMap.keySet()) {
+				if (this.cpeMap.get(cpeId).contains(new Uri(nodeId1))) {
+					for (Link link : topology.getLink()) {
+						if (link.getCpeSwitchesId().equals(cpeId)) {
+							if (link.getNpeSwitch().getValue().equals(nodeId2))
+								return true;
+							else
+								return false;
+						}
+					}
+					return false;
+				}
+			}
+		}
+
+		return false;
+
 	}
 
 }

@@ -113,5 +113,6 @@ public interface SdnMudConstants {
   public static final Integer CACHE_TIMEOUT = 120;
   
   public static final int ETHERTYPE_LLDP = 0x88cc;
+  public static final int ETHERTYPE_ARP = 0x806;
 
 }
