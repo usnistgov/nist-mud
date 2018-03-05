@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <arp-handler-config xmlns="urn:opendaylight:packet:arp-handler-config">
    <is-proactive-flood-mode>true</is-proactive-flood-mode>
-   <flood-flow-table-id>6</flood-flow-table-id>
-   <arp-flow-table-id>6</arp-flow-table-id>
+   <flood-flow-table-id>7</flood-flow-table-id>
+   <arp-flow-table-id>7</arp-flow-table-id>
 </arp-handler-config>

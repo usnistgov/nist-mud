@@ -200,6 +200,7 @@ public class FlowCommitWrapper {
   public synchronized void deleteFlows(InstanceIdentifier<FlowCapableNode> flowCapableNode,
       String uri, short table, MacAddress sourceMacAddress) {
 
+	LOG.info("deleteFlows " + uri);
     List<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri, sourceMacAddress);
     for (FlowKey flowKey : flowKeys) {
       deleteFlow(flowKey, table, flowCapableNode);

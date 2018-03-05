@@ -16,6 +16,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapableNode> {
 	private static final Logger LOG = LoggerFactory.getLogger(WakeupOnFlowCapableNode.class);
 
@@ -83,11 +84,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		if (idsProvider.isNpeSwitch(nodeUri)) {
+		if (idsProvider.isNpeSwitch(nodeUri) || idsProvider.isVnfSwitch(nodeUri)) {
 			// Send IDS registration packet to controller.
 
 			installSendIdsHelloToControllerFlow(nodeUri, nodePath);
-
+			// Send packet to controller flow
+			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.STRIP_VLAN_TAG_TABLE,
+					SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE);
+			
 			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
 					SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
 			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
@@ -98,10 +102,26 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.PASS_THRU_TABLE,
 					SdnMudConstants.L2SWITCH_TABLE);
-		} else if (idsProvider.isCpeNode(nodeUri)) {
-			LOG.info("CPE node appeared");
+		} 
+		
+		/* if (idsProvider.isCpeNode(nodeUri)  || idsProvider.isVnfSwitch(nodeUri) ) {
+			LOG.info("CPE / VNF node appeared node appeared installing VLAN match rules");
+			int tag = ( idsProvider.isCpeNode(nodeUri)) ? (int) idsProvider.getCpeTag(nodeUri)
+					: (int)	idsProvider.getVnfTag(nodeUri);
 			
-		}
+			if (tag == -1 ) {
+				LOG.error("WakeupOnFlowCapableNode : Tag is -1 " + nodeUri);
+				return;
+			}
+			
+			
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeUri);
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri);
+			
+			FlowBuilder fb = FlowUtils.createVlanMatchPopVlanTagAndGoToTable(flowCookie, flowId, 
+					SdnMudConstants.PASS_THRU_TABLE, SdnMudConstants.L2SWITCH_TABLE, tag);
+			idsProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
+		}*/
 
 		PacketProcessingListenerImpl packetInDispatcher = new PacketProcessingListenerImpl(nodeUri, nodePath,
 				idsProvider);

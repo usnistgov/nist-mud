@@ -39,9 +39,8 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 	private ListenerRegistration<PacketProcessingListenerImpl> listenerRegistration;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketProcessingListenerImpl.class);
-	
-	private static HashMap<FlowCookie,InstanceIdentifier<FlowCapableNode>> arpFlowCookies = new HashMap<>();
-	
+
+	private static HashMap<FlowCookie, InstanceIdentifier<FlowCapableNode>> arpFlowCookies = new HashMap<>();
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
@@ -136,7 +135,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 			if (!destinationId.equals(this.nodeId)) {
 				this.idsProvider.setNodeConnector(destinationId, this.nodeId, matchInPortUri);
 				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId +":" + destinationId);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId + ":" + destinationId);
 
 				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
 						notification.getMatch().getInPort(), SdnMudConstants.PASS_THRU_TABLE,
@@ -145,24 +144,53 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 			}
 			return;
-		} else if (etherType == SdnMudConstants.ETHERTYPE_ARP  && tableId == SdnMudConstants.PASS_THRU_TABLE ) {
-			if (!dstMac.getValue().equals("FF:FF:FF:FF:FF:FF")) {
-				LOG.info("ARP Response " + matchInPortUri + " destinationId " + destinationId + " myNodeId " + nodeId);
-				LOG.info("ARP response src mac = " + srcMac.getValue() + " destMac " + dstMac.getValue());
-				// Write a destination MAC flow 
-				if (! destinationId.equals(this.nodeId)) {
-					InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
-					String flowIdStr = destinationId + ":" + srcMac;
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
-					idsProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
-					FlowBuilder fb = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, flowId, srcMac, 
+		} else if (etherType == SdnMudConstants.ETHERTYPE_ARP && tableId == SdnMudConstants.PASS_THRU_TABLE) {
+			if (dstMac.getValue().equals("FF:FF:FF:FF:FF:FF")) {
+				LOG.info("ARP Discovery");
+			} else {
+				LOG.info("ARP Response ");
+			}
+			LOG.info("ARP  " + matchInPortUri + " destinationId " + destinationId + " myNodeId " + nodeId);
+			LOG.info("ARP src mac = " + srcMac.getValue() + " destMac " + dstMac.getValue());
+
+			// Write a destination MAC flow
+			if (!destinationId.equals(this.nodeId)) {
+				InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
+				String flowIdStr = "pushVpn:" + destinationId + ":" + srcMac;
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
+				idsProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
+
+				if (idsProvider.isCpeNode(destinationId) || idsProvider.isVnfSwitch(destinationId)) {
+					int tag;
+					if (idsProvider.isCpeNode(destinationId)) {
+						tag = (int) idsProvider.getCpeTag(destinationId);
+					} else {
+						tag = (int) idsProvider.getVnfTag(destinationId);
+					}
+					if (tag == -1) {
+						LOG.error("Tag == -1 " + destinationId);
+						return;
+					}
+					FlowBuilder fb = FlowUtils.createDestMacAddressMatchSetVlanTagAndSendToPort(flowCookie, flowId,
+							srcMac, SdnMudConstants.L2SWITCH_TABLE, tag, matchInPortUri, 300);
+					
+					idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+					LOG.info("CPE / VNF node appeared node appeared installing VLAN match rules");
+
+					flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
+					flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
+
+					fb = FlowUtils.createVlanAndPortMatchPopVlanTagAndGoToTable(flowCookie, flowId,
+							SdnMudConstants.STRIP_VLAN_TAG_TABLE, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
+							tag, notification.getMatch().getInPort(),300);
+					
+					idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+				} else {
+					FlowBuilder fb = FlowUtils.createDestMacAddressMatchSendToPort(flowCookie, flowId, srcMac,
 							SdnMudConstants.L2SWITCH_TABLE, matchInPortUri, 300);
 					idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				}
-				
-			} else {
-				LOG.info("ARP Discovery " + srcMac.getValue());
 			}
 		}
 

@@ -213,6 +213,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		uninstallDefaultFlows(nodeUri);
 
 		// Send packet to controller flow
+		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.STRIP_VLAN_TAG_TABLE,
+				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE);
 
 		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
 				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);

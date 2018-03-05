@@ -41,9 +41,10 @@ public interface SdnMudConstants {
 
   // Table where SDN MUD rules are stored.
   
-  public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = 0;
-  public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = 1;
-  public static final Short SDNMUD_RULES_TABLE = 2;
+  public static final Short STRIP_VLAN_TAG_TABLE = 0;
+  public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (STRIP_VLAN_TAG_TABLE+1);
+  public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (STRIP_VLAN_TAG_TABLE+2);
+  public static final Short SDNMUD_RULES_TABLE = (short)( STRIP_VLAN_TAG_TABLE + 3);
   public static final Short DROP_TABLE = (short) (SDNMUD_RULES_TABLE + 1);
   public static final Short PASS_THRU_TABLE = (short) (SDNMUD_RULES_TABLE + 2);
   public static final Short STRIP_MPLS_RULE_TABLE = (short) (SDNMUD_RULES_TABLE + 3);

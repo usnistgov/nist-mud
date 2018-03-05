@@ -339,6 +339,17 @@ public class IdsProvider {
 		}
 		return false;
 	}
+	
+	public boolean isVnfSwitch(String nodeUri) {
+		if (this.topology == null) {
+			return false;
+		}
+		for (Link link : this.topology.getLink()) {
+			if (link.getVnfSwitch().getValue().equals(nodeUri))
+				return true;
+		}
+		return false;
+	}
 
 	public boolean isCpeNode(String nodeId) {
 		if (this.cpeCollections == null) {
@@ -387,20 +398,27 @@ public class IdsProvider {
 				}
 			}
 		}
+		if (nodeKey == null) {
+			LOG.error("getCpeTag : " + nodeId + " nodeKey " + nodeKey);
+			return -1;
+		}
 		for (Link link : this.topology.getLink()) {
 			if (link.getCpeSwitchesId().equals(nodeKey)) {
 				return link.getTag();
 			}
 		}
+		LOG.error("getCpeTag : " + nodeId + " nodeKey " + nodeKey);
 		return -1;
 	}
 
-	public long getNpeTag(String nodeId) {
+	public long getVnfTag(String nodeId) {
 		for (Link link : this.topology.getLink()) {
-			if (link.getNpeSwitch().getValue().equals(nodeId)) {
+			if (link.getVnfSwitch().getValue().equals(nodeId)) {
 				return link.getTag();
 			}
 		}
+		LOG.error("getVnfTag : " + nodeId );
+
 		return -1;
 	}
 
