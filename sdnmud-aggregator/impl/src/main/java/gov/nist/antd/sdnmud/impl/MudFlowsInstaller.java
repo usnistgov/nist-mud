@@ -21,23 +21,25 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.Accept;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.Aces;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.aces.Ace;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180202.access.lists.acl.aces.ace.Matches;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Ipv41;
-//import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180124.Matches1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.Accept;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.Aces;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.Ace;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.Matches;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l3.Ipv4;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180301.Ipv41;
+//import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180301.Matches1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Host;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Matches1;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.Mud;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.access.lists.AccessLists;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.access.lists.access.lists.AccessList;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.mud.grouping.FromDevicePolicy;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180124.mud.grouping.ToDevicePolicy;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev180202.port.range.or.operator.Range;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Matches1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.AccessLists;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.access.lists.AccessList;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.FromDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.ToDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev180303.PortRangeOrOperator;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev180303.port.range.or.operator.port.range.or.operator.Range;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
@@ -46,6 +48,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.Udp;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.Tcp;
 
 public class MudFlowsInstaller {
 
@@ -166,7 +170,7 @@ public class MudFlowsInstaller {
 	private static List<Ipv4Address> getMatchAddresses(Matches matches) {
 
 		ArrayList<Ipv4Address> ipAddresses = new ArrayList<Ipv4Address>();
-		Ipv41 ipv41 = matches.getIpv4().getAugmentation(Ipv41.class);
+		Ipv41 ipv41 = (Ipv41) matches.getL3();
 		if (ipv41 != null) {
 			Host dnsName = ipv41.getDstDnsname() != null ? ipv41.getDstDnsname() : ipv41.getSrcDnsname();
 			if (dnsName != null) {
@@ -216,54 +220,41 @@ public class MudFlowsInstaller {
 		return sdnmudProvider.getNode(cpeNodeId);
 	}
 
-	private static Range getSourcePortRange(Matches matches) {
-		if (matches.getIpv4().getProtocol() == SdnMudConstants.TCP_PROTOCOL) {
-			return matches.getTcp().getSourcePortRangeOrOperator().getRange();
-		} else {
-			return matches.getUdp().getSourcePortRangeOrOperator().getRange();
-		}
-
-	}
-
 	private static short getProtocol(Matches matches) {
-		if (matches.getIpv4() == null) {
+		if (matches.getL3() == null) {
 			LOG.error("No IPV4 node foound -- cannto determine protocol ");
 			return -1;
 		}
-		return matches.getIpv4().getProtocol();
-	}
-
-	private static Range getDestinationPortRange(Matches matches) {
-		if (matches.getIpv4().getProtocol() == SdnMudConstants.UDP_PROTOCOL)
-			return matches.getUdp().getDestinationPortRangeOrOperator().getRange();
-		else
-			return matches.getTcp().getDestinationPortRangeOrOperator().getRange();
+		return ((Ipv4) matches.getL3()).getIpv4().getProtocol();
 
 	}
 
 	private static Integer getDestinationPort(Matches matches) {
-		if (matches.getTcp() != null && matches.getTcp().getDestinationPortRangeOrOperator() != null
-				&& matches.getTcp().getDestinationPortRangeOrOperator().getPort() != null)
-			return matches.getTcp().getDestinationPortRangeOrOperator().getPort().getValue();
-		else if (matches.getUdp() != null && matches.getUdp().getDestinationPortRangeOrOperator() != null
-				&& matches.getUdp().getDestinationPortRangeOrOperator().getPort() != null)
-			return matches.getUdp().getDestinationPortRangeOrOperator().getPort().getValue();
+		if (((Tcp) matches.getL4()) != null && ((Tcp) matches.getL4()).getTcp() != null
+				&& ((Tcp) matches.getL4()).getTcp().getDestinationPort() != null)
+			return Integer.parseUnsignedInt(
+					((Tcp) matches.getL4()).getTcp().getDestinationPort().getDestinationPort().toString());
+		else if (((Udp) matches.getL4()) != null && ((Udp) matches.getL4()).getUdp() != null
+				&& ((Udp) matches.getL4()).getUdp().getDestinationPort() != null)
+			return Integer.parseUnsignedInt(
+					((Udp) matches.getL4()).getUdp().getDestinationPort().getDestinationPort().toString());
 		else
 			return -1;
 
 	}
 
 	private static Integer getSourcePort(Matches matches) {
-
-		if (matches.getTcp() != null && matches.getTcp().getSourcePortRangeOrOperator() != null
-				&& matches.getTcp().getSourcePortRangeOrOperator().getPort() != null)
-			return matches.getTcp().getSourcePortRangeOrOperator().getPort().getValue();
-
-		else if (matches.getUdp() != null && matches.getUdp().getSourcePortRangeOrOperator() != null
-				&& matches.getUdp().getSourcePortRangeOrOperator().getPort() != null)
-			return matches.getUdp().getSourcePortRangeOrOperator().getPort().getValue();
+		if (((Tcp) matches.getL4()) != null && ((Tcp) matches.getL4()).getTcp() != null
+				&& ((Tcp) matches.getL4()).getTcp().getSourcePort() != null)
+			return Integer
+					.parseUnsignedInt(((Tcp) matches.getL4()).getTcp().getSourcePort().getSourcePort().toString());
+		else if (((Udp) matches.getL4()) != null && ((Udp) matches.getL4()).getUdp() != null
+				&& ((Udp) matches.getL4()).getUdp().getDestinationPort() != null)
+			return Integer.parseUnsignedInt(
+					((Udp) matches.getL4()).getUdp().getDestinationPort().getDestinationPort().toString());
 		else
 			return -1;
+
 	}
 
 	private void installPermitFromDeviceToIpAddressFlow(FlowId flowId, BigInteger metadata, BigInteger metadataMask,
@@ -287,21 +278,9 @@ public class MudFlowsInstaller {
 			LOG.error("Cannot install -- protocol field missing");
 			return;
 		}
-		if (getDestinationPortRange(matches) != null) {
-			Range destinationPortRange = getDestinationPortRange(matches);
 
-			for (Ipv4Address address : addresses) {
-				for (int port = destinationPortRange.getLowerPort().getValue().intValue(); port <= destinationPortRange
-						.getUpperPort().getValue().intValue(); port++) {
-					String flowUri = createFlowUri(authority, address);
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
-					installPermitFromDeviceToIpAddressFlow(flowId, metadata, metadataMask, address, port,
-							protocol.shortValue(), flowCookie);
-				}
-			}
-		} else {
-			int port = getDestinationPort(matches);
+		int port = getDestinationPort(matches);
+		if (port != -1) {
 			for (Ipv4Address address : addresses) {
 				String flowUri = createFlowUri(authority, address);
 				FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
@@ -309,7 +288,10 @@ public class MudFlowsInstaller {
 				installPermitFromDeviceToIpAddressFlow(flowId, metadata, metadataMask, address, port,
 						protocol.shortValue(), flowCookie);
 			}
+		} else {
+			LOG.error("Destinaiton port not specified");
 		}
+
 	}
 
 	private void installPermitFromIpToDeviceFlow(BigInteger metadata, BigInteger metadataMask, Ipv4Address address,
@@ -329,32 +311,17 @@ public class MudFlowsInstaller {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
 		String authority = InstanceIdentifierUtils.getAuthority(mudUri);
-		Short protocol = matches.getIpv4().getProtocol();
-		if (getSourcePortRange(matches) != null) {
-			Range sourcePortRange = getSourcePortRange(matches);
+		Short protocol = getProtocol(matches);
 
-			for (Ipv4Address address : addresses) {
-				for (int port = sourcePortRange.getLowerPort().getValue().intValue(); port <= sourcePortRange
-						.getUpperPort().getValue().intValue(); port++) {
-					String flowUri = createFlowUri(authority, address);
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
-
-					installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(),
-							flowCookie, flowId, getCpeNode());
-
-				}
-			}
-		} else {
-			int port = getSourcePort(matches);
-			for (Ipv4Address address : addresses) {
-				String flowUri = createFlowUri(authority, address);
-				FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
-				installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(),
-						flowCookie, flowId, getCpeNode());
-			}
+		int port = getSourcePort(matches);
+		for (Ipv4Address address : addresses) {
+			String flowUri = createFlowUri(authority, address);
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri);
+			installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(), flowCookie,
+					flowId, getCpeNode());
 		}
+
 	}
 
 	private void installPermitFromSameManufacturerFlowRule(String mudUri, String flowUri, Matches matches) {
@@ -460,8 +427,6 @@ public class MudFlowsInstaller {
 				srcPort, destinationPort, tableId,  flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
-
-	
 
 	public static void installPermitPacketsFromToServer(SdnmudProvider sdnmudProvider,
 			InstanceIdentifier<FlowCapableNode> node, Ipv4Address address, short protocol, int port) {
@@ -622,10 +587,6 @@ public class MudFlowsInstaller {
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
-
-	
-
-	
 
 	/**
 	 * Retrieve and install flows for a device of a given MAC address.
