@@ -36,8 +36,6 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketProcessingListenerImpl.class);
 
-
-
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
 	 * 
@@ -120,32 +118,32 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
 			LOG.info("LLDP Packet matchInPortUri " + matchInPortUri + " destinationId " + destinationId);
 
-			
 			InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
 
 			LOG.info("LLDP Packet installing rules on " + InstanceIdentifierUtils.getNodeUri(destinationNode));
 
-
-			
 			if (idsProvider.isCpeNode(destinationId)) {
 				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
 				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
-				
+
 				int tag = (int) idsProvider.getCpeTag(destinationId);
-				//FlowBuilder fb = FlowUtils.createVlanAndPortMatchSendPacketToControllerAndGoToTableFlow(
-				//		notification.getMatch().getInPort(), tag, SdnMudConstants.PASS_THRU_TABLE, 300, flowId, flowCookie);
-				
-				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow
-				    		(notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId, flowCookie);
-				    
+				// FlowBuilder fb =
+				// FlowUtils.createVlanAndPortMatchSendPacketToControllerAndGoToTableFlow(
+				// notification.getMatch().getInPort(), tag,
+				// SdnMudConstants.PASS_THRU_TABLE, 300, flowId, flowCookie);
+
+				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+						flowCookie);
+
 				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				flowId = InstanceIdentifierUtils.createFlowId(destinationId);
 				flowCookie = InstanceIdentifierUtils.createFlowCookie("NO_VLAN_MATCH_PUSH_ARP_" + destinationId);
 
 				fb = FlowUtils.createNoVlanArpMatchPushVlanSendToPortAndGoToTable(
-						notification.getMatch().getInPort().getValue(), tag, 
-						SdnMudConstants.PUSH_VLAN_ON_ARP_TABLE, 300, flowId, flowCookie);
-				
+						notification.getMatch().getInPort().getValue(), tag, SdnMudConstants.PUSH_VLAN_ON_ARP_TABLE,
+						300, flowId, flowCookie);
+
 				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				flowId = InstanceIdentifierUtils.createFlowId(destinationId);
 				flowCookie = InstanceIdentifierUtils.createFlowCookie("VLAN_MATCH_POP_ARP_" + destinationId);
@@ -157,16 +155,17 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				// For L2switch to build MAC to MAC flows.
 				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
 				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("ARP_MATCH_" + destinationId);
-			    FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow
-			    		(notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId, flowCookie);
-			    idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+						flowCookie);
+				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 			}
 
 			return;
-		} else if (tableId == SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE && !dstMac.getValue().equals("FF:FF:FF:FF:FF:FF")
-				&& !dstMac.getValue().startsWith("33:33:")) {
+		} else if (tableId == SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE
+				&& !dstMac.getValue().equals("FF:FF:FF:FF:FF:FF") && !dstMac.getValue().startsWith("33:33:")) {
 			InstanceIdentifier<FlowCapableNode> destinationNode = idsProvider.getNode(destinationId);
-	
+
 			if (idsProvider.isCpeNode(destinationId)) {
 				// Write a destination MAC flow
 				String flowIdStr = "pushVLAN:" + destinationId + ":" + srcMac.getValue();
@@ -175,25 +174,28 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				idsProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
 
 				int tag = (int) idsProvider.getCpeTag(destinationId);
-				
+
 				if (tag == -1) {
 					LOG.error("Tag == -1 " + destinationId);
 					return;
 				}
-				// Override the L2Switch rules (HACK alert)
-				FlowBuilder fb = FlowUtils.createSrcDestMacAddressMatchSetVlanTagAndSendToPort(flowCookie, 
-						flowId,dstMac, srcMac,SdnMudConstants.L2SWITCH_TABLE, tag, matchInPortUri, 300);
+				// Override the L2Switch rules (HACK alert -- L2Switch should do this natively.)
+				FlowBuilder fb = FlowUtils.createSrcDestMacAddressMatchSetVlanTagAndSendToPort(flowCookie, flowId,
+						dstMac, srcMac, SdnMudConstants.L2SWITCH_TABLE, tag, matchInPortUri, 300);
 
 				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
-				flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
-				
-				fb = FlowUtils.createSrcDestMacAddressVlanPortMatchGoToTable(srcMac, dstMac, tag, notification.getMatch().getInPort(),
-						SdnMudConstants.L2SWITCH_TABLE, flowId, flowCookie,  300);
-				idsProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+				/*
+				 * flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
+				 * 
+				 * fb = FlowUtils.createSrcDestMacAddressVlanPortMatchGoToTable(
+				 * srcMac, dstMac, tag, notification.getMatch().getInPort(),
+				 * SdnMudConstants.L2SWITCH_TABLE, flowId, flowCookie, 300);
+				 * idsProvider.getFlowCommitWrapper().writeFlow(fb,
+				 * destinationNode);
+				 */
 				LOG.info("CPE / VNF node appeared node appeared installing VLAN match rules");
 
-				
-			} 
+			}
 
 		}
 
