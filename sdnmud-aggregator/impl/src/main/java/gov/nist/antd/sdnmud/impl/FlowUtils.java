@@ -508,49 +508,9 @@ public class FlowUtils {
 
 	}
 
-	private static FlowBuilder createpermitPacketsFromNtpServerFlow(MacAddress macAddress, Ipv4Address ntpAddress,
-			FlowCookie flowCookie, FlowId flowId) {
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsFromNtp")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
+	
 
-		FlowUtils.createEthernetDestMatch(matchBuilder, macAddress);
-		FlowUtils.createSrcIpv4Match(matchBuilder, ntpAddress);
-		FlowUtils.createSrcUdpPortMatch(matchBuilder, SdnMudConstants.NTP_SERVER_PORT);
-		Match match = matchBuilder.build();
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
-
-	private static FlowBuilder createPermitPacketsToNtpServerFlow(MacAddress macAddress, Ipv4Address ntpAddress,
-			FlowCookie flowCookie, FlowId flowId) {
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsToNtp").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-
-		FlowUtils.createEthernetSourceMatch(matchBuilder, macAddress);
-		FlowUtils.createDestIpv4Match(matchBuilder, ntpAddress);
-		FlowUtils.createDstUdpPortMatch(matchBuilder, SdnMudConstants.NTP_SERVER_PORT);
-		Match match = matchBuilder.build();
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
+	
 
 	/**
 	 * create and return a goto table instruction.
@@ -1100,15 +1060,15 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createMetadataMatchGoToTableFlow(FlowCookie flowCookie, BigInteger metadata,
-			BigInteger metadataMask, FlowId flowId, Short tableId, Short targetTable, int duration) {
+	public static FlowBuilder createMetadataMatchGoToDropTableFlow(FlowCookie flowCookie, BigInteger metadata,
+			BigInteger metadataMask, FlowId flowId, Short tableId, Short dropTableId, int duration) {
 		LOG.info("FlowUtils: createMetadataMatchGoToTable " + flowCookie.getValue().toString(16) + " metadata "
 				+ metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId " + tableId
-				+ " targetTable " + targetTable);
+				+ " targetTable " + dropTableId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTable, flowCookie.getValue());
+		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(dropTableId, flowCookie.getValue());
 
 		FlowBuilder fb = new FlowBuilder();
 		fb.setStrict(false);
@@ -1123,295 +1083,6 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createVlanMatchPopVlanTagAndGoToL2SwitchFlow(FlowCookie flowCookie, FlowId flowId,
-			short tableId, int label) {
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createVlanMatch(matchBuilder, label);
-
-		FlowBuilder stripTagFlow = new FlowBuilder().setTableId(tableId).setFlowName("vlanMatchPopVlanTagGoToL2Switch")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		Instruction popVlanTagInstruction = createPopVlanActionInstruction(0, 0);
-		Instruction goToTableInstruction = new InstructionBuilder().setInstruction(new GoToTableCaseBuilder()
-				.setGoToTable(new GoToTableBuilder().setTableId(SdnMudConstants.L2SWITCH_TABLE).build()).build())
-				.setKey(new InstructionKey(getInstructionKey())).setOrder(1).build();
-
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(popVlanTagInstruction);
-		instructions.add(goToTableInstruction);
-		insb.setInstruction(instructions);
-
-		stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
-				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return stripTagFlow;
-
-	}
-
-	public static FlowBuilder createMplsMatchPopMplsLabelAndGoToTable(FlowCookie flowCookie, FlowId flowId,
-			short tableId, short gototableId, int label) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createMplsMatch(matchBuilder, label);
-
-		Instruction popMplsTagInstruction = createPopMplsActionInstruction(0, 0);
-
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(popMplsTagInstruction);
-		Instruction goToTableInstruction = new InstructionBuilder()
-				.setInstruction(new GoToTableCaseBuilder()
-						.setGoToTable(new GoToTableBuilder().setTableId(gototableId).build()).build())
-				.setKey(new InstructionKey(1)).setOrder(1).build();
-
-		instructions.add(goToTableInstruction);
-		insb.setInstruction(instructions);
-
-		FlowBuilder stripLabelFlow = new FlowBuilder();
-		stripLabelFlow.setStrict(false);
-		stripLabelFlow.setBarrier(true);
-
-		stripLabelFlow.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("mplsMatchPopMplsTagGoToL2Switch")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie)
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setInstructions(insb.build())
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return stripLabelFlow;
-	}
-
-	public static FlowBuilder createOutputToPortsFlow(FlowCookie flowCookie, FlowId flowId, short tableId,
-			String[] ports) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-
-		Instruction outputInstruction = FlowUtils.createSendToPortsAction(ports);
-		FlowBuilder flowBuilder = new FlowBuilder().setStrict(false).setBarrier(true);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(outputInstruction);
-		flowBuilder.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("outputToPortsFlow").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie)
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setInstructions(insb.build())
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createOnMplsTagMatchPopMplsTagsAndSendToPort(FlowCookie flowCookie, FlowId flowId,
-			int label, String nodeId, List<Integer> outputPorts, short tableId, int duration) {
-		LOG.info("createOnMplsTagMatchPopMplsTagsAndSendToPort " + Integer.toHexString(label));
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createMplsMatch(matchBuilder, label);
-
-		Instruction instruction = FlowUtils.createPopMplsAndOutputToPortInstruction(0, 0, nodeId, outputPorts);
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		// fb.setBarrier(true);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("mplsMatchPopMplsOutputToPort").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie)
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setInstructions(insb.build())
-				.setInstallHw(false).setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
-
-	public static FlowBuilder createOnMplsTagMatchPopMpsTagsSendToPortAndGoToTable(FlowCookie flowCookie, FlowId flowId,
-			int label, String nodeId, List<Integer> portSpecs, Short tableId, Short gototableId, int duration) {
-		LOG.info("createOnMplsTagMatchPopMplsTagsOutputToPortsAndGoToTable " + Integer.toHexString(label));
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createMplsMatch(matchBuilder, label);
-		Instruction instruction = FlowUtils.createPopMplsAndOutputToPortInstruction(0, 0, nodeId, portSpecs);
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
-
-		Instruction goToTableInstruction = new InstructionBuilder()
-				.setInstruction(new GoToTableCaseBuilder()
-						.setGoToTable(new GoToTableBuilder().setTableId(gototableId).build()).build())
-				.setKey(new InstructionKey(portSpecs.size() + 1)).setOrder(portSpecs.size() + 1).build();
-
-		instructions.add(goToTableInstruction);
-
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setMatch(matchBuilder.build()).setTableId((short) tableId)
-				.setFlowName("onMplsTagMatchPopMpsTagsSendToPortAndGoToTable").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-				.setInstructions(insb.build()).setInstallHw(false).setBufferId(OFConstants.ANY).setHardTimeout(duration)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
-
-	/**
-	 * createOnSourceMacAddressMatchSendToPortAndGoToL2Switch
-	 * 
-	 * @param flowCookie
-	 *            -- the flow Cookie.
-	 * @param flowId
-	 *            -- the flow Id to use
-	 * @param macAddress
-	 *            -- source mac address for match.
-	 * @param tableId
-	 *            -- the table id where the flow is to be installed.
-	 * @param outputPortUri
-	 *            -- the output port URI
-	 * @param time
-	 *            -- time in seconds.
-	 * @return -- the created flow.
-	 */
-
-	public static FlowBuilder createOnSourceMacAddressMatchSendToPortAndGoToL2Switch(FlowCookie flowCookie,
-			FlowId flowId, MacAddress macAddress, Short tableId, String outputPortUri, int time) {
-		FlowBuilder tagPacketFlow = new FlowBuilder().setTableId(tableId)
-				.setFlowName("SourceMacAddressMatchSendToPortAndGoToL2Switch").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createEthernetSourceMatch(matchBuilder, macAddress);
-		Instruction sendToPort = createSendToPortInstruction(outputPortUri);
-		Instruction gotoInstruction = FlowUtils.createGoToTableInstruction(SdnMudConstants.L2SWITCH_TABLE);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(sendToPort);
-		// instructions.add(createVlanTag);
-		instructions.add(gotoInstruction);
-		insb.setInstruction(instructions);
-		tagPacketFlow.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return tagPacketFlow;
-
-	}
-
-	/**
-	 * Send to a port on destination mac addreess match.
-	 * 
-	 * @param destinationMacAddress
-	 * @param tableId
-	 *            -- the table id where the flow is installed.
-	 * @param outputPortUri
-	 *            -- the output port URI
-	 * @param time
-	 *            -- duration of the flow.
-	 * @param flowCookie
-	 *            -- the flow cookie for the flow.
-	 * @return -- the flowbuilder that builds this flow.
-	 */
-	public static FlowBuilder createSrcAndDestMacAddressMatchSendToPort(FlowCookie flowCookie,
-			MacAddress sourceMacAddress, MacAddress destinationMacAddress, Short tableId, String outputPortUri,
-			int time) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId();
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetSourceAndDestinationMatch(matchBuilder, sourceMacAddress, destinationMacAddress);
-		Instruction sendToPort = createSendToPortInstruction(outputPortUri);
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(sendToPort);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName("OnDestinationMacAddressMatchSendToPort").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
-
-	public static FlowBuilder createDestMacAddressMatchSendToPort(FlowCookie flowCookie,
-			MacAddress destinationMacAddress, Short tableId, String outputPortUri, int time) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId();
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
-		Instruction sendToPort = createSendToPortInstruction(outputPortUri);
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(sendToPort);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName("OnDestinationMacAddressMatchSendToPort").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
-
-	public static FlowBuilder createFwdAllToControllerFlow(final Short tableId) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId();
-		FlowCookie flowCookie = new FlowCookie(BigInteger.valueOf(flowCookieInc.incrementAndGet()));
-		LOG.info("createFwdAllToControllerFlow tableId = " + tableId + " flowCookie = "
-				+ flowCookie.getValue().toString(16));
-		FlowBuilder allToCtrlFlow = new FlowBuilder().setTableId(tableId).setFlowName("allPacketsToCtrl").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
-
-		Instruction instruction = createSendPacketToControllerInstruction();
-		// Put our Instruction in a list of Instructions
-		InstructionsBuilder isb = new InstructionsBuilder();
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
-		isb.setInstruction(instructions);
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-
-		int priority = 0;
-		allToCtrlFlow.setMatch(matchBuilder.build()).setInstructions(isb.build()).setPriority(priority)
-				.setBufferId(OFConstants.OFP_NO_BUFFER).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return allToCtrlFlow;
-	}
-
-	public static FlowBuilder createDestIpMatchGoToIdsTableFlow(FlowCookie flowCookie, FlowId flowId,
-			MacAddress macAddress, Ipv4Address destination, int port, short protocol) {
-
-		LOG.info("createPermitPacketFlow " + " FlowCookie : " + flowCookie.getValue().toString(16) + " macAddress "
-				+ macAddress.getValue() + " destination " + destination.getValue() + " protocol " + protocol);
-
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("createDestIpMatchGoToIdsTableFlow").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createEthernetSourceMatch(matchBuilder, macAddress);
-		createDestIpv4Match(matchBuilder, destination);
-		if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-			FlowUtils.createDstTcpPortMatch(matchBuilder, port);
-		} else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			FlowUtils.createDstUdpPortMatch(matchBuilder, port);
-		}
-
-		Match match = matchBuilder.build();
-
-		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
 
 	public static FlowBuilder createUnconditionalGoToNextTableFlow(short table, short nextTable, FlowId flowId,
 			FlowCookie flowCookie) {
@@ -1431,40 +1102,6 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createDropPacketOnSourceMacMatchAndSendToControllerFlow(FlowCookie flowCookie,
-			FlowId flowId, MacAddress macAddress, short tableId, int idleTimeout) {
-
-		LOG.info("createDropPacketFlow: flowCookie = " + flowCookie.getValue().toString(16) + " MacAddress "
-				+ macAddress.getValue());
-
-		FlowBuilder dropPacketFlow = new FlowBuilder().setTableId(tableId).setFlowName("dropAllPackets").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
-
-		Instruction sendToControllerInstruction = FlowUtils.createSendPacketToControllerInstruction();
-
-		InstructionsBuilder isb = new InstructionsBuilder();
-
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		// instructions.add(metadataInstruction);
-		instructions.add(sendToControllerInstruction);
-		isb.setInstruction(instructions);
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		// MetadataBuilder metadataBuilder = new MetadataBuilder();
-		// metadataBuilder.setMetadata(BigInteger.valueOf(SdnMudConstants.MUD_RULE_MISS_LABEL));
-		// matchBuilder.setMetadata(metadataBuilder.build());
-		Match match = FlowUtils.createEthernetSourceMatch(matchBuilder, macAddress).build();
-
-		// Put our Instruction in a list of Instructions
-
-		// NOTE the idle timeout here is not 0!!
-		dropPacketFlow.setMatch(match).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(idleTimeout)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return dropPacketFlow;
-	}
 
 	public static FlowBuilder createIpMatchSendPacketToControllerFlow(Short tableId, FlowId flowId,
 			FlowCookie flowCookie) {
@@ -1508,60 +1145,9 @@ public class FlowUtils {
 		return sendToControllerFlow;
 	}
 
-	public static FlowBuilder createPermitPacketFromIpAddressOnDestMacMatch(FlowCookie flowCookie, FlowId flowId,
-			MacAddress macAddress, Ipv4Address source, int port, short protocol) {
-		LOG.info("createPermitPacketFromIpAddressOnDestMacMatch " + " FlowCookie : "
-				+ flowCookie.getValue().toString(16) + " macAddress " + " flowId " + flowId.getValue()
-				+ macAddress.getValue() + " destination " + source.getValue() + " protocol " + protocol);
-
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("permitPacketsFromIpAddressOnDestMacMatch").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createEthernetDestMatch(matchBuilder, macAddress);
-		createSrcIpv4Match(matchBuilder, source);
-		if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-			FlowUtils.createSrcTcpPortMatch(matchBuilder, port);
-		} else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			FlowUtils.createSrcUdpPortMatch(matchBuilder, port);
-		}
-
-		Match match = matchBuilder.build();
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-
-	}
-
-	public static FlowBuilder createPermitPacketsToDhcpServerFlow(MacAddress macAddress, FlowCookie flowCookie,
-			FlowId flowId) {
-		LOG.info("creatrePermitPacketsToDhcpServerFlow");
-
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("permitPacketsToDhcp").setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetSourceMatch(matchBuilder, macAddress);
-		FlowUtils.createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT, SdnMudConstants.DHCP_SERVER_PORT);
-
-		Match match = matchBuilder.build();
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createPermitPacketsToDhcpServerFlow(short tableId, short destinationTableId,
+	
+	
+	public static FlowBuilder createToDhcpServerMatchGoToNextTableFlow(short tableId,
 			FlowCookie flowCookie, FlowId flowId) {
 
 		LOG.info("createPermitPacketsToDhcpServerFlow ");
@@ -1574,6 +1160,8 @@ public class FlowUtils {
 		FlowUtils.createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT, SdnMudConstants.DHCP_SERVER_PORT);
 
 		Match match = matchBuilder.build();
+		short destinationTableId = (short)(tableId + 1);
+		
 		InstructionsBuilder isb = createGoToNextTableInstruction(destinationTableId, flowCookie.getValue());
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
@@ -1583,7 +1171,7 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createPermitPacketsFromDhcpServerFlow(short tableId, short destinationTableId,
+	public static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, 
 			FlowCookie flowCookie, FlowId flowId) {
 
 		LOG.info("createPermitPacketsFromDhcpServerFlow ");
@@ -1595,6 +1183,7 @@ public class FlowUtils {
 		FlowUtils.createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_SERVER_PORT, SdnMudConstants.DHCP_CLIENT_PORT);
 
 		Match match = matchBuilder.build();
+		short destinationTableId = (short) (tableId +1);
 		InstructionsBuilder isb = createGoToNextTableInstruction(destinationTableId, flowCookie.getValue());
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
@@ -1604,229 +1193,17 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createPermitPacketsFromDhcpServerFlow(MacAddress macAddress, FlowCookie flowCookie,
-			FlowId flowId) {
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsFromDhcpServerFlow")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetDestMatch(matchBuilder, macAddress);
-		FlowUtils.createDstUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT);
-		FlowUtils.createSrcUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_SERVER_PORT);
-		Match match = matchBuilder.build();
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
 
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
 
-		return flowBuilder;
 
-	}
-
-	public static List<FlowBuilder> createPermitPacketsToFromNtpServerFlows(MacAddress macAddress,
-			Ipv4Address ntpAddress, FlowCookie flowCookie, String flowIdStr) {
-
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
-		List<FlowBuilder> retval = new ArrayList<FlowBuilder>();
-		FlowBuilder toNtpFlow = createPermitPacketsToNtpServerFlow(macAddress, ntpAddress, flowCookie, flowId);
-		retval.add(toNtpFlow);
-		flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
-		FlowBuilder fromNtpFlow = createpermitPacketsFromNtpServerFlow(macAddress, ntpAddress, flowCookie, flowId);
-		retval.add(fromNtpFlow);
-		return retval;
-
-	}
-
-	public static FlowBuilder createDropPacketsOnDestMacMatchFlow(MacAddress macAddress,
-			MacAddress destinationMacAddress, FlowCookie flowCookie, FlowId flowId) {
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("permitPacketsFromNtp").setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetSourceMatch(matchBuilder, macAddress);
-		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
-		Match match = matchBuilder.build();
-		Instruction instruction = FlowUtils.createGoToTableInstruction(SdnMudConstants.DROP_TABLE);
-		InstructionsBuilder isb = new InstructionsBuilder();
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
-		isb.setInstruction(instructions);
-
-		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createPermitPacketsFromDeviceMacToMacFlow(MacAddress deviceMacAddress,
-			MacAddress destinationMacAddress, int port, short protocol, FlowCookie flowCookie, FlowId flowId) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createEthernetSourceMatch(matchBuilder, deviceMacAddress);
-		FlowUtils.createEthernetDestMatch(matchBuilder, destinationMacAddress);
-		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			FlowUtils.createDstUdpPortMatch(matchBuilder, port);
-		} else {
-			FlowUtils.createDstTcpPortMatch(matchBuilder, port);
-
-		}
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-
-		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketToMac").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createPermitPacketsFromMacToMacFlow(MacAddress sourceMacAddress, int sourcePort,
-			MacAddress destinationMacAddress, int destinationPort, short protocol, FlowCookie flowCookie,
-			FlowId flowId) {
-		LOG.info("createPermitPacketsFromMacToMacFlow :" + sourceMacAddress.getValue() + " sourcePort " + sourcePort
-				+ " destinationMacAddress " + destinationMacAddress.getValue() + " destinationPort " + destinationPort
-				+ " protocol " + protocol);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createEthernetSourceAndDestinationMatch(matchBuilder, sourceMacAddress, destinationMacAddress);
-		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			if (sourcePort != -1) {
-				createSrcUdpPortMatch(matchBuilder, sourcePort);
-			}
-			if (destinationPort != -1) {
-				createDstUdpPortMatch(matchBuilder, destinationPort);
-			}
-			if (sourcePort == -1 && destinationPort == -1) {
-				// Don't care about port.
-				createUdpProtocolMatch(matchBuilder);
-			}
-		} else {
-			if (sourcePort != -1) {
-				createSrcTcpPortMatch(matchBuilder, sourcePort);
-			}
-			if (destinationPort != -1) {
-				createDstTcpPortMatch(matchBuilder, destinationPort);
-			}
-			if (sourcePort == -1 && destinationPort == -1) {
-				// Don't care about port.
-				createTcpProtocolMatch(matchBuilder);
-			}
-		}
-
-		short tableId = SdnMudConstants.SDNMUD_RULES_TABLE;
-		// Goto next table and set the metadata
-		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName("permitPacketsFromMacToDeviceMacFlow").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createVlanMatchDivertToPorts(int vlanLabel, String[] ports, int duration, short tableId,
-			FlowCookie flowCookie, FlowId flowId) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createVlanMatch(matchBuilder, vlanLabel);
-
-		Instruction instruction = createSendToPortsAction(ports);
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("vlanMatchDeliverToPorts").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(duration).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
-
-	public static FlowBuilder createDestIpMatchSendToController(String address, int port, short tableId,
-			FlowCookie flowCookie, FlowId flowId, BigInteger metadata) {
-		Ipv4Address ipv4Address = new Ipv4Address(address);
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createDestIpv4Match(matchBuilder, ipv4Address);
-		FlowUtils.createDstUdpPortMatch(matchBuilder, port);
-		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-		FlowUtils.createSrcUdpPortMatch(matchBuilder, port);
-
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-
-		WriteMetadataBuilder wmb = new WriteMetadataBuilder();
-		wmb.setMetadata(metadata);
-		wmb.setMetadataMask(BigInteger.valueOf(0xffffffffL));
-		WriteMetadataCaseBuilder wmcb = new WriteMetadataCaseBuilder().setWriteMetadata(wmb.build());
-		Instruction maskInstruction = new InstructionBuilder().setOrder(0).setKey(new InstructionKey(0))
-				.setInstruction(wmcb.build()).build();
-
-		instructions.add(maskInstruction);
-
-		Instruction sendPacketToController = FlowUtils.createSendPacketToControllerInstruction();
-
-		instructions.add(sendPacketToController);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("destIpMatchSendToController").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-		return fb;
-	}
-
-	public static FlowBuilder createMetadataMatchSendToPortsAndGotoTable(FlowCookie flowCookie, FlowId flowId,
-			BigInteger metadata, BigInteger metadataMask, Short tableId, Short targetTableId, List<Integer> idsPorts,
-			int duration) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
-
-		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
-
-		Instruction sendToPorts = FlowUtils.createSendToPortsAction(idsPorts);
-		instructions.add(sendToPorts);
-		Instruction goToTableInstruction = new InstructionBuilder()
-				.setInstruction(new GoToTableCaseBuilder()
-						.setGoToTable(new GoToTableBuilder().setTableId(targetTableId).build()).build())
-				.setKey(new InstructionKey(1)).setOrder(1).build();
-
-		instructions.add(goToTableInstruction);
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchSendToPortsAndGotoTable")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(duration).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-
-	}
-
-	public static FlowBuilder createMetadataDestIpAndPortMatchGoTo(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int destinationPort, short protocol, Short tableId, Short targetTable, FlowId flowId,
+	public static FlowBuilder createMetadataDestIpAndPortMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
+			Ipv4Address address, int destinationPort, short protocol, Short tableId, FlowId flowId,
 			FlowCookie flowCookie) {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 
+		Short targetTableId = (short)(tableId  + 1);
+		
 		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
 		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
 		FlowUtils.createDestIpv4Match(matchBuilder, address);
@@ -1836,7 +1213,7 @@ public class FlowUtils {
 			FlowUtils.createDstTcpPortMatch(matchBuilder, destinationPort);
 		}
 
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTable, flowCookie.getValue());
+		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTableId, flowCookie.getValue());
 
 		FlowBuilder fb = new FlowBuilder();
 		fb.setStrict(false);
@@ -1850,14 +1227,15 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createMetadataSrcIpAndPortMatchGoTo(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int destinationPort, short protocol, Short tableId, Short targetTable, FlowId flowId,
+	public static FlowBuilder createMetadataSrcIpAndPortMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
+			Ipv4Address address, int destinationPort, short protocol, Short tableId, FlowId flowId,
 			FlowCookie flowCookie) {
 
 		LOG.info("createMetadataSrcIpAndPortMatchGoTo metadata = " + metadata.toString(16) + " metadataMask = "
 				+ metadataMask.toString(16) + " ipv4Address = " + address.getValue() + " destinationPort = "
-				+ destinationPort + " protocol " + protocol + " tableId " + tableId + " targetTable = " + targetTable
+				+ destinationPort + " protocol " + protocol + " tableId " + tableId 
 				+ " flowId " + flowId);
+		short targetTable = (short)(tableId + 1);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
 		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
@@ -1882,123 +1260,12 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createMetadataAndDestMacMatchGoToTableFlow(BigInteger metadata, BigInteger metadataMask,
-			MacAddress destinationMacAddress, Short tableId, Short targetTable, FlowCookie flowCookie, FlowId flowId) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		createEthernetDestMatch(matchBuilder, destinationMacAddress);
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTable, flowCookie.getValue());
+	
 
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataAndDestMacMatchGoToTable")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-
-	}
-
-	public static FlowBuilder createMetadataMatchDropPacket(BigInteger metadata, BigInteger metadataMask, Short tableId,
-			FlowCookie flowCookie, FlowId flowId) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		Instruction dropInstruction = FlowUtils.createDropInstruction();
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(dropInstruction);
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchDropPacket").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-		return fb;
-	}
-
-	public static FlowBuilder createMetadaAndProtocolMatchGoToTable(BigInteger metadata, BigInteger metadataMask,
-			short protocol, short tableId, short targetTableId, FlowId flowId, FlowCookie flowCookie) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			FlowUtils.createUdpProtocolMatch(matchBuilder);
-		} else {
-			FlowUtils.createTcpProtocolMatch(matchBuilder);
-		}
-
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTableId, flowCookie.getValue());
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataAndDestMacMatchGoToTable")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
-
-	public static FlowBuilder createMetadaProtocolAndDestPortMatchGoToTable(BigInteger metadata,
-			BigInteger metadataMask, short protocol, int port, short tableId, short targetTableId, FlowId flowId,
-			FlowCookie flowCookie) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			FlowUtils.createDstUdpPortMatch(matchBuilder, port);
-		} else {
-			FlowUtils.createDstTcpPortMatch(matchBuilder, port);
-		}
-
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTableId, flowCookie.getValue());
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("MetadaProtocolAndDestPortMatchGoToTable")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
-
-	public static FlowBuilder createMetadaProtocolAndSrcPortMatchGoToTable(BigInteger metadata, BigInteger metadataMask,
-			short protocol, int port, short tableId, short targetTableId, FlowId flowId, FlowCookie flowCookie) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		createEthernetTypeMatch(matchBuilder, 0x800);
-		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-			createSrcUdpPortMatch(matchBuilder, port);
-		} else {
-			createSrcTcpPortMatch(matchBuilder, port);
-		}
-
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTableId, flowCookie.getValue());
-
-		FlowBuilder fb = new FlowBuilder();
-		fb.setStrict(false);
-		fb.setBarrier(true);
-
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("MetadaProtocolAndSrcPortMatchGoToTable")
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb;
-	}
 
 	public static FlowBuilder createMetadaProtocolAndSrcDestPortMatchGoToTable(BigInteger metadata,
-			BigInteger metadataMask, short protocol, int srcPort, int destPort, short tableId, short targetTableId,
+			BigInteger metadataMask, short protocol, int srcPort, int destPort, short tableId,
 			FlowId flowId, FlowCookie flowCookie) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
@@ -2015,6 +1282,7 @@ public class FlowUtils {
 				createDstTcpPortMatch(matchBuilder, destPort);
 		}
 
+		short targetTableId = (short)(tableId + 1);
 		InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(targetTableId, flowCookie.getValue());
 
 		FlowBuilder fb = new FlowBuilder();
@@ -2029,8 +1297,8 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createSourceMacMatchSetMetadataAndGoToTable(MacAddress srcMac, BigInteger metadata,
-			BigInteger metadataMask, short tableId, short targetTableId, FlowId flowId, FlowCookie flowCookie) {
+	public static FlowBuilder createSourceMacMatchSetMetadataGoToNextTableFlow(MacAddress srcMac, BigInteger metadata,
+			BigInteger metadataMask, short tableId, FlowId flowId, FlowCookie flowCookie) {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createEthernetSourceMatch(matchBuilder, srcMac);
@@ -2042,6 +1310,7 @@ public class FlowUtils {
 				.setKey(new InstructionKey(getInstructionKey())).setInstruction(wmcb.build()).build();
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(maskInstruction);
+		short targetTableId = (short)(tableId + 1);
 		Instruction gotoTableInstruction = new InstructionBuilder()
 				.setInstruction(new GoToTableCaseBuilder()
 						.setGoToTable(new GoToTableBuilder().setTableId(targetTableId).build()).build())
@@ -2064,8 +1333,8 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createDestMacMatchSetMetadataAndGoToTable(MacAddress dstMac, BigInteger metadata,
-			BigInteger metadataMask, short tableId, short targetTableId, FlowId flowId, FlowCookie flowCookie) {
+	public static FlowBuilder createDestMacMatchSetMetadataAndGoToNextTableFlow(MacAddress dstMac, BigInteger metadata,
+			BigInteger metadataMask, short tableId,  FlowId flowId, FlowCookie flowCookie) {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		// FlowUtils.createEthernetDestNoEthTypeMatch(matchBuilder, dstMac);
@@ -2078,6 +1347,7 @@ public class FlowUtils {
 				.setKey(new InstructionKey(getInstructionKey())).setInstruction(wmcb.build()).build();
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(maskInstruction);
+		short targetTableId = (short)(tableId + 1);
 		Instruction gotoTableInstruction = new InstructionBuilder()
 				.setInstruction(new GoToTableCaseBuilder()
 						.setGoToTable(new GoToTableBuilder().setTableId(targetTableId).build()).build())
@@ -2100,7 +1370,7 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createSourceMacMatchGoToTableFlow(MacAddress macAddress, Short tableId, Short targetTable,
+	public static FlowBuilder createSourceMacMatchGoToNextTableFlow(MacAddress macAddress, Short tableId, 
 			FlowId flowId, FlowCookie flowCookie) {
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("sourceMacMatchGoToTableFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -2109,6 +1379,7 @@ public class FlowUtils {
 		createEthernetSourceNoEthTypeMatch(matchBuilder, macAddress);
 		matchBuilder.setIpMatch(null);
 		Match match = matchBuilder.build();
+		short targetTable = (short)(tableId + 1);
 		Instruction gotoInstruction = FlowUtils.createGoToTableInstruction(targetTable);
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(gotoInstruction);
@@ -2124,7 +1395,7 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createDestMacMatchGoToTableFlow(MacAddress macAddress, Short tableId, Short targetTable,
+	public static FlowBuilder createDestMacMatchGoToNextTableFlow(MacAddress macAddress, Short tableId,
 			FlowId flowId, FlowCookie flowCookie) {
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("sourceMacMatchGoToTableFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -2133,6 +1404,7 @@ public class FlowUtils {
 		createEthernetDestNoEthTypeMatch(matchBuilder, macAddress);
 		matchBuilder.setIpMatch(null);
 		Match match = matchBuilder.build();
+		short targetTable = (short)(tableId + 1);
 		Instruction gotoInstruction = FlowUtils.createGoToTableInstruction(targetTable);
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(gotoInstruction);
@@ -2148,88 +1420,9 @@ public class FlowUtils {
 
 	}
 
-	/**
-	 * create flow to permit packets to DNS server.
-	 * 
-	 * @param macAddress
-	 *            -- device mac
-	 * @param address
-	 *            -- dns service address.
-	 * @param protocol
-	 *            -- protocol (UDP/TCP)
-	 * @param flowCookie
-	 *            -- flow cookie
-	 * @param flowId
-	 *            -- flow id.
-	 * @return the dns server flow.
-	 */
-
-	public static FlowBuilder createPermitPacketsToServerFlow(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address dnsAddress, int port, short protocol, FlowId flowId, FlowCookie flowCookie) {
-
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("permitPacketsToServerFlow").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-
-		if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-			FlowUtils.createDstTcpPortMatch(matchBuilder, port);
-		} else {
-			FlowUtils.createDstUdpPortMatch(matchBuilder, port);
-		}
-		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
-		FlowUtils.createDestIpv4Match(matchBuilder, dnsAddress);
-		Match match = matchBuilder.build();
-
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	public static FlowBuilder createPermitPacketsFromServerFlow(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address dnsAddress, short protocol, FlowId flowId, FlowCookie flowCookie) {
-
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(SdnMudConstants.SDNMUD_RULES_TABLE)
-				.setFlowName("permitPacketsFromServerFlow").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-		MatchBuilder matchBuilder = new MatchBuilder();
-
-		if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-			FlowUtils.createSrcTcpPortMatch(matchBuilder, SdnMudConstants.DNS_PORT);
-		} else {
-			FlowUtils.createSrcUdpPortMatch(matchBuilder, SdnMudConstants.DNS_PORT);
-		}
-		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
-		FlowUtils.createSrcIpv4Match(matchBuilder, dnsAddress);
-		Match match = matchBuilder.build();
-
-		InstructionsBuilder isb = createGoToNextTableInstruction(SdnMudConstants.PASS_THRU_TABLE,
-				flowCookie.getValue());
-
-		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY)
-				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
-				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return flowBuilder;
-	}
-
-	/**
-	 * Unconditional permit packets to server flow.
-	 * 
-	 * @param dnsAddress
-	 * @param port
-	 * @param protocol
-	 * @param flowId
-	 * @param flowCookie
-	 * @return
-	 */
-	public static FlowBuilder createPermitPacketsToServerFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, short nextTable, FlowId flowId, FlowCookie flowCookie) {
+	
+	public static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
+			short tableId, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsToServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -2244,6 +1437,8 @@ public class FlowUtils {
 
 		FlowUtils.createDestIpv4Match(matchBuilder, dnsAddress);
 		Match match = matchBuilder.build();
+		
+		short nextTable = (short)(tableId + 1);
 
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, flowCookie.getValue());
 
@@ -2254,17 +1449,9 @@ public class FlowUtils {
 		return flowBuilder;
 	}
 
-	/**
-	 * Unconditional permit packets from server flow.
-	 * 
-	 * @param dnsAddress
-	 * @param protocol
-	 * @param flowId
-	 * @param flowCookie
-	 * @return
-	 */
-	public static FlowBuilder createPermitPacketsFromServerFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, short nextTable, FlowId flowId, FlowCookie flowCookie) {
+
+	public static FlowBuilder createSrcAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
+			short tableId,  FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsFromServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -2278,7 +1465,8 @@ public class FlowUtils {
 		}
 		FlowUtils.createSrcIpv4Match(matchBuilder, dnsAddress);
 		Match match = matchBuilder.build();
-
+		short nextTable = (short)(tableId + 1);
+		
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, flowCookie.getValue());
 
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)

@@ -13,10 +13,36 @@ import sys
 import signal
 from distutils.spawn import find_executable
 from subprocess import call
+from functools import partial
 import time
+from mininet.node import Host
 from mininet.log import setLogLevel 
 
 
+class VLANHost( Host ):
+    "Host connected to VLAN interface"
+
+    def config( self, vlan=772, **params ):
+        """Configure VLANHost according to (optional) parameters:
+           vlan: VLAN ID for default interface"""
+
+        r = super( VLANHost, self ).config( **params )
+
+        intf = self.defaultIntf()
+        # remove IP from default, "physical" interface
+        self.cmd( 'ifconfig %s inet 0' % intf )
+        # create VLAN interface
+        self.cmd( 'vconfig add %s %d' % ( intf, vlan ) )
+        # assign the host's IP to the VLAN interface
+        self.cmd( 'ifconfig %s.%d inet %s' % ( intf, vlan, params['ip'] ) )
+        # update the intf name and host's intf map
+        newName = '%s.%d' % ( intf, vlan )
+        # update the (Mininet) interface to refer to VLAN interface name
+        intf.name = newName
+        # add VLAN interface to host's name to intf map
+        self.nameToIntf[ newName ] = intf
+
+	return r
 
 
 def setupTopology(controller_addr,dns_address, interface):
@@ -34,7 +60,7 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # h1: IOT Device.
     # h2 : StatciDHCPD
-    # h3 : router / NAT
+    # h3# : router / NAT
     # h4 : Non IOT device.
 
     h1,h2,h3,h4,h5= net.addHost('h1'),net.addHost('h2'),net.addHost('h3'),net.addHost('h4'),net.addHost('h5')
@@ -50,6 +76,7 @@ def setupTopology(controller_addr,dns_address, interface):
     s1.linkTo(h4)
     # The non-iot client runs here
     s1.linkTo(h5)
+
     h6 = net.addHost('h6')
 
     # Switch s2 is the "multiplexer".
@@ -57,15 +84,23 @@ def setupTopology(controller_addr,dns_address, interface):
 
     s3 = net.addSwitch('s3')
 
-    h7 = net.addHost('h7')
 
+    host = partial(VLANHost,vlan=772)
+    h7 = net.addHost('h7', cls=host)
+    #h7 = net.addHost('h7')
     # This is the IDS node.
-    h8 = net.addHost('h8')
 
-    # This is our fake www.nist.local host.
-    h9 = net.addHost('h9')
+    h8 = net.addHost('h8')
    
+    net.addLink(s3,h7)
+    
+    host = partial(VLANHost,vlan=772)
+    h9 = net.addHost('h9', cls=host)
+    #h9 = net.addHost('h9')
+
+    net.addLink(s3,h9)
     s2.linkTo(h6)
+
     #h7 is the router -- no direct link between S2 and S3
     # h7 linked to both s2 and s3
     s2.linkTo(s3)
@@ -73,6 +108,8 @@ def setupTopology(controller_addr,dns_address, interface):
     s2.linkTo(h8)
     # h9 is our fake server.
     # s2 linked to s3 via our router.
+    h7.cmd( 'ip link set h7-eth0 down')
+    h9.cmd( 'ip link set h9-eth0 down')
     s3.linkTo(h9)
     s3.linkTo(h7)
 
@@ -81,17 +118,21 @@ def setupTopology(controller_addr,dns_address, interface):
     s1.linkTo(s2)
 
     """
-    h7.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
-    # Flush old rules.
-    h7.cmdPrint('iptables -F')
-    h7.cmdPrint('iptables -t nat -F')
-    h7.cmdPrint('iptables -t mangle -F')
-    h7.cmdPrint('iptables -X')
+    intf = 'h7-eth0'
+    h7.cmd( 'ifconfig %s inet 0' % intf )
+    h7.cmd( 'ip link set %s down' % intf)
+    h7.cmd( 'vconfig add %s %d' % ( intf , 772 ) )
+    h7.cmd( 'ip addr add 10.0.0.7/24 dev %s.772' % intf )
+    h7.cmd( 'ip link set %s.772 up' % intf )
+    h7.cmd( 'ifconfig')
 
-    # Set up h3 to be our router (it has two interfaces).
-    h7.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
-    # Set up iptables to forward as NAT
-    h7.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
+    intf = 'h9-eth0'
+    h9.cmd( 'ifconfig %s inet 0' % intf )
+    h9.cmd( 'ip link set %s down' % intf)
+    h9.cmd( 'vconfig add %s %d' % ( intf , 772 ) )
+    h9.cmd( 'ip addr add 10.0.0.9/24 dev %s.772' % intf )
+    h9.cmd( 'ip link set %s.772 up' % intf )
+    h7.cmd( 'ifconfig')
     """
 
     net.build()
@@ -115,9 +156,9 @@ def setupTopology(controller_addr,dns_address, interface):
     h4.setMAC("00:00:00:00:00:04","h4-eth0")
     h5.setMAC("00:00:00:00:00:05","h5-eth0")
     h6.setMAC("00:00:00:00:00:06","h6-eth0")
-    h7.setMAC("00:00:00:00:00:07","h7-eth0")
     h8.setMAC("00:00:00:00:00:08","h8-eth0")
-    h9.setMAC("00:00:00:00:00:09","h9-eth0")
+    #h9.setMAC("00:00:00:00:00:09","h9-eth0.772")
+    #h7.setMAC("00:00:00:00:00:07","h7-eth0.772")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -150,13 +191,6 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # Start dnsmasq (our dns server).
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
-
-    # Set up our router routes.
-    """
-    h7.cmdPrint('ip route add 203.0.113.13/32 dev h7-eth1')
-    h7.cmdPrint('ifconfig h7-eth1 203.0.113.1 netmask 255.255.255.0')
-    """
-    
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     #h2 is our peer same manufacturer host.

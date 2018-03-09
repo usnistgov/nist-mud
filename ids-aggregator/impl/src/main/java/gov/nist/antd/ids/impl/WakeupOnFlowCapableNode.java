@@ -88,20 +88,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			// Send IDS registration packet to controller.
 
 			installSendIdsHelloToControllerFlow(nodeUri, nodePath);
-			// Send packet to controller flow
-			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.STRIP_VLAN_TAG_TABLE,
-					SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE);
 			
-			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
-					SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
-			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
-					SdnMudConstants.SDNMUD_RULES_TABLE);
-
-			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SDNMUD_RULES_TABLE,
-					SdnMudConstants.PASS_THRU_TABLE);
-
-			installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.PASS_THRU_TABLE,
-					SdnMudConstants.L2SWITCH_TABLE);
+			for (short i = 0 ; i < SdnMudConstants.MAX_TID; i++) {
+				installUnconditionalGoToTable(nodeUri, nodePath, i, (short) (i+1));
+				
+			}
 		} 
 		
 		/* if (idsProvider.isCpeNode(nodeUri)  || idsProvider.isVnfSwitch(nodeUri) ) {
@@ -123,11 +114,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			idsProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
 		}*/
 
-		PacketProcessingListenerImpl packetInDispatcher = new PacketProcessingListenerImpl(nodeUri, nodePath,
-				idsProvider);
-		ListenerRegistration<PacketProcessingListenerImpl> registration = idsProvider.getNotificationService()
-				.registerNotificationListener(packetInDispatcher);
-		packetInDispatcher.setListenerRegistration(registration);
+		
 	}
 
 	public synchronized void installDefaultFlows() {

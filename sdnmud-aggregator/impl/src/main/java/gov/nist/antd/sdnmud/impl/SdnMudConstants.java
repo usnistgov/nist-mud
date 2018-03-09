@@ -37,19 +37,26 @@ public interface SdnMudConstants {
 	public static final short UDP_PROTOCOL = 17;
 	public static final short ICMP_PROTOCOL = 1;
 	public static final int ETHERTYPE_IPV4 = 0x0800;
-
-	// Table where SDN MUD rules are stored.
-	public static final Short STRIP_VLAN_TAG_TABLE = 0;
-	public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (STRIP_VLAN_TAG_TABLE + 1);
-	public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (STRIP_VLAN_TAG_TABLE + 2);
-	public static final Short SDNMUD_RULES_TABLE = (short) (STRIP_VLAN_TAG_TABLE + 3);
-	public static final Short DROP_TABLE = (short) (SDNMUD_RULES_TABLE + 1);
-	public static final Short PASS_THRU_TABLE = (short) (SDNMUD_RULES_TABLE + 2);
-	public static final Short STRIP_MPLS_RULE_TABLE = (short) (SDNMUD_RULES_TABLE + 3);
-	public static final Short L2SWITCH_TABLE = (short) (SDNMUD_RULES_TABLE + 4);
+	
+	
 	public static final short FIRST_TABLE = 0;
-	public static final Short MAX_TID = L2SWITCH_TABLE;
+	public static final Short DETECT_EXTERNAL_ARP_TABLE = (short) FIRST_TABLE;
+	public static final Short PUSH_VLAN_ON_ARP_TABLE = (short)(FIRST_TABLE + 1);
+	public static final Short STRIP_VLAN_TABLE = (short) (FIRST_TABLE + 2);
 
+	public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 3);
+	public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 4);
+	public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
+	
+	
+	public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
+	public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 7);
+	
+	public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 8);
+	public static final Short MAX_TID = L2SWITCH_TABLE;
+	public static final Short DROP_TABLE = (short) (MAX_TID + 1);
+	
+	
 	// Flow table priorities.
 	public static final Integer BASE_PRIORITY = 30;
 	public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;

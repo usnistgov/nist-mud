@@ -23,14 +23,11 @@ package gov.nist.antd.sdnmud.impl;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.genius.mdsalutil.MDSALUtil;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
@@ -42,6 +39,7 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 /**
  * Class that gets invoked when a switch connects.
@@ -183,14 +181,12 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private void installPermitPacketsToFromDhcp(String nodeId, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils.createPermitPacketsToDhcpServerFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
-				SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId);
+		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
 		flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		flowBuilder = FlowUtils.createPermitPacketsFromDhcpServerFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
-				SdnMudConstants.PASS_THRU_TABLE, flowCookie, flowId);
+		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
 
@@ -212,21 +208,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 		uninstallDefaultFlows(nodeUri);
 
-		// Send packet to controller flow
-		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.STRIP_VLAN_TAG_TABLE,
-				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE);
-
-		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE);
-		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
-				SdnMudConstants.SDNMUD_RULES_TABLE);
-
-		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.SDNMUD_RULES_TABLE,
-				SdnMudConstants.PASS_THRU_TABLE);
-
-		installUnconditionalGoToTable(nodeUri, nodePath, SdnMudConstants.PASS_THRU_TABLE,
-				SdnMudConstants.L2SWITCH_TABLE);
-
+		// Set up the pipeline.
+		for (short i = 0 ; i < SdnMudConstants.MAX_TID; i++) {
+			installUnconditionalGoToTable(nodeUri, nodePath, i, (short) (i+1));
+		}
 		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);

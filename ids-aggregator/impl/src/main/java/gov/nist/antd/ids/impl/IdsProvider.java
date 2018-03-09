@@ -151,7 +151,10 @@ public class IdsProvider {
 				LogicalDatastoreType.OPERATIONAL, getWildcardPath());
 		this.wakeupOnFlowCapableNodeRegistration = this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier,
 				wakeupListener);
-
+		
+		PacketProcessingListenerImpl packetInDispatcher = new PacketProcessingListenerImpl(this);
+		ListenerRegistration<PacketProcessingListenerImpl> registration = getNotificationService().registerNotificationListener(packetInDispatcher);
+		packetInDispatcher.setListenerRegistration(registration);
 	}
 
 	/**

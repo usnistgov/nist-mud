@@ -54,12 +54,11 @@ public class IdsRegistrationScanner extends TimerTask {
 	}
 
 	private void installStripMplsTagAndGoToL2Switch(InstanceIdentifier<FlowCapableNode> nodePath, FlowId flowId,
-			Short stripMplsRuleTable, Short l2switchTable, int label) {
+			Short stripMplsRuleTable, int label) {
 
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowId.getValue());
 
-		FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, stripMplsRuleTable,
-				l2switchTable, label);
+		FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, stripMplsRuleTable, label);
 
 		this.idsProvider.getFlowCommitWrapper().writeFlow(flow, nodePath);
 
@@ -167,15 +166,13 @@ public class IdsRegistrationScanner extends TimerTask {
 							// Match on metadata, set the MPLS tag and send to
 							// NPE switch and go to l2 switch.
 							FlowBuilder fb = FlowUtils.createMetadataMatchSetMplsTagSendToPortAndGoToTable(flowCookie,
-									flowId, SdnMudConstants.STRIP_MPLS_RULE_TABLE,
-									SdnMudConstants.STRIP_MPLS_RULE_TABLE, mplsTag, outputPortUri, duration);
+									flowId, SdnMudConstants.PASS_THRU_TABLE, mplsTag, outputPortUri, duration);
 							// Write the flow to the data store.
 							flowCommitWrapper.writeFlow(fb, node);
 							// Install a flow to strip the mpls label.
 							flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
 							// Strip MPLS tag and go to the L2 switch.
-							installStripMplsTagAndGoToL2Switch(node, flowId, SdnMudConstants.STRIP_MPLS_RULE_TABLE,
-									SdnMudConstants.L2SWITCH_TABLE, mplsTag);
+							installStripMplsTagAndGoToL2Switch(node, flowId, SdnMudConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
 						}
 					}
 
