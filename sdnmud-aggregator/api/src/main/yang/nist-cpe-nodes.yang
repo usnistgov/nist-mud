@@ -47,8 +47,7 @@ module nist-cpe-nodes {
 
   container cpe-collections {
       description
-          "Network topology gives an association between npe switches and 
-          sets of CPE switches";
+          "The collection of CPE switches on which MUD rules are installed.";
       uses accounts;
   }
 

@@ -2,7 +2,7 @@
   "ietf-access-control-list:access-lists": {
     "acl": [
       {
-        "name": "mud-98955-v4to",
+        "name": "mud-38382-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -10,11 +10,12 @@
               "name": "cl0-todev",
               "matches": {
                 "ipv4": {
-                  "ietf-acldns:src-dnsname": "www.nist.local",
+                  "ietf-acldns:src-dnsname": "www.nist.gov",
                   "protocol": 6
                 },
                 "tcp": {
-                  "source-port-range-or-operator": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -36,9 +37,9 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "source-port-range-or-operator": {
+                  "source-port": {
                     "operator": "eq",
-                    "port": 8000
+                    "port": 8002
                   }
                 }
               },
@@ -58,9 +59,9 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "source-port-range-or-operator": {
+                  "source-port": {
                     "operator": "eq",
-                    "port": 8002
+                    "port": 8000
                   }
                 }
               },
@@ -80,7 +81,7 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "source-port-range-or-operator": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 4000
                   }
@@ -94,7 +95,7 @@
         }
       },
       {
-        "name": "mud-98955-v4fr",
+        "name": "mud-38382-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -102,11 +103,12 @@
               "name": "cl0-frdev",
               "matches": {
                 "ipv4": {
-                  "ietf-acldns:dst-dnsname": "www.nist.local",
+                  "ietf-acldns:dst-dnsname": "www.nist.gov",
                   "protocol": 6
                 },
                 "tcp": {
-                  "destination-port-range-or-operator": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "destination-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -128,9 +130,9 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "destination-port-range-or-operator": {
+                  "destination-port": {
                     "operator": "eq",
-                    "port": 8000
+                    "port": 8002
                   }
                 }
               },
@@ -150,9 +152,9 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "destination-port-range-or-operator": {
+                  "destination-port": {
                     "operator": "eq",
-                    "port": 8002
+                    "port": 8000
                   }
                 }
               },
@@ -172,7 +174,7 @@
                   "protocol": 17
                 },
                 "udp": {
-                  "destination-port-range-or-operator": {
+                  "destination-port": {
                     "operator": "eq",
                     "port": 4000
                   }
