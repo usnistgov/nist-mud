@@ -38,23 +38,23 @@ public interface SdnMudConstants {
 	public static final short ICMP_PROTOCOL = 1;
 	public static final int ETHERTYPE_IPV4 = 0x0800;
 	
-	
-	public static final short FIRST_TABLE = 0;
-	public static final Short DETECT_EXTERNAL_ARP_TABLE = (short) FIRST_TABLE;
-	public static final Short PUSH_VLAN_ON_ARP_TABLE = (short)(FIRST_TABLE + 1);
-	public static final Short STRIP_VLAN_TABLE = (short) (FIRST_TABLE + 2);
+	// Pipeline 
+		public static final short FIRST_TABLE = 0;
+		public static final Short DETECT_EXTERNAL_ARP_TABLE = (short) FIRST_TABLE;
+		public static final Short PUSH_VLAN_ON_ARP_TABLE = (short)(FIRST_TABLE + 1);
+		public static final Short STRIP_VLAN_TABLE = (short) (FIRST_TABLE + 2);
 
-	public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 3);
-	public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 4);
-	public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
+		public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 3);
+		public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 4);
+		public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
+		public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
+		public static final Short SET_VLAN_RULE_TABLE =  (short) (FIRST_TABLE+7);
+		public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 8);
+		public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 9);
+		public static final Short MAX_TID = L2SWITCH_TABLE;
+		public static final Short DROP_TABLE = (short) (MAX_TID + 1);
+		
 	
-	
-	public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
-	public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 7);
-	
-	public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 8);
-	public static final Short MAX_TID = L2SWITCH_TABLE;
-	public static final Short DROP_TABLE = (short) (MAX_TID + 1);
 	
 	
 	// Flow table priorities.
@@ -74,6 +74,9 @@ public interface SdnMudConstants {
 	public static final String LOCAL = "local";
 	public static final String REMOTE = "remote";
 	public static final String NONE = "NONE";
+	public static final String IN = "todevice";
+	public static final String OUT = "fromdevice";
+	
 
 	// The mask for Manufacturer and model.
 	public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000", 16);
@@ -97,7 +100,7 @@ public interface SdnMudConstants {
 	public static final BigInteger LOCAL_DST_NETWORK_FLAG = new BigInteger("0000000010000000", 16);
 
 	// Drop mud flow.
-	public static final String MUD_FLOW_MISS = "drop";
+	public static final String DROP = "drop";
 
 	public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
 			.createFlowCookie("send-to-controller-flow-cookie");
@@ -105,5 +108,7 @@ public interface SdnMudConstants {
 	// Cache timeout for network and model stamping flow rules.
 	public static final Integer CACHE_TIMEOUT = 120;
 	public static final int ETHERTYPE_LLDP = 0x88cc;
+	public static final String PASSTHRU = "PASSTHRU";
+	public static final String UNCLASSIFIED = "UNCLASSIFIED";
 
 }

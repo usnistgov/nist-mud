@@ -123,8 +123,6 @@ public class FlowUtils {
 
 	private static AtomicLong instructionKey = new AtomicLong(0x0);
 
-	private static AtomicLong flowCookieInc = new AtomicLong(0x2a00000000000000L);
-
 	private FlowUtils() {
 		// Only static methods in this class
 	}

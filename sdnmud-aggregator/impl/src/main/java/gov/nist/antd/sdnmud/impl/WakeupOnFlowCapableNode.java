@@ -40,7 +40,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 /**
  * Class that gets invoked when a switch connects.
  * 
@@ -114,19 +113,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return PacketUtils.rawMacToMac(reverseArray(rawMac));
 	}
 
-	/*
-	 * private synchronized void
-	 * installTableMiss(InstanceIdentifier<FlowCapableNode> node) {
-	 * LOG.info("installTableMiss " + node); FlowBuilder allToCtrlFlow =
-	 * FlowUtils.createFwdAllToControllerFlow((short)
-	 * SdnMudConstants.SDNMUD_RULES_TABLE);
-	 * dataStoreAccessor.writeFlow(allToCtrlFlow, node); }
-	 */
-
 	private void installUnconditionalGoToTable(String nodeId, InstanceIdentifier<FlowCapableNode> node, short table,
 			short destinationTable) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.PASSTHRU);
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, destinationTable,
 				flowId, flowCookie);
 		dataStoreAccessor.writeFlow(unconditionalGoToNextFlow, node);
@@ -181,12 +171,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private void installPermitPacketsToFromDhcp(String nodeId, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
+		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
+				flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
 		flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
+		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
+				flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
 
@@ -209,19 +201,20 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		uninstallDefaultFlows(nodeUri);
 
 		// Set up the pipeline.
-		for (short i = 0 ; i < SdnMudConstants.MAX_TID; i++) {
-			installUnconditionalGoToTable(nodeUri, nodePath, i, (short) (i+1));
+		for (short i = 0; i < SdnMudConstants.MAX_TID; i++) {
+			installUnconditionalGoToTable(nodeUri, nodePath, i, (short) (i + 1));
 		}
 		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		}
 
-		// Install an unconditional packet drop in the DROP_TABLE (this is
-		// where MUD packets that do not match go.
-		// The default action is to drop the packet. This is a placeholder for
-		// subsequent
-		// packet inspection.
+		/*
+		 * Install an unconditional packet drop in the DROP_TABLE (this is 
+		 * where MUD packets that do not match go. The default action is to
+		 * drop the packet. This is a placeholder for  subsequent packet
+		 * inspection.
+		 */
 
 		installUnditionalDropPacket(nodeUri, nodePath, SdnMudConstants.DROP_TABLE);
 
