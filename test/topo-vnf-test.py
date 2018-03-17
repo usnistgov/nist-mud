@@ -85,24 +85,22 @@ def setupTopology(controller_addr,dns_address, interface):
     s3 = net.addSwitch('s3')
 
 
+
+    #h7 is the router -- no direct link between S2 and S3
     host = partial(VLANHost,vlan=772)
     h7 = net.addHost('h7', cls=host)
-    #h7 = net.addHost('h7')
-    # This is the IDS node.
 
-    h8 = net.addHost('h8')
    
     net.addLink(s3,h7)
     
     host = partial(VLANHost,vlan=772)
     h9 = net.addHost('h9', cls=host)
-    #h9 = net.addHost('h9')
 
     net.addLink(s3,h9)
+
     s2.linkTo(h6)
 
-    #h7 is the router -- no direct link between S2 and S3
-    # h7 linked to both s2 and s3
+    h8 = net.addHost('h8')
     s2.linkTo(s3)
     # h8 is the ids.
     s2.linkTo(h8)
@@ -141,7 +139,7 @@ def setupTopology(controller_addr,dns_address, interface):
     c2.start()
     s1.start([c1])
     s2.start([c1])
-    s3.start([c2])
+    s3.start([c1])
 
     net.start()
     net1.start()
@@ -201,6 +199,23 @@ def setupTopology(controller_addr,dns_address, interface):
     # Start the IDS on node 8
 
     #h8.cmdPrint("python packet-sniffer.py &")
+
+    h7.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
+    # Flush old rules.
+    h7.cmdPrint('iptables -F')
+    h7.cmdPrint('iptables -t nat -F')
+    h7.cmdPrint('iptables -t mangle -F')
+    h7.cmdPrint('iptables -X')
+
+    # Set up a router to reach the 'internet'
+    s4 = net.addSwitch('s4')
+    s4.linkTo(h7)
+    h10 = net1.addHost('h10')
+    s4.linkTo(h10)
+    h10.cmdPrint('ifconfig h10-eth0 203.0.113.13 netmask 255.255.255.0')
+    # Start a web server there.
+    h10.cmdPrint('python http-server.py -H 203.0.113.13&')
+    s4.start([c1])
 
 
     print "*********** System ready *********"

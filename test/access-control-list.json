@@ -10,7 +10,7 @@
               "name": "cl0-todev",
               "matches": {
                 "ipv4": {
-                  "ietf-acldns:src-dnsname": "www.nist.gov",
+                  "ietf-acldns:src-dnsname": "www.nist.local",
                   "protocol": 6
                 },
                 "tcp": {
@@ -103,7 +103,7 @@
               "name": "cl0-frdev",
               "matches": {
                 "ipv4": {
-                  "ietf-acldns:dst-dnsname": "www.nist.gov",
+                  "ietf-acldns:dst-dnsname": "www.nist.local",
                   "protocol": 6
                 },
                 "tcp": {

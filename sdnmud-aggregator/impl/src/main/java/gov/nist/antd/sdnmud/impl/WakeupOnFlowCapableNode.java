@@ -198,12 +198,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			return;
 		}
 		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
-		uninstallDefaultFlows(nodeUri);
 
-		// Set up the pipeline.
-		for (short i = 0; i < SdnMudConstants.MAX_TID; i++) {
-			installUnconditionalGoToTable(nodeUri, nodePath, i, (short) (i + 1));
-		}
 		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
