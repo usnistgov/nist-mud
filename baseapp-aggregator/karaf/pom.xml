@@ -76,13 +76,12 @@
 					<skip>true</skip>
 				</configuration>
 			</plugin>
+<!--
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>
-				<!-- <version>3.0.2</version> -->
 				<executions>
 					<execution>
 						<id>copy-resources</id>
-						<!-- here the phase you need -->
 						<phase>validate</phase>
 						<goals>
 							<goal>copy-resources</goal>
@@ -99,6 +98,7 @@
 					</execution>
 				</executions>
 			</plugin>
+-->
 		</plugins>
 	</build>
 </project>
