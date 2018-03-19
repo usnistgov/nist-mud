@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<features name="odl-genius-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+<features name="odl-baseapp-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
 
-  <feature name='odl-baseapp' version='${project.version}'>
+  <feature name='odl-baseapp' version="${project.version}">
     <configfile
-      finalname="etc/opendaylight/datastore/initial/config/arp-handler-config_arp-handler-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/config</configfile>
+      finalname="etc/opendaylight/datastore/initial/config/l2switch-config_l2switch-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/config-l2switch</configfile>
     <configfile
-      finalname="etc/opendaylight/datastore/initial/config/l2switch-config_l2switch-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/config</configfile>
+      finalname="etc/opendaylight/datastore/initial/config/arp-handler-config_arp-handler-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/config-arphandler</configfile>
   </feature>
+
 </features>

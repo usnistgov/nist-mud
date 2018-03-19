@@ -150,9 +150,13 @@
               <artifacts>
                 <artifact>
                   <file>${project.build.directory}/classes/initial/arp-handler-config_arp-handler-config.xml</file>
+                  <type>xml</type>
+                  <classifier>config-arphandler</classifier>
+                </artifact>
+                <artifact>
                   <file>${project.build.directory}/classes/initial/l2switch-config_l2switch-config.xml</file>
                   <type>xml</type>
-                  <classifier>config</classifier>
+                  <classifier>config-l2switch</classifier>
                 </artifact>
               </artifacts>
             </configuration>

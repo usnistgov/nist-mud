@@ -67,6 +67,22 @@
 
         <dependency>
             <groupId>${project.groupId}</groupId>
+            <artifactId>baseapp-impl</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>config-arphandler</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>baseapp-impl</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>config-l2switch</classifier>
+        </dependency>
+
+        <dependency>
+            <groupId>${project.groupId}</groupId>
             <artifactId>baseapp-api</artifactId>
             <version>${project.version}</version>
         </dependency>
