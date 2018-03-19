@@ -59,7 +59,6 @@ public class VlanProvider {
 	
 	private CpeCollectionsDataStoreListener cpeCollectionsDataStoreListener;
 
-
 	private WakeupOnFlowCapableNode wakeupListener;
 
 	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;

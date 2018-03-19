@@ -72,11 +72,22 @@
             <version>${project.version}</version>
         </dependency>
 
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>vlan-api</artifactId>
             <version>${project.version}</version>
         </dependency>
+
+        <!-- sdnmud is our MUD implementation which will pull in l2switch and baseapp -->
+
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>odl-sdnmud</artifactId>
+			<classifier>features</classifier>
+            <version>${project.version}</version>
+			<type>xml</type>
+		</dependency>
 
 		<dependency>
 			<groupId>org.opendaylight.openflowplugin</groupId>
@@ -84,6 +95,7 @@
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+
 		<dependency>
 			<groupId>org.opendaylight.openflowplugin.applications</groupId>
 			<artifactId>lldp-speaker</artifactId>
@@ -105,21 +117,6 @@
 			<classifier>features</classifier>
 		</dependency>
 
-		<dependency>
-			<groupId>org.opendaylight.dlux</groupId>
-			<artifactId>odl-dlux-core</artifactId>
-			<version>${dlux.version}</version>
-			<type>xml</type>
-			<classifier>features</classifier>
-		</dependency>
-
-		<dependency>
-			<groupId>org.opendaylight.dluxapps</groupId>
-			<artifactId>odl-dluxapps-applications</artifactId>
-			<version>${dluxapps.version}</version>
-			<type>xml</type>
-			<classifier>features</classifier>
-		</dependency>
     </dependencies>
 
 </project>

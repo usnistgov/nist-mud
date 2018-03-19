@@ -20,7 +20,6 @@ class TopologyDataStoreListener implements DataTreeChangeListener<Topology> {
       Topology topology = change.getRootNode().getDataAfter();
       this.vlanProvider.setTopology(topology);
     }
-    vlanProvider.getWakeupListener().installDefaultFlows();
   }
 
 }
