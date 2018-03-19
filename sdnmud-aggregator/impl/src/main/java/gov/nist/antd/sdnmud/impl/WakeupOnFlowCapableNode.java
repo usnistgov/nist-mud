@@ -151,13 +151,13 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	public void uninstallDefaultFlows(String nodeUri) {
+	/* public void uninstallDefaultFlows(String nodeUri) {
 		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(nodeUri);
 		if (node != null) {
 			for (short tid = 0; tid < SdnMudConstants.MAX_TID + 1; tid++)
 				sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, nodeUri, tid, null);
 		}
-	}
+	} */
 
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
 			Short dropPacketTable) {

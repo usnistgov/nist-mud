@@ -72,6 +72,14 @@
         </dependency>
 
         <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-baseapp</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+
+        <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>odl-mdsal-broker</artifactId>
             <type>xml</type>
@@ -85,7 +93,7 @@
 			<classifier>features</classifier>
 		</dependency>
 
-		<!-- dependency>
+		<dependency>
 			<groupId>org.opendaylight.l2switch</groupId>
 			<artifactId>odl-l2switch-all</artifactId>
 			<version>${l2switch.version}</version>
@@ -93,6 +101,7 @@
 			<classifier>features</classifier>
 		</dependency>
 
+        <!--
 		<dependency>
 			<groupId>org.opendaylight.dlux</groupId>
 			<artifactId>odl-dlux-core</artifactId>
@@ -106,7 +115,8 @@
 			<version>${dluxapps.version}</version>
 			<type>xml</type>
 			<classifier>features</classifier>
-		</dependency -->
+		</dependency>
+        -->
     </dependencies>
 
 </project>

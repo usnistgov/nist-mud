@@ -84,7 +84,7 @@ public class FlowCommitWrapper {
     return addFlowTransaction.submit();
   }
 
-  public boolean deleteFlow(FlowKey flowKey, short tableId,
+  private boolean deleteFlow(FlowKey flowKey, short tableId,
       InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
     ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
     LOG.info("deleteFlow : " + flowKey.getId().getValue());

@@ -659,6 +659,7 @@ public class MudFlowsInstaller {
 				LOG.info("installFlows -- cpe Node is null -- skipping MUD install.");
 				return;
 			}
+			
 			flowCommitWrapper.deleteFlows(node, "flow:" + authority, SdnMudConstants.SDNMUD_RULES_TABLE, null);
 
 			// Track that we have added a node for this device MAC address for
