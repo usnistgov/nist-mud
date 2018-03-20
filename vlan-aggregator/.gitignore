@@ -4,8 +4,8 @@ bin/
 dist
 **/logs
 *~
-target
-target-ide
+/target/
+/target-ide/
 .classpath
 .project
 .settings
