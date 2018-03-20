@@ -209,9 +209,9 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # Set up a router to reach the 'internet'
     s4 = net.addSwitch('s4')
-    s4.linkTo(h7)
+    net.addLink(s4,h7)
     h10 = net1.addHost('h10')
-    s4.linkTo(h10)
+    net.addLink(s4,h10)
     h10.cmdPrint('ifconfig h10-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
     h10.cmdPrint('python http-server.py -H 203.0.113.13&')

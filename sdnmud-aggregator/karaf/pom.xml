@@ -61,17 +61,6 @@
 			<scope>runtime</scope>
 		</dependency>
 
-        <!--
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>features-baseapp</artifactId>
-			<classifier>features</classifier>
-            <version>0.1.0</version>
-			<type>xml</type>
-			<scope>runtime</scope>
-		</dependency>
-        -->
-
 	</dependencies>
 
 	<build>
