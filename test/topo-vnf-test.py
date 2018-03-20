@@ -16,6 +16,7 @@ from subprocess import call
 from functools import partial
 import time
 from mininet.node import Host
+from mininet.node import Switch
 from mininet.log import setLogLevel 
 
 
