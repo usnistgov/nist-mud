@@ -376,13 +376,13 @@ class FlowUtils {
 	/**
 	 * Go to the target table.
 	 * 
-	 * @param thistable
+	 * @param targetTable
 	 * @return
 	 */
-	private static InstructionsBuilder createGoToNextTableInstruction(short thistable) {
+	private static InstructionsBuilder createGoToNextTableInstruction(short targetTable) {
 		// Create an instruction allowing the interaction.
 		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(createGoToTableInstruction((thistable)));
+		instructions.add(createGoToTableInstruction((targetTable)));
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		return isb;
@@ -1404,7 +1404,6 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 	public static FlowBuilder createVlanMatchPopVlanTagAndSendToPort(FlowCookie flowCookie, FlowId flowId,
 			Short tableId, int vlanLabel, String outputPortUri, int timeout) {
-		// TODO Auto-generated method stub
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("createVlanMatchPopVlanAndSendToPort")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		
@@ -1421,6 +1420,51 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
+	}
+
+	public static FlowBuilder createVlanTagArpMatchSendToControllerAndGoToTable(int tag, Short tableId,
+			int timeout, FlowId flowId, FlowCookie flowCookie) {
+		
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("vlanTagArpMatchSendToControllerAndGoToTable")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createArpTypeMatch(matchBuilder);
+		FlowUtils.createVlanMatch(matchBuilder, tag);
+		List<Instruction> instructions = new ArrayList<Instruction>();
+		
+		Instruction instruction = FlowUtils.createSendPacketToControllerInstruction();
+		instructions.add(instruction);
+		Instruction gotoNextInstruction = FlowUtils.createGoToTableInstruction((short) (tableId + 1));
+		instructions.add(instruction);
+		instructions.add(gotoNextInstruction);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+	}
+
+	public static FlowBuilder createSrcPortMatchSetVlanTagAndSendToPort(String inputPort, String outputPort,
+			int vlanTag, short tableId, int timeout, FlowId flowId, FlowCookie flowCookie) {
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("srcPortMatchSetVlanTagAndSendToPort")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createInPortMatch(matchBuilder, new NodeConnectorId(inputPort));
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		Instruction ins = FlowUtils.createSetVlanAndOutputToPortInstructions(vlanTag, outputPort);
+		instructions.add(ins);
+		
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+		
 	}
 
 }

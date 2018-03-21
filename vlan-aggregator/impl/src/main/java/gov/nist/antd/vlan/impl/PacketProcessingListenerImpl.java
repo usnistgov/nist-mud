@@ -1,17 +1,12 @@
 package gov.nist.antd.vlan.impl;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 
 import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.LLDP;
 import org.opendaylight.controller.liblldp.NetUtils;
-import org.opendaylight.controller.liblldp.Packet;
-import org.opendaylight.controller.liblldp.PacketException;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -23,7 +18,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
@@ -39,6 +33,10 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 	private VlanProvider vlanProvider;
 
 	private ListenerRegistration<PacketProcessingListenerImpl> listenerRegistration;
+	
+	private HashMap<FlowCookie,String> flowCookieToVnfPortMap = new HashMap<>();
+	
+	private HashMap<FlowCookie,Integer> flowCookieToTagMap = new HashMap<>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketProcessingListenerImpl.class);
 
@@ -148,17 +146,18 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 			LOG.info("LLDP Packet matchInPortUri " + matchInPortUri + " destinationId " + destinationId
 					+ " systemName = " + systemName);
 
-			FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
-			// Push a flow that detects and inbound ARP from the external
-			// port (from which we just saw the LLDP packet.
-			FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
-					notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
-					flowCookie);
-
-			vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
-
+		
 			if (vlanProvider.isCpeNode(destinationId)) {
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
+				// Push a flow that detects and inbound ARP from the external
+				// port (from which we just saw the LLDP packet.
+				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+						flowCookie);
+
+				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+
 
 				int tag = vlanProvider.isCpeNode(destinationId) ? (int) vlanProvider.getCpeTag(destinationId)
 						: vlanProvider.getVnfTag(destinationId);
@@ -188,11 +187,35 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 					LOG.error("VNF Tag not found -- returning without installing rule");
 					return;
 				}
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + tag +  destinationId);
+				this.flowCookieToVnfPortMap.put(flowCookie , matchInPortUri);
+				this.flowCookieToTagMap.put(flowCookie,tag);
+				// Push a flow that detects and inbound ARP from the external
+				// port (from which we just saw the LLDP packet.
+				FlowBuilder fb = FlowUtils.createVlanTagArpMatchSendToControllerAndGoToTable(
+					    tag, SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+						flowCookie);
+
+				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+
+				
 				flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-				flowCookie = InstanceIdentifierUtils.createFlowCookie("VLAN_MATCH_" + destinationId);
+		        flowCookie = InstanceIdentifierUtils.createFlowCookie("VLAN_MATCH_" + destinationId);
 
 				fb = FlowUtils.createVlanMatchPopVlanTagAndSendToPort(flowCookie, flowId,
 						SdnMudConstants.PASS_THRU_TABLE, tag, matchInPortUri, 300);
+				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+
+			}  else if (!vlanProvider.isNpeSwitch(destinationId)){
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
+				// Push a flow that detects and inbound ARP from the external
+				// port (from which we just saw the LLDP packet.
+				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+						flowCookie);
+
 				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 
 			}
@@ -207,7 +230,6 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				String flowIdStr = "pushVLAN:" + destinationId + ":" + srcMac.getValue();
 				FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
 				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
-				vlanProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
 
 				int tag = (vlanProvider.isCpeNode(destinationId) ? vlanProvider.getCpeTag(destinationId)
 						: vlanProvider.getVnfTag(destinationId));
@@ -225,6 +247,18 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				LOG.info("CPE / VNF node appeared node appeared installing VLAN match rules");
 
+			} else if (vlanProvider.isNpeSwitch(destinationId)) {
+				FlowCookie flowCookie = notification.getFlowCookie();
+				String inputPort = this.flowCookieToVnfPortMap.get(flowCookie);
+				String outputPort = notification.getMatch().getInPort().getValue();
+				String flowIdStr = "PORT_TO_PORT_FLOW:" + inputPort + ":" + outputPort;
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(flowIdStr);
+				FlowCookie newFlowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
+				int vlanTag = flowCookieToTagMap.get(flowCookie);
+				FlowBuilder fb = FlowUtils.createSrcPortMatchSetVlanTagAndSendToPort(inputPort,outputPort,vlanTag, SdnMudConstants.SET_VLAN_RULE_TABLE,
+						300, flowId, newFlowCookie);
+				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+				
 			}
 
 		}
