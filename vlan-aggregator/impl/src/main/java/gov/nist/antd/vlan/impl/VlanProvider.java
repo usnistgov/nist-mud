@@ -232,7 +232,7 @@ public class VlanProvider {
 		}
 	}
 
-	long getCpeTag(String nodeId) {
+	int  getCpeTag(String nodeId) {
 		String nodeKey = null;
 		for (MudNodes mudNodes : this.cpeCollections.getMudNodes()) {
 			for (Uri cpeUri : mudNodes.getCpeSwitches()) {
@@ -248,10 +248,19 @@ public class VlanProvider {
 		}
 		for (Link link : this.topology.getLink()) {
 			if (link.getCpeSwitchesId().equals(nodeKey)) {
-				return link.getTag();
+				return (int) link.getTag().intValue();
 			}
 		}
 		LOG.error("getCpeTag : " + nodeId + " nodeKey " + nodeKey);
+		return -1;
+	}
+
+	public int getVnfTag(String nodeId) {		
+		for (Link link : this.topology.getLink()) {
+			if (link.getVnfSwitch().getValue().equals(nodeId)) {
+				return (int) link.getTag().intValue();
+			}
+		}
 		return -1;
 	}
 

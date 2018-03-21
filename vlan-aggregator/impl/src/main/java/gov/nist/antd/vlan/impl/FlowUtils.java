@@ -434,6 +434,44 @@ class FlowUtils {
 		instructionBuilder.setKey(new InstructionKey(instructionKey));
 		return instructionBuilder.build();
 	}
+	
+private static Instruction createPopVlanAndSendToPortActionInstruction(String outputPortUri) {
+	
+	    int actionKey = 0;
+		
+		Action popVlanAction = new ActionBuilder()
+				.setAction(new PopVlanActionCaseBuilder().setPopVlanAction(new PopVlanActionBuilder().build()).build())
+				.setOrder(0).setKey(new ActionKey(actionKey)).build();
+		
+		
+		List<Action> listAction = new ArrayList<>();
+		listAction.add(popVlanAction);
+		
+		OutputActionBuilder output = new OutputActionBuilder();
+		output.setMaxLength(Integer.valueOf(0xffff));
+
+		Uri controllerPort = new Uri(outputPortUri);
+		output.setOutputNodeConnector(controllerPort);
+
+		ActionBuilder ab = new ActionBuilder();
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(output.build()).build());
+		ab.setOrder(1);
+		listAction.add(ab.build());
+
+
+		ApplyActions applyActions = new ApplyActionsBuilder().setAction(listAction).build();
+		ApplyActionsCase applyActionsCase = new ApplyActionsCaseBuilder().setApplyActions(applyActions).build();
+			
+		//WriteActions writeActions = new WriteActionsBuilder().setAction(listAction).build();
+		//WriteActionsCase writeActionsCase = new WriteActionsCaseBuilder().setWriteActions(writeActions).build();
+
+		InstructionBuilder instructionBuilder = new InstructionBuilder();
+
+		instructionBuilder.setInstruction(applyActionsCase);
+		instructionBuilder.setOrder(0);
+		instructionBuilder.setKey(new InstructionKey(0));
+		return instructionBuilder.build();
+	}
 
 	private static Instruction createPopMplsActionInstruction(int actionKey, int instructionKey) {
 		// Integer mplsEthertype = 2048;
@@ -1342,6 +1380,47 @@ class FlowUtils {
 
 		return flowBuilder;
 
+	}
+
+	public static FlowBuilder createVlanMatchSendToPort(FlowCookie flowCookie, FlowId flowId, Short tableId,
+			int vlanLabel, String outputPortUri, int timeout) {
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("createVlanMatchSendToPort")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createVlanMatch(matchBuilder, vlanLabel);
+		Instruction instruction = FlowUtils.createSendToPortInstruction(outputPortUri);
+		List<Instruction> instructions = new ArrayList<>();
+		instructions.add(instruction);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
+	}
+
+	public static FlowBuilder createVlanMatchPopVlanTagAndSendToPort(FlowCookie flowCookie, FlowId flowId,
+			Short tableId, int vlanLabel, String outputPortUri, int timeout) {
+		// TODO Auto-generated method stub
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("createVlanMatchPopVlanAndSendToPort")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		
+		MatchBuilder matchBuilder = new MatchBuilder();
+		FlowUtils.createVlanMatch(matchBuilder, vlanLabel);
+		Instruction instruction = FlowUtils.createPopVlanAndSendToPortActionInstruction(outputPortUri);
+		
+		List<Instruction> instructions = new ArrayList<>();
+		instructions.add(instruction);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
 	}
 
 }

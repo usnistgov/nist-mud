@@ -2,10 +2,16 @@ package gov.nist.antd.vlan.impl;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import org.opendaylight.controller.liblldp.Ethernet;
+import org.opendaylight.controller.liblldp.LLDP;
+import org.opendaylight.controller.liblldp.NetUtils;
+import org.opendaylight.controller.liblldp.Packet;
+import org.opendaylight.controller.liblldp.PacketException;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -35,6 +41,18 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 	private ListenerRegistration<PacketProcessingListenerImpl> listenerRegistration;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketProcessingListenerImpl.class);
+
+	private static MacAddress rawMacToMac(final byte[] rawMac) {
+		MacAddress mac = null;
+		if (rawMac != null) {
+			StringBuilder sb = new StringBuilder();
+			for (byte octet : rawMac) {
+				sb.append(String.format(":%02X", octet));
+			}
+			mac = new MacAddress(sb.substring(1));
+		}
+		return mac;
+	}
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
@@ -83,12 +101,26 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 			LOG.error("Topology node not found -- ignoring packet");
 			return;
 		}
-		// Extract the src mac address from the packet.
-		byte[] srcMacRaw = PacketUtils.extractSrcMac(notification.getPayload());
-		MacAddress srcMac = PacketUtils.rawMacToMac(srcMacRaw);
 
-		byte[] dstMacRaw = PacketUtils.extractDstMac(notification.getPayload());
-		MacAddress dstMac = PacketUtils.rawMacToMac(dstMacRaw);
+		Ethernet ethernet = new Ethernet();
+
+		try {
+			ethernet.deserialize(notification.getPayload(), 0,
+					notification.getPayload().length * NetUtils.NumBitsInAByte);
+
+		} catch (Exception ex) {
+			LOG.error("Error deserializing packet", ex);
+		}
+
+		// Extract various fields from the ethernet packet.
+
+		int etherType = ethernet.getEtherType() < 0 ? 0xffff + ethernet.getEtherType() + 1 : ethernet.getEtherType();
+		byte[] srcMacRaw = ethernet.getSourceMACAddress();
+		byte[] dstMacRaw = ethernet.getDestinationMACAddress();
+
+		// Extract the src mac address from the packet.
+		MacAddress srcMac = rawMacToMac(srcMacRaw);
+		MacAddress dstMac = rawMacToMac(dstMacRaw);
 
 		short tableId = notification.getTableId().getValue();
 
@@ -100,36 +132,40 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 		LOG.info("onPacketReceived : matchInPortUri = " + matchInPortUri + " destinationId " + destinationId
 				+ " tableId " + tableId + " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
 
-		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
-		int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
-
 		if (vlanProvider.getTopology() == null) {
 			LOG.info("Topology not yet registered -- dropping packet");
 			return;
 		}
 
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
-			LOG.info("LLDP Packet matchInPortUri " + matchInPortUri + " destinationId " + destinationId);
 
 			InstanceIdentifier<FlowCapableNode> destinationNode = vlanProvider.getNode(destinationId);
 
-			LOG.info("LLDP Packet installing rules on " + InstanceIdentifierUtils.getNodeUri(destinationNode));
+			LLDP lldp = (LLDP) ethernet.getPayload();
+
+			String systemName = new String(lldp.getSystemNameId().getValue());
+
+			LOG.info("LLDP Packet matchInPortUri " + matchInPortUri + " destinationId " + destinationId
+					+ " systemName = " + systemName);
+
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
+			// Push a flow that detects and inbound ARP from the external
+			// port (from which we just saw the LLDP packet.
+			FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
+					notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
+					flowCookie);
+
+			vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 
 			if (vlanProvider.isCpeNode(destinationId)) {
-				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
 
-				int tag = (int) vlanProvider.getCpeTag(destinationId);
+				int tag = vlanProvider.isCpeNode(destinationId) ? (int) vlanProvider.getCpeTag(destinationId)
+						: vlanProvider.getVnfTag(destinationId);
 
-				// Push a flow that detects and inbound ARP from the external
-				// port (from which we just saw the LLDP packet.
-				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
-						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
-						flowCookie);
-
-				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 				flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-				flowCookie = InstanceIdentifierUtils.createFlowCookie("NO_VLAN_MATCH_PUSH_ARP_" + destinationId);
+				flowCookie = InstanceIdentifierUtils
+						.createFlowCookie("NO_VLAN_MATCH_PUSH_ARP_" + destinationId);
 
 				// The following sends two copies of the ARP through the
 				// external port. One with VLAN tag and one without.
@@ -144,14 +180,21 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				fb = FlowUtils.createVlanMatchPopVlanTagAndGoToTable(flowCookie, flowId,
 						SdnMudConstants.STRIP_VLAN_TABLE, tag);
 				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
-			} else {
-				// For L2switch to build MAC to MAC flows.
-				FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("ARP_MATCH_" + destinationId);
-				FlowBuilder fb = FlowUtils.createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
-						notification.getMatch().getInPort(), SdnMudConstants.DETECT_EXTERNAL_ARP_TABLE, 300, flowId,
-						flowCookie);
+			} else if (vlanProvider.isNpeSwitch(destinationId) && vlanProvider.isVnfSwitch(systemName)) {
+				// Got an inbound from VNF switch at the NPE. Strip the Vlan tag
+				// and send to the VNF switch.
+				int tag = vlanProvider.getVnfTag(systemName);
+				if (tag == -1) {
+					LOG.error("VNF Tag not found -- returning without installing rule");
+					return;
+				}
+				flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+				flowCookie = InstanceIdentifierUtils.createFlowCookie("VLAN_MATCH_" + destinationId);
+
+				fb = FlowUtils.createVlanMatchPopVlanTagAndSendToPort(flowCookie, flowId,
+						SdnMudConstants.PASS_THRU_TABLE, tag, matchInPortUri, 300);
 				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
+
 			}
 
 			return;
@@ -166,14 +209,16 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowIdStr);
 				vlanProvider.getFlowCommitWrapper().deleteFlows(destinationNode, flowIdStr, tableId, null);
 
-				int tag = (int) vlanProvider.getCpeTag(destinationId);
+				int tag = (vlanProvider.isCpeNode(destinationId) ? vlanProvider.getCpeTag(destinationId)
+						: vlanProvider.getVnfTag(destinationId));
 
 				if (tag == -1) {
 					LOG.error("Tag == -1 " + destinationId);
 					return;
 				}
-				// Override the L2Switch mac to mac rule. 
-				// Sends of the match packet with VLAN tag applied before it gets to the L2Switch. 
+				// Override the L2Switch mac to mac rule.
+				// Sends of the match packet with VLAN tag applied before it
+				// gets to the L2Switch.
 				FlowBuilder fb = FlowUtils.createSrcDestMacAddressMatchSetVlanTagAndSendToPort(flowCookie, flowId,
 						dstMac, srcMac, SdnMudConstants.SET_VLAN_RULE_TABLE, tag, matchInPortUri, 300);
 
