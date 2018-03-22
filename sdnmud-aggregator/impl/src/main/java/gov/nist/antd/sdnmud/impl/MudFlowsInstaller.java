@@ -209,10 +209,9 @@ public class MudFlowsInstaller {
 	 */
 	private void installGoToDropTableOnSrcModelMetadataMatchFlow(String mudUri, String dropFlowUri,
 			InstanceIdentifier<FlowCapableNode> node) {
-		String nodeSuffix = "?nodeId="+InstanceIdentifierUtils.getNodeUri(node);
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + nodeSuffix);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(dropFlowUri);
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToDropTableFlow(flowCookie, metadata, metadataMask, flowId,
 				SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.DROP_TABLE, 0);
@@ -221,10 +220,9 @@ public class MudFlowsInstaller {
 
 	private void installGoToDropTableOnDstModelMetadataMatchFlow(String mudUri, String dropFlowUri,
 			InstanceIdentifier<FlowCapableNode> node) {
-		String nodeSuffix = "?nodeId="+InstanceIdentifierUtils.getNodeUri(node);
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + nodeSuffix);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(dropFlowUri);
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToDropTableFlow(flowCookie, metadata, metadataMask, flowId,
 				SdnMudConstants.SDNMUD_RULES_TABLE, SdnMudConstants.DROP_TABLE, 0);
@@ -312,8 +310,7 @@ public class MudFlowsInstaller {
 		if (port != -1) {
 			for (Ipv4Address address : addresses) {
 				String flowSpec = createFlowSpec(authority, address, SdnMudConstants.OUT);
-				FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + "?flowSpec=" + flowSpec + "&nodeId=" + cpeNodeId 
-						+ "&direction=" + SdnMudConstants.OUT);
+				FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
 				installPermitFromDeviceToIpAddressFlow(flowId, metadata, metadataMask, address, port,
 						protocol.shortValue(), flowCookie);
@@ -346,8 +343,7 @@ public class MudFlowsInstaller {
 		int port = getSourcePort(matches);
 		for (Ipv4Address address : addresses) {
 			String flowSpec = createFlowSpec(authority, address, SdnMudConstants.IN);
-			FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + "?flowSpec=" + flowSpec + "&nodeId=" + cpeNodeId
-					+ "&direction="+ SdnMudConstants.IN );
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
 			installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(), flowCookie,
 					flowId, getCpeNode());
@@ -464,14 +460,12 @@ public class MudFlowsInstaller {
 
 		String flowSpec = MudFlowsInstaller.createFlowSpec(address,SdnMudConstants.OUT);
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec); 
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId + "?flowSpec=" + flowSpec+"&nodeId=" + nodeId  
-				+ "&direction=" + SdnMudConstants.OUT);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
 		FlowBuilder flowBuilder = FlowUtils.createDestAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
 				SdnMudConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 		flowSpec = MudFlowsInstaller.createFlowSpec(address,SdnMudConstants.IN);
-		flowId = InstanceIdentifierUtils.createFlowId(nodeId + "?flowSpec="+ flowSpec + "&nodeId="+nodeId 
-				+ "&direction=" + SdnMudConstants.IN );
+		flowId = InstanceIdentifierUtils.createFlowId(nodeId );
 		flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
 				SdnMudConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
@@ -489,8 +483,7 @@ public class MudFlowsInstaller {
 
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
 		
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId + "?flowSpec=" + flowSpec + "&nodeId=" + nodeId 
-				+ "&direction=" + SdnMudConstants.IN);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId );
 
 		FlowBuilder flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
 				SdnMudConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
@@ -592,11 +585,10 @@ public class MudFlowsInstaller {
 	public static void installStampManufacturerModelFlowRules(MacAddress srcMac, String mudUri,
 			SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
 
-		String nodeIdSuffix = "?nodeId="+InstanceIdentifierUtils.getNodeUri(node);
 		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
 		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + nodeIdSuffix );
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 		BigInteger metadata = createSrcManufacturerMetadata(manufacturer).or(createSrcModelMetadata(mudUri));
 
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
@@ -608,7 +600,7 @@ public class MudFlowsInstaller {
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
-		flowId = InstanceIdentifierUtils.createFlowId(mudUri + nodeIdSuffix);
+		flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 		metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);

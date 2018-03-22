@@ -49,8 +49,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	}
 	
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
-		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCONDITIONAL_GOTO);
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
 				flowId, flowCookie);

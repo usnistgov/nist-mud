@@ -42,7 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
@@ -100,7 +99,6 @@ public class SdnmudProvider {
 	// installed for a given MAC address.
 	private HashMap<String, HashSet<InstanceIdentifier<FlowCapableNode>>> mudNodesMap = new HashMap<>();
 
-	
 	// A map between the NODE uri and the Flow installer for that node.
 	private HashMap<String, MudFlowsInstaller> flowInstallerMap = new HashMap<>();
 
@@ -197,8 +195,8 @@ public class SdnmudProvider {
 
 		/* Register data tree change listener for Topology change */
 		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
-		final DataTreeIdentifier<CpeCollections> topoId = new DataTreeIdentifier<CpeCollections>(LogicalDatastoreType.CONFIGURATION,
-				topoWildCardPath);
+		final DataTreeIdentifier<CpeCollections> topoId = new DataTreeIdentifier<CpeCollections>(
+				LogicalDatastoreType.CONFIGURATION, topoWildCardPath);
 		this.topoDataStoreListener = new CpeCollectionsDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
 
@@ -379,8 +377,6 @@ public class SdnmudProvider {
 		nodes.add(node);
 	}
 
-	
-
 	/**
 	 * Get the MUD nodes where flow rules were installed.
 	 * 
@@ -454,11 +450,9 @@ public class SdnmudProvider {
 		if (this.getTopology() == null) {
 			return false;
 		}
-		for (MudNodes link : this.getTopology().getMudNodes()) {
-			for (Uri cpeNode : link.getCpeSwitches()) {
-				if (nodeId.equals(cpeNode.getValue())) {
-					return true;
-				}
+		for (Uri cpeNode : topology.getCpeSwitches()) {
+			if (nodeId.equals(cpeNode.getValue())) {
+				return true;
 			}
 		}
 		return false;

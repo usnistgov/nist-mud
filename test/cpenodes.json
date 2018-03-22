@@ -1,10 +1,5 @@
 {
  "cpe-collections" : {
-     "mud-nodes" : [ 
-         {
-	            "name" : "test-topo-1",
-	            "cpe-switches" : [ "openflow:1" ]
-         } 
-     ]
-    }
+	       "cpe-switches" : [ "openflow:1" ]
+   }
 }

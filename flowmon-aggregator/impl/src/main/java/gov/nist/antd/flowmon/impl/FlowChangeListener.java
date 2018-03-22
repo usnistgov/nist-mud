@@ -2,13 +2,13 @@ package gov.nist.antd.flowmon.impl;
 
 import java.util.Collection;
 
+import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.data.api.schema.tree.ModificationType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,15 +31,21 @@ public class FlowChangeListener implements DataTreeChangeListener<Flow> {
 			 * IDS process.
 			 */
 			Flow flow = change.getRootNode().getDataAfter();
-			LOG.info("FlowChangeListener : flow appeared " + flow.getFlowName() + " ModificationType = " + 
-					change.getRootNode().getModificationType().name() );
+		
+			if (change.getRootNode().getModificationType()  == ModificationType.WRITE) {
+				
+				FlowId flowId = flow.getId();
+				String flowIdStr = flowId.getValue();
+				
+				LOG.info("FlowChangeListener : flow appeared " + flow.getFlowName() + " ModificationType = " + 
+						change.getRootNode().getModificationType().name()  + " tableId = " + flow.getTableId());
+				
+				LOG.info("FlowChangeListener : " + flowIdStr);
 
-			if (change.getRootNode().getModificationType().equals(ModificationType.WRITE)) {
+
 				if (flow.getTableId() == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
 						|| flow.getTableId() == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-					FlowId flowId = flow.getId();
-					String flowIdStr = flowId.getValue();
-					if (flowIdStr.startsWith("UNCLASSIFIED")) {
+					if (flow.getCookie().equals(InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED))) {
 						String nodeId = InstanceIdentifierUtils.getNodeIdFromFlowId(flowIdStr);
 						if (flowmonProvider.isCpeNode(nodeId)) {
 							InstanceIdentifier<FlowCapableNode> vnfNode = flowmonProvider.getVnfNode(nodeId);

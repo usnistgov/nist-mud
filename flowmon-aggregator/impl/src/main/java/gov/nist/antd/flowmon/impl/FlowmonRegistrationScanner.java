@@ -117,8 +117,7 @@ public class FlowmonRegistrationScanner extends TimerTask {
 				if (flowmonPorts == null) {
 					LOG.debug("No IDS registrations found for " + flowmonNodeId);
 					for (Uri uri : flowSpec) {
-						for (Uri cpeSwitch : flowmonProvider.getCpeNodeFlowmon()) {
-							InstanceIdentifier<FlowCapableNode> node = flowmonProvider.getNode(cpeSwitch.getValue());
+						for (InstanceIdentifier<FlowCapableNode> node : flowmonProvider.getCpeNodes()) {
 							flowCommitWrapper.deleteFlows(node, uri.getValue(), SdnMudConstants.PASS_THRU_TABLE, null);
 							flowCommitWrapper.deleteFlows(flowmonNode, uri.getValue(),
 									SdnMudConstants.SDNMUD_RULES_TABLE, null);
@@ -165,7 +164,7 @@ public class FlowmonRegistrationScanner extends TimerTask {
 						 * IDS. The packets that do not any unclassified device
 						 * are assumed to have been filtered through a MUD rule.
 						 * Note that FlowChangeListener populates the device
-						 * classification tables 
+						 * classification tables
 						 */
 						BigInteger metadata = BigInteger
 								.valueOf(InstanceIdentifierUtils.getFlowHash(SdnMudConstants.UNCONDITIONAL_GOTO));
@@ -176,16 +175,16 @@ public class FlowmonRegistrationScanner extends TimerTask {
 
 					} else if (flowType.equals(SdnMudConstants.PASSTHRU)) {
 						/*
-						 * PASSTHRU flows are flows that do not have any MUD 
-						 * rule asociated with them  that are sent from CPE
-						 * via the VNF switch. This is the most common case
-						 * that we would be interested in montoring.
-						 * Install flows on the VNF switch. Get the packets
-						 * that match the MPLS tag and send it to the IDS.
+						 * PASSTHRU flows are flows that do not have any MUD
+						 * rule asociated with them that are sent from CPE via
+						 * the VNF switch. This is the most common case that we
+						 * would be interested in montoring. Install flows on
+						 * the VNF switch. Get the packets that match the MPLS
+						 * tag and send it to the IDS.
 						 */
- 						flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
- 						
- 						BigInteger metadata = BigInteger
+						flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+
+						BigInteger metadata = BigInteger
 								.valueOf(InstanceIdentifierUtils.getFlowHash(SdnMudConstants.PASSTHRU));
 						BigInteger metadataMask = new BigInteger("ffffffffffffffff", 16);
 						FlowBuilder fb = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId,
@@ -194,52 +193,50 @@ public class FlowmonRegistrationScanner extends TimerTask {
 					}
 
 					/* get the cpe nodes corresponding to this VNF node */
-					Collection<InstanceIdentifier<FlowCapableNode>> nodes = flowmonProvider.getCpeNodes(flowmonNodeId);
+					InstanceIdentifier<FlowCapableNode> node = flowmonProvider.getCpeNode(flowmonNodeId);
 
-					if (nodes != null) {
+					if (node != null) {
 
-						for (InstanceIdentifier<FlowCapableNode> node : nodes) {
+						String sourceNodeUri = InstanceIdentifierUtils.getNodeUri(node);
+						if (sourceNodeUri == null) {
+							LOG.error("flowmonRegistration: Cannot find source node URI");
+							continue;
+						}
+						if (flowmonProvider.isCpeNode(sourceNodeUri)) {
 
-							String sourceNodeUri = InstanceIdentifierUtils.getNodeUri(node);
-							if (sourceNodeUri == null) {
-								LOG.error("flowmonRegistration: Cannot find source node URI");
+							flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
+									SdnMudConstants.PASS_THRU_TABLE, null);
+
+							String outputPortUri = flowmonProvider.getFlowmonOutputPort(sourceNodeUri);
+							if (outputPortUri == null) {
+								LOG.info("Cannot find output port URI");
 								continue;
 							}
-							if (flowmonProvider.isCpeNode(sourceNodeUri)) {
-
-								flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
-										SdnMudConstants.PASS_THRU_TABLE, null);
-
-								String outputPortUri = flowmonProvider.getFlowmonOutputPort(sourceNodeUri);
-								if (outputPortUri == null) {
-									LOG.info("Cannot find output port URI");
-									continue;
-								}
-								LOG.debug("flowmonRegistration: outputPortUri " + outputPortUri);
-								flowCommitWrapper.deleteFlows(node, uri.getValue(), SdnMudConstants.PASS_THRU_TABLE,
-										null);
-								if (flowType.equals(SdnMudConstants.LOCAL)) {
-									/*
-									 * This is the case when the IDS is interested in seeing local device to 
-									 * device flows that are passed by MUD. The IDS is intertested 
-									 * in monitoring local communications between devices.
-									 */
-									flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-									/*
-									 * Match on metadata, set the MPLS tag and
-									 * send to NPE switch and go to l2 switch.
-									 */
-									FlowBuilder fb = FlowUtils.createMetadataMatchSetMplsTagSendToPortAndGoToTable(
-											flowCookie, flowId, SdnMudConstants.PASS_THRU_TABLE, mplsTag, outputPortUri,
-											duration);
-									// Write the flow to the data store.
-									flowCommitWrapper.writeFlow(fb, node);
-									// Install a flow to strip the mpls label.
-									flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-									// Strip MPLS tag and go to the L2 switch.
-									installStripMplsTagAndGoToL2Switch(node, flowId,
-											SdnMudConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
-								} 
+							LOG.debug("flowmonRegistration: outputPortUri " + outputPortUri);
+							flowCommitWrapper.deleteFlows(node, uri.getValue(), SdnMudConstants.PASS_THRU_TABLE, null);
+							if (flowType.equals(SdnMudConstants.LOCAL)) {
+								/*
+								 * This is the case when the IDS is interested
+								 * in seeing local device to device flows that
+								 * are passed by MUD. The IDS is intertested in
+								 * monitoring local communications between
+								 * devices.
+								 */
+								flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+								/*
+								 * Match on metadata, set the MPLS tag and send
+								 * to NPE switch and go to l2 switch.
+								 */
+								FlowBuilder fb = FlowUtils.createMetadataMatchSetMplsTagSendToPortAndGoToTable(
+										flowCookie, flowId, SdnMudConstants.PASS_THRU_TABLE, mplsTag, outputPortUri,
+										duration);
+								// Write the flow to the data store.
+								flowCommitWrapper.writeFlow(fb, node);
+								// Install a flow to strip the mpls label.
+								flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+								// Strip MPLS tag and go to the L2 switch.
+								installStripMplsTagAndGoToL2Switch(node, flowId, SdnMudConstants.STRIP_MPLS_RULE_TABLE,
+										mplsTag);
 							}
 						}
 					}

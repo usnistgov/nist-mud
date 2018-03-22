@@ -185,8 +185,8 @@ public class InstanceIdentifierUtils {
 		return new FlowRef(flowPath);
 	}
 
-	public static FlowId createFlowId(String mudUrl) {
-		return new FlowId(mudUrl + "&counter=" + String.valueOf(flowIdInc.getAndIncrement()));
+	public static FlowId createFlowId(String prefix) {
+		return new FlowId(prefix + "/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	public static FlowCookie createFlowCookie(String flowCookieId) {

@@ -264,16 +264,8 @@ public class InstanceIdentifierUtils {
 
 
 	public static String getNodeIdFromFlowId(String flowIdStr) {
-		String[] pieces = flowIdStr.split("?");
-		if (pieces == null || pieces.length == 0) return null;
-		String[] ppieces = pieces[1].split("&");
-		if (ppieces == null || ppieces.length == 0 ) return null;
-		for (String piece: ppieces) {
-			if (piece.startsWith("nodeId"))  {
-				return piece.split("=") [1];
-			}
-		}
-		return null;
+		String[] pieces = flowIdStr.split("/");
+		return pieces[0];
 	}
 
 }

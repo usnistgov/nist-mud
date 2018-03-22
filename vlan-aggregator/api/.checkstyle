@@ -14,16 +14,11 @@
   <fileset name="java-sources-check-license" enabled="true" check-config-name="maven-checkstyle-plugin check-license" local="true">
     <file-match-pattern match-pattern="^src/main/java.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java.*\.xtend" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*\.java" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/main/java.*.*protobuff/messages/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/main/java.*.*thrift/gen/.*\.java" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*.*protobuff/messages/.*" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*.*thrift/gen/.*\.java" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*.*protobuff/messages/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*.*thrift/gen/.*\.java" include-pattern="false"/>
@@ -31,22 +26,17 @@
   <fileset name="java-sources-default" enabled="true" check-config-name="maven-checkstyle-plugin default" local="true">
     <file-match-pattern match-pattern="^src/main/java.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java.*\.xtend" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*\.java" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/main/java.*.*protobuff/messages/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/main/java.*.*thrift/gen/.*\.java" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*.*protobuff/messages/.*" include-pattern="false"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/mdsal-binding.*.*thrift/gen/.*\.java" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*.*protobuff/messages/.*" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/test/java.*.*thrift/gen/.*\.java" include-pattern="false"/>
     <file-match-pattern match-pattern="^src/main/resources.*\.properties" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/spi.*\.properties" include-pattern="true"/>
-    <file-match-pattern match-pattern="^target-ide/generated-sources/yang.*\.properties" include-pattern="true"/>
+    <file-match-pattern match-pattern="^target-ide/generated-sources/spi/.*\.properties" include-pattern="true"/>
+    <file-match-pattern match-pattern="^target-ide/generated-sources/yang/.*\.properties" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/resources.*\.properties" include-pattern="true"/>
   </fileset>
 </fileset-config>

@@ -117,5 +117,6 @@ public interface SdnMudConstants {
 	public static final int ETHERTYPE_ARP = 0x806;
 	
 	public static final String UNCONDITIONAL_GOTO = "UNCONDITIONAL_GOTO";
+	public static final String UNCLASSIFIED = "UNCLASSIFIED";
 
 }

@@ -21,34 +21,19 @@ module nist-cpe-nodes {
 
   revision 2017-09-15 {
     description
-      "Initial proposed standard.";
+      "Implementation YANG model.";
     reference
-      "RFC XXXX: Manufacturer Usage Description
-       Specification";
-  }
-
-  grouping accounts {
-      description
-          "A grouping of accounts. This identifies the switches on MUD flow rules are installed.";
-      list mud-nodes {
-        key "name";
-        leaf name {
-          description
-                "unique identifier for this set of cpe switches";
-          type string;
-        }
-        leaf-list cpe-switches {
-          description 
-             "CPE switch ID's associated with this NPE switch";
-          type inet:uri;
-        }
-      }
+      "Collection of CPE nodes where MUD flows are installed.";
   }
 
   container cpe-collections {
       description
           "The collection of CPE switches on which MUD rules are installed.";
-      uses accounts;
+       leaf-list cpe-switches {
+          description 
+             "CPE switch ID's associated with this NPE switch";
+          type inet:uri;
+       }
   }
 
 }

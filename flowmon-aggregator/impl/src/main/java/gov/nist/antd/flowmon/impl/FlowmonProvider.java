@@ -4,22 +4,17 @@
  */
 package gov.nist.antd.flowmon.impl;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
-import org.opendaylight.controller.md.sal.common.api.data.AsyncDataBroker.DataChangeScope;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.NistFlowControllerService;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
@@ -56,11 +51,6 @@ public class FlowmonProvider {
 
 	private HashMap<String, String> flowmonOutputPortMap = new HashMap<>();
 
-	// Maps the instance identifier to the URI of the node (should not need this
-	// map)
-
-	private HashMap<String, MappingNotification> mappingNotificationMap = new HashMap<>();
-
 	private Topology topology;
 
 	private NotificationService notificationService;
@@ -69,17 +59,13 @@ public class FlowmonProvider {
 
 	private TopologyDataStoreListener topoDataStoreListener;
 
-	private CpeCollectionsDataStoreListener cpeCollectionsDataStoreListener;
-
 	private WakeupOnFlowCapableNode wakeupListener;
 
 	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;
 
-	private CpeCollections cpeCollections;
-
-	private HashMap<String, HashSet<Uri>> cpeMap = new HashMap<>();
-
 	private FlowmonConfigDataStoreListener flowmonConfigDataStoreListener;
+
+	private HashMap<String, MappingNotification> mappingNotificationMap = new HashMap<>();
 
 	private class FlowmonPort {
 		private String portUri;
@@ -118,10 +104,6 @@ public class FlowmonProvider {
 		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
 	}
 
-	private static InstanceIdentifier<CpeCollections> getCpeCollectionsWildCardPath() {
-		return InstanceIdentifier.create(CpeCollections.class);
-	}
-
 	private static InstanceIdentifier<FlowmonConfigData> getFlowmonConfigWildCardPath() {
 		return InstanceIdentifier.create(FlowmonConfigData.class);
 	}
@@ -141,17 +123,16 @@ public class FlowmonProvider {
 	 */
 	public void init() {
 		LOG.info("FlowmonProvider Session Initiated");
+
+		// metadata mapping notification listener
+
 		this.notificationService.registerNotificationListener(new MappingNotificationListener(this));
+
 		InstanceIdentifier<Topology> topoWildCardPath = getTopologyWildCardPath();
 		final DataTreeIdentifier<Topology> topoId = new DataTreeIdentifier<Topology>(LogicalDatastoreType.CONFIGURATION,
 				topoWildCardPath);
 		this.topoDataStoreListener = new TopologyDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
-
-		final DataTreeIdentifier<CpeCollections> cpeConfigId = new DataTreeIdentifier<CpeCollections>(
-				LogicalDatastoreType.CONFIGURATION, getCpeCollectionsWildCardPath());
-		this.cpeCollectionsDataStoreListener = new CpeCollectionsDataStoreListener(this);
-		this.dataBroker.registerDataTreeChangeListener(cpeConfigId, cpeCollectionsDataStoreListener);
 
 		this.flowmonConfigDataStoreListener = new FlowmonConfigDataStoreListener(this);
 		final DataTreeIdentifier<FlowmonConfigData> flowmonConfigId = new DataTreeIdentifier<FlowmonConfigData>(
@@ -230,6 +211,15 @@ public class FlowmonProvider {
 
 	}
 
+	public void addMappingNotification(MappingNotification notification) {
+		String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
+		mappingNotificationMap.put(mudUrl, notification);
+	}
+
+	public MappingNotification getMappingNotification(String mudUrl) {
+		return this.mappingNotificationMap.get(mudUrl);
+	}
+
 	public synchronized String getFlowmonPort(String flowmonNodeId) {
 
 		return this.flowmonNodeToPortMap.get(flowmonNodeId).portUri;
@@ -243,34 +233,28 @@ public class FlowmonProvider {
 		return topology;
 	}
 
-	public Collection<InstanceIdentifier<FlowCapableNode>> getCpeNodes() {
+	Collection<InstanceIdentifier<FlowCapableNode>> getCpeNodes() {
 		Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
-		for (MudNodes link : this.cpeCollections.getMudNodes()) {
-			for (Uri cpeUri : link.getCpeSwitches()) {
+		if (this.topology != null) {
+			for (Link link : this.topology.getLink()) {
+				Uri cpeUri = link.getCpeSwitch();
 				if (this.uriToNodeMap.containsKey(cpeUri.getValue())) {
-					retval.add(this.uriToNodeMap.get(cpeUri.getValue()));
+					if (this.uriToNodeMap.get(cpeUri.getValue()) != null) {
+						retval.add(this.uriToNodeMap.get(cpeUri.getValue()));
+					}
 				}
 			}
 		}
 		return retval;
 	}
-	
-	public Collection<InstanceIdentifier<FlowCapableNode>> getCpeNodes(String vnfSwitch) {
-		Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
-		for (Link link : this.getTopology().getLink()) {
-			if ( link.getVnfSwitch().equals(vnfSwitch)) {
-			     String cpeCollectionId = link.getCpeSwitchesId(); 
-			     for (MudNodes cpeNodes : cpeCollections.getMudNodes())  {
-			    	 if ( cpeNodes.getName().equals(cpeCollectionId)) {
-			    		 for (Uri nodeUri : cpeNodes.getCpeSwitches()) {
-			    			InstanceIdentifier<FlowCapableNode> node =  this.getNode(nodeUri.getValue());
-			    			if ( node != null ) retval.add(node);
-			    		 }
-			    	 }
-			     }
+
+	public InstanceIdentifier getCpeNode(String vnfSwitch) {
+		for (Link link : this.topology.getLink()) {
+			if (link.getVnfSwitch().getValue().equals(vnfSwitch)) {
+				return this.uriToNodeMap.get(link.getCpeSwitch().getValue());
 			}
 		}
-		return retval;
+		return null;
 	}
 
 	public Collection<InstanceIdentifier<FlowCapableNode>> getNpeNodes() {
@@ -315,49 +299,19 @@ public class FlowmonProvider {
 		return false;
 	}
 
-	public boolean isCpeNode(String nodeId) {
-		if (this.cpeCollections == null) {
-			return false;
-		}
-		for (MudNodes mudNodes : this.cpeCollections.getMudNodes()) {
-			for (Uri uri : mudNodes.getCpeSwitches()) {
-				if (uri.getValue().equals(nodeId))
+	boolean isCpeNode(String nodeId) {
+		if (this.topology != null) {
+			for (Link link : this.topology.getLink()) {
+				if (link.getCpeSwitch().getValue().equals(nodeId)) {
 					return true;
+				}
 			}
 		}
 		return false;
 	}
 
-	public void addMappingNotification(MappingNotification notification) {
-		String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
-		mappingNotificationMap.put(mudUrl, notification);
-	}
-
-	public MappingNotification getMappingNotification(String mudUrl) {
-		return this.mappingNotificationMap.get(mudUrl);
-	}
-
 	public WakeupOnFlowCapableNode getWakeupListener() {
 		return this.wakeupListener;
-	}
-
-	public void setCpeCollections(CpeCollections cpeCollections) {
-		this.cpeCollections = cpeCollections;
-		for (MudNodes mudNodes : cpeCollections.getMudNodes()) {
-			String key = mudNodes.getKey().getName();
-			HashSet<Uri> cpes = new HashSet<>();
-			cpes.addAll(mudNodes.getCpeSwitches());
-			LOG.info("setCpeCollections : key " + key);
-			this.cpeMap.put(key, cpes);
-		}
-	}
-
-	public Collection<Uri> getCpeNodeFlowmon() {
-		ArrayList<Uri> retval = new ArrayList<>();
-		for (MudNodes mudNode : this.cpeCollections.getMudNodes()) {
-			retval.addAll(mudNode.getCpeSwitches());
-		}
-		return retval;
 	}
 
 	public void setFlowmonOutputPort(String destinationId, String matchInPortUri) {
@@ -369,17 +323,9 @@ public class FlowmonProvider {
 	}
 
 	public InstanceIdentifier<FlowCapableNode> getVnfNode(String cpeNodeId) {
-		for (Link link : this.getTopology().getLink()) {
-			Uri vnfSwitch = link.getVnfSwitch();
-			String cpeCollectionId = link.getCpeSwitchesId(); 
-			for (MudNodes cpeNodes : cpeCollections.getMudNodes())  {
-				if ( cpeNodes.getName().equals(cpeCollectionId)) {
-					for (Uri nodeUri : cpeNodes.getCpeSwitches()) {
-						if ( cpeNodeId.equals(nodeUri.getValue())) {
-							return this.getNode(vnfSwitch.getValue());
-						}
-					}
-				}
+		for (Link link : this.topology.getLink()) {
+			if (link.getCpeSwitch().getValue().equals(cpeNodeId)) {
+				return this.getNode(link.getVnfSwitch().getValue());
 			}
 		}
 		return null;

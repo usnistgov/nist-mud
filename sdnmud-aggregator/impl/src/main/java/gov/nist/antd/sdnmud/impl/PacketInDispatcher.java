@@ -135,8 +135,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
 		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
-		String nodeSuffix = "?" + InstanceIdentifierUtils.getNodeUri(node);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(srcMac.getValue() + nodeSuffix);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		int flag = 0;
 		if (isLocalAddress)
 			flag = 1;
@@ -161,8 +160,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private static void installSrcMacMatchStampLocalAddressFlowRules(MacAddress srcMac, SdnmudProvider sdnmudProvider,
 			InstanceIdentifier<FlowCapableNode> node) {
-		String nodeIdSuffix = "?nodeId=" + InstanceIdentifierUtils.getNodeUri(node);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(SdnMudConstants.UNCLASSIFIED+ nodeIdSuffix);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT);
 
@@ -189,7 +187,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		LOG.debug("installStampDstManufacturerModelFlowRules : dstMac = " + dstMac.getValue() + " isLocalAddress "
 				+ isLocalAddress + " mudUri " + mudUri);
 		
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri + "?nodeId=" + InstanceIdentifierUtils.getNodeUri(node));
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
@@ -211,8 +209,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	// installDstMacMatchStampDstLocalAddressFlowRules
 	private static void installDstMacMatchStampDstLocalAddressFlowRules(MacAddress dstMac, SdnmudProvider sdnmudProvider,
 			InstanceIdentifier<FlowCapableNode> node) {
-		String nodeSuffix = "?" + InstanceIdentifierUtils.getNodeUri(node);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(SdnMudConstants.UNCLASSIFIED+ nodeSuffix);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT);
 		BigInteger metadataMask = SdnMudConstants.DST_NETWORK_MASK;
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.PASSTHRU);
@@ -287,7 +284,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				} else {
 					LOG.debug("MUD URI not found for MAC address and not a local packet" + srcMac.getValue());
 					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED);
 					FlowBuilder fb = FlowUtils.createSourceMacMatchGoToNextTableFlow(srcMac, 
 							SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
 							flowId, flowCookie);
@@ -312,7 +309,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				} else {
 					LOG.debug("MUD URI not found for MAC address and not a local packet" + dstMac.getValue());
 					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED);
 					FlowBuilder fb = FlowUtils.createDestMacMatchGoToNextTableFlow(dstMac, 
                             SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
 							 flowId, flowCookie);

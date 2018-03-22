@@ -32,7 +32,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev1803
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.AccessLists;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.access.lists.AccessList;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.FromDevicePolicy;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.accounts.MudNodes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,22 +68,21 @@ public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListe
 		LOG.info("onDataTreeChanged ");
 		for (DataTreeModification<Mud> change : changes) {
 			Mud mud = change.getRootNode().getDataAfter();
-			printMudProfile(mud);
+			
+			//printMudProfile(mud);
+			
 			// Put this in a map. Later when the MAC appears, we can pick it up
 			// from this map and install flow rules.
 			this.sdnmudProvider.addMudProfile(mud);
 			if (sdnmudProvider.getTopology() != null) {
-				for (MudNodes link : sdnmudProvider.getTopology().getMudNodes()) {
-					for (Uri cpeNodeId : link.getCpeSwitches()) {
-						MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId.getValue());
-						if (mudFlowsInstaller != null) {
-							mudFlowsInstaller.tryInstallFlows(mud);
-						}
+				for (Uri cpeNodeId : sdnmudProvider.getTopology().getCpeSwitches()) {
+					MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId.getValue());
+					if (mudFlowsInstaller != null) {
+						mudFlowsInstaller.tryInstallFlows(mud);
 					}
 				}
 			}
 		}
-
 	}
 
 }
