@@ -28,55 +28,21 @@ import java.math.BigInteger;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
 public interface SdnMudConstants {
+	// Well known ports.
 	public static final int DNS_PORT = 53;
 	public static final int DHCP_SERVER_PORT = 67;
 	public static final int DHCP_CLIENT_PORT = 68;
 	public static final int NTP_SERVER_PORT = 123;
 
+	// Protocol ids.
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;
 	public static final short ICMP_PROTOCOL = 1;
 	public static final int ETHERTYPE_IPV4 = 0x0800;
-	
-	// Pipeline 
-		public static final short FIRST_TABLE = 0;
-		public static final Short DETECT_EXTERNAL_ARP_TABLE = (short) FIRST_TABLE;
-		public static final Short PUSH_VLAN_ON_ARP_TABLE = (short)(FIRST_TABLE + 1);
-		public static final Short STRIP_VLAN_TABLE = (short) (FIRST_TABLE + 2);
 
-		public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 3);
-		public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 4);
-		public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
-		public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
-		public static final Short SET_VLAN_RULE_TABLE =  (short) (FIRST_TABLE+7);
-		public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 8);
-		public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 9);
-		public static final Short MAX_TID = L2SWITCH_TABLE;
-		public static final Short DROP_TABLE = (short) (MAX_TID + 1);
-		
-	
-	
-	
-	// Flow table priorities.
-	public static final Integer BASE_PRIORITY = 30;
-	public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
-
-	// Flow entry for dropping flows on a match.
-	public static final Integer MAX_PRIORITY = BASE_PRIORITY + 20;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH = BASE_PRIORITY + 15;
-	public static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
-	public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
-	public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
+	// Well known classes.
 	public static final String DNS_SERVER_URI = "urn:ietf:params:mud:dns";
 	public static final String NTP_SERVER_URI = "urn:ietf:params:mud:ntp";
-
-	public static final String LOCAL = "local";
-	public static final String REMOTE = "remote";
-	public static final String NONE = "NONE";
-	public static final String IN = "todevice";
-	public static final String OUT = "fromdevice";
-	
 
 	// The mask for Manufacturer and model.
 	public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000", 16);
@@ -99,16 +65,31 @@ public interface SdnMudConstants {
 	public static final int DST_NETWORK_FLAGS_SHIFT = "0000000".length() * 4;
 	public static final BigInteger LOCAL_DST_NETWORK_FLAG = new BigInteger("0000000010000000", 16);
 
-	// Drop mud flow.
+	// Cookie for unclassified flow rule.
+	public static final String UNCLASSIFIED = "UNCLASSIFIED";
+	// Flow URIs.
+	public static final String NONE = "NONE";
 	public static final String DROP = "drop";
+	public static final String LOCAL = "local";
+	public static final String REMOTE = "remote";
 
+	// Well known cookies.
 	public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
 			.createFlowCookie("send-to-controller-flow-cookie");
+	
+	public static final FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = 
+				InstanceIdentifierUtils.createFlowCookie("stamp-src-mac-manufacturer-model-flow-cookie");
 
+	public static final FlowCookie DROP_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("DROP");
+	
+	public static final FlowCookie UNCLASSIFIED_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("UNCLASSIFIED");
+	
+	public static final FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("src-local-network-flow-cookie");
+
+	public static final FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = 
+			InstanceIdentifierUtils.createFlowCookie("stamp-dst-mac-manufactuer-model-flow-cookie");
+	
 	// Cache timeout for network and model stamping flow rules.
-	public static final Integer CACHE_TIMEOUT = 120;
 	public static final int ETHERTYPE_LLDP = 0x88cc;
-	public static final String PASSTHRU = "PASSTHRU";
-	public static final String UNCLASSIFIED = "UNCLASSIFIED";
 
 }

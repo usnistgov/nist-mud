@@ -40,6 +40,8 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.nist.antd.baseapp.impl.BaseappConstants;
+
 /**
  * Class that gets invoked when a switch connects.
  * 
@@ -113,14 +115,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return PacketUtils.rawMacToMac(reverseArray(rawMac));
 	}
 
-	private void installUnconditionalGoToTable(String nodeId, InstanceIdentifier<FlowCapableNode> node, short table,
-			short destinationTable) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.PASSTHRU);
-		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, destinationTable,
-				flowId, flowCookie);
-		dataStoreAccessor.writeFlow(unconditionalGoToNextFlow, node);
-	}
+	
 
 	/**
 	 * Flow to send packet to Controller (unconditionally)
@@ -133,12 +128,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
 		LOG.info("SEND_TO_CONTROLLER_FLOW " + flowCookie.getValue().toString(16));
 		FlowBuilder fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
-				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
+				BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
 		fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, SdnMudConstants.SDNMUD_RULES_TABLE, flowId,
+				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
 				flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -171,13 +165,13 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private void installPermitPacketsToFromDhcp(String nodeId, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
+		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE,
 				flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
 		flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(SdnMudConstants.SDNMUD_RULES_TABLE,
+		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE,
 				flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
@@ -188,8 +182,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			LOG.info("Node not seen -- not installing flow ");
 			return;
 		}
-		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
-		installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 	}
 
 	private void installInitialFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
@@ -200,8 +194,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
 		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
-			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
-			installSendIpPacketToControllerFlow(nodeUri, SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		}
 
 		/*
@@ -211,7 +205,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		 * inspection.
 		 */
 
-		installUnditionalDropPacket(nodeUri, nodePath, SdnMudConstants.DROP_TABLE);
+		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
 
 		// All devices may access DHCP (default rule).
 		installPermitPacketsToFromDhcp(nodeUri, nodePath);

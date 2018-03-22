@@ -122,7 +122,7 @@ abstract class FlowUtils {
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

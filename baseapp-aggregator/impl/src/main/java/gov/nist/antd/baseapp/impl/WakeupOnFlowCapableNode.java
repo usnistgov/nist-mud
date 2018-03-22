@@ -50,7 +50,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCONDITIONAL_GOTO);
+		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(BaseappConstants.UNCONDITIONAL_GOTO);
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
 				flowId, flowCookie);
 		baseappProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
@@ -69,7 +69,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		
 		// Just create a cascade of gotos at min flow priority.
 		
-		for ( int i = 0; i < SdnMudConstants.MAX_TID; i++) {
+		for ( int i = 0; i < BaseappConstants.MAX_TID; i++) {
 			installUnconditionalGoToTable(nodePath,(short)i);
 		}
 

@@ -27,7 +27,7 @@ package gov.nist.antd.baseapp.impl;
 import java.math.BigInteger;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
-public interface SdnMudConstants {
+public interface BaseappConstants {
 
 	// Pipeline
 	public static final short FIRST_TABLE = 0;
@@ -57,11 +57,15 @@ public interface SdnMudConstants {
 	public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
 	public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
 
-	public static final String LOCAL = "local";
-	public static final String REMOTE = "remote";
-	public static final String PASSTHRU = "PASSTHRU";
-	
+
 	public static final String NONE = "NONE";
 	public static final String MUD_FLOW_MISS = "drop";
 	public static final String UNCONDITIONAL_GOTO = "UNCONDITIONAL_GOTO";
+
+
+	public static final String PASSTHRU = "PASSTHRU";
+
+    // Default cache timeout.
+	public static final Integer CACHE_TIMEOUT = 120;
+
 }

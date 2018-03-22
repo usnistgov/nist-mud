@@ -69,8 +69,8 @@ class InstanceIdentifierUtils {
 
 	static {
 		// Dummy constants
-		models.add(SdnMudConstants.NONE);
-		manufacturers.add(SdnMudConstants.NONE);
+		models.add(VlanConstants.NONE);
+		manufacturers.add(VlanConstants.NONE);
 	}
 
 	private InstanceIdentifierUtils() {

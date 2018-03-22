@@ -557,7 +557,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 	private static MatchBuilder createDstUdpPortMatch(MatchBuilder matchBuilder, int udpPort) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
+		ipmatch.setIpProtocol(VlanConstants.UDP_PROTOCOL);
 		ipmatch.setIpProto(IpVersion.Ipv4);
 		matchBuilder.setIpMatch(ipmatch.build());
 		PortNumber udpDstPort = new PortNumber(udpPort);
@@ -569,7 +569,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 	private static MatchBuilder createSrcUdpPortMatch(MatchBuilder matchBuilder, int udpPort) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
+		ipmatch.setIpProtocol(VlanConstants.UDP_PROTOCOL);
 		ipmatch.setIpProto(IpVersion.Ipv4);
 		matchBuilder.setIpMatch(ipmatch.build());
 		PortNumber portNumber = new PortNumber(udpPort);
@@ -589,7 +589,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 	private static MatchBuilder createUdpPortMatch(MatchBuilder matchBuilder, int udpSrcPort, int udpDstPort) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
+		ipmatch.setIpProtocol(VlanConstants.UDP_PROTOCOL);
 		ipmatch.setIpProto(IpVersion.Ipv4);
 		matchBuilder.setIpMatch(ipmatch.build());
 		PortNumber portNumber = new PortNumber(udpSrcPort);
@@ -602,7 +602,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 	private static MatchBuilder createUdpProtocolMatch(MatchBuilder matchBuilder) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
+		ipmatch.setIpProtocol(VlanConstants.UDP_PROTOCOL);
 		ipmatch.setIpProto(IpVersion.Ipv4);
 		matchBuilder.setIpMatch(ipmatch.build());
 		return matchBuilder;
@@ -997,7 +997,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		fb.setMatch(matchBuilder.build()).setTableId(tableId)
 				.setFlowName("metadataMatchSetVLANTagSendToPortAndGoToStripVlanTagTable").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
@@ -1021,7 +1021,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 				.setFlowName("destinationMacMatchSetVlanSendToPort").setId(flowId).setKey(new FlowKey(flowId))
 				.setCookie(flowCookie);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(time).setIdleTimeout(2*time).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1045,7 +1045,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 				.setFlowName("srcDestMacMatchSetVlanSendToPort").setId(flowId).setKey(new FlowKey(flowId))
 				.setCookie(flowCookie);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(time).setIdleTimeout(2*time).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1072,7 +1072,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 					.setFlowName("srcDestMacVlanMatchGoToTable").setId(flowId).setKey(new FlowKey(flowId))
 					.setCookie(flowCookie);
 			flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-					.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
+					.setPriority(VlanConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY)
 					.setHardTimeout(time).setIdleTimeout(2*time).setFlags(new FlowModFlags(false, false, false, false, false));
 
 			return flowBuilder;
@@ -1100,7 +1100,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		insb.setInstruction(instructions);
 
 		stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
-				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
+				.setKey(new FlowKey(flowId)).setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -1129,7 +1129,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		insb.setInstruction(instructions);
 
 		stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
-				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
+				.setKey(new FlowKey(flowId)).setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -1154,7 +1154,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		FlowBuilder setTagFlow = new FlowBuilder().setTableId(tableId).setFlowName("setVlanTagGoToTable").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		setTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
-				.setKey(new FlowKey(flowId)).setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
+				.setKey(new FlowKey(flowId)).setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -1176,7 +1176,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 				.setFlowName("setVlanTagAndSendToPort").setId(flowId).setKey(new FlowKey(flowId))
 				.setCookie(flowCookie);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(time).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1196,7 +1196,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(VlanConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1218,7 +1218,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("vlanMatchDeliverToPorts").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -1257,7 +1257,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("destIpMatchSendToController").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(VlanConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return fb;
 	}
@@ -1276,7 +1276,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		fb.setBarrier(true);
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchDropPacket").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH).setBufferId(OFConstants.ANY)
+				.setPriority(VlanConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return fb;
 	}
@@ -1299,7 +1299,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(li);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+				.setPriority(VlanConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 				.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1323,7 +1323,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(li);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+				.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 				.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1350,7 +1350,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(li);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+				.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 				.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1375,7 +1375,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(li);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+				.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 				.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1395,7 +1395,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1416,7 +1416,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1441,7 +1441,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1460,7 +1460,7 @@ private static Instruction createPopVlanAndSendToPortActionInstruction(String ou
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-			.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+			.setPriority(VlanConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
 			.setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

@@ -57,6 +57,13 @@
 			<version>${project.version}</version>
 		</dependency>
 
+       <dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>baseapp-impl</artifactId>
+			<version>0.1.0</version>
+			<scope>compile</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
 			<artifactId>sal-binding-api</artifactId>
@@ -102,6 +109,12 @@
 			<scope>compile</scope>
 		</dependency>
 
+        <dependency>
+           <groupId>org.opendaylight.controller</groupId>
+           <artifactId>liblldp</artifactId>
+           <version>0.13.2</version>
+           <scope>compile</scope>
+        </dependency>
 
 		<!-- Testing Dependencies -->
 		<dependency>

@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.opendaylight.controller.liblldp.Ethernet;
+import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -41,6 +43,8 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 /**
  * Packet in dispatcher that gets invoked on flow table miss when a packet
@@ -76,6 +80,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.sdnmudProvider = sdnmudProvider;
 	}
 
+	private static MacAddress rawMacToMac(final byte[] rawMac) {
+		MacAddress mac = null;
+		if (rawMac != null) {
+			StringBuilder sb = new StringBuilder();
+			for (byte octet : rawMac) {
+				sb.append(String.format(":%02X", octet));
+			}
+			mac = new MacAddress(sb.substring(1));
+		}
+		return mac;
+	}
+
+	
+	
 	/**
 	 * Get the Node for a given MAC address.
 	 * 
@@ -150,10 +168,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK)
 				.or(SdnMudConstants.SRC_NETWORK_MASK);
 
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("stamp-src-mac-manufactuer-model-flow");
+		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
 		FlowBuilder fb = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
+				BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -166,10 +184,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		BigInteger metadataMask = SdnMudConstants.SRC_NETWORK_MASK;
 
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.PASSTHRU);
+		FlowCookie flowCookie = SdnMudConstants.SRC_LOCALNETWORK_MASK_FLOW_COOKIE;
 
 		FlowBuilder fb = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-				SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
+				BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -193,10 +211,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
 				.or(SdnMudConstants.DST_NETWORK_MASK);
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("stamp-dst-mac-manufactuer-model-flow");
+		FlowCookie flowCookie =  SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
+				
 
 		FlowBuilder fb = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
+				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -212,10 +231,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT);
 		BigInteger metadataMask = SdnMudConstants.DST_NETWORK_MASK;
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.PASSTHRU);
-
+		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 		FlowBuilder fb = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-				SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
+				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -227,23 +245,34 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			LOG.error("Topology node not found -- ignoring packet");
 			return;
 		}
+		
+		Ethernet ethernet = new Ethernet();
+
+		try {
+			ethernet.deserialize(notification.getPayload(), 0,
+					notification.getPayload().length * NetUtils.NumBitsInAByte);
+
+		} catch (Exception ex) {
+			LOG.error("Error deserializing packet", ex);
+		}
+
+		// Extract various fields from the ethernet packet.
+
+		int etherType = ethernet.getEtherType() < 0 ? 0xffff + ethernet.getEtherType() + 1 : ethernet.getEtherType();
+		byte[] srcMacRaw = ethernet.getSourceMACAddress();
+		byte[] dstMacRaw = ethernet.getDestinationMACAddress();
+
 		// Extract the src mac address from the packet.
-		byte[] srcMacRaw = PacketUtils.extractSrcMac(notification.getPayload());
-		MacAddress srcMac = PacketUtils.rawMacToMac(srcMacRaw);
-
-		byte[] dstMacRaw = PacketUtils.extractDstMac(notification.getPayload());
-		MacAddress dstMac = PacketUtils.rawMacToMac(dstMacRaw);
-
+		MacAddress srcMac = rawMacToMac(srcMacRaw);
+		MacAddress dstMac = rawMacToMac(dstMacRaw);
+		
+		
 		short tableId = notification.getTableId().getValue();
 
 		String matchInPortUri = notification.getMatch().getInPort().getValue();
 
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
 				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
-
-		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
-		int etherType = PacketUtils.bytesToEtherType(etherTypeRaw);
-
 
 		if ( etherType == SdnMudConstants.ETHERTYPE_LLDP) {
 			LOG.debug("LLDP Pakcet -- dropping it");
@@ -255,8 +284,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			String sourceIpAddress = PacketUtils.extractSrcIpStr(notification.getPayload());
 			String destIpAddress = PacketUtils.extractDstIpStr(notification.getPayload());
 			LOG.info("Source IP  " + sourceIpAddress + " dest IP  " + destIpAddress);
-
-			String sendingNodeId = matchInPortUri;
 			
 			
 			if (!sdnmudProvider.isCpeNode(nodeId)) {
@@ -265,8 +292,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 
 			sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
-			if (tableId == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE || 
-                tableId == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE || 
+                tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				// We got a notification for a device that is connected to this
 				// switch.
 				Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
@@ -284,9 +311,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				} else {
 					LOG.debug("MUD URI not found for MAC address and not a local packet" + srcMac.getValue());
 					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED);
+					FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 					FlowBuilder fb = FlowUtils.createSourceMacMatchGoToNextTableFlow(srcMac, 
-							SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
+							BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE,
 							flowId, flowCookie);
 					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 				}
@@ -309,9 +336,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				} else {
 					LOG.debug("MUD URI not found for MAC address and not a local packet" + dstMac.getValue());
 					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED);
+					FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 					FlowBuilder fb = FlowUtils.createDestMacMatchGoToNextTableFlow(dstMac, 
-                            SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
+                            BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
 							 flowId, flowCookie);
 					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 				}

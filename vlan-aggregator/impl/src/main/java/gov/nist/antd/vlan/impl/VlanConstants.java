@@ -27,7 +27,7 @@ package gov.nist.antd.vlan.impl;
 import java.math.BigInteger;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
-interface SdnMudConstants {
+public interface VlanConstants {
 	
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;
