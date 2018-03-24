@@ -186,6 +186,9 @@ def setupTopology(controller_addr,dns_address, interface):
     # Start a web server there.
     h10.cmdPrint('python http-server.py -H 203.0.113.13&')
 
+    # Ping the VNF host (past the lan)
+  
+    h1.cmdPrint('ping -c 10 203.0.113.13')
 
 
     print "*********** System ready *********"
