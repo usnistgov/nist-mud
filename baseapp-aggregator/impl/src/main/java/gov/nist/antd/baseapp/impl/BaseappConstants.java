@@ -67,5 +67,9 @@ public interface BaseappConstants {
 
     // Default cache timeout.
 	public static final Integer CACHE_TIMEOUT = 120;
+	
+	public static final short TCP_PROTOCOL = 6;
+	public static final short UDP_PROTOCOL = 17;
+	
 
 }

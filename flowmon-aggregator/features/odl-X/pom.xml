@@ -107,6 +107,15 @@
 			<type>xml</type>
 		</dependency>
 
+        <!-- baseapp lays out the table structure -->
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>odl-baseapp</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>features</classifier>
+        </dependency>
+
     </dependencies>
 
 </project>

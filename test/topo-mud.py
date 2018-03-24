@@ -14,6 +14,8 @@ import signal
 from distutils.spawn import find_executable
 from subprocess import call
 import time
+import requests
+import json
 from mininet.log import setLogLevel 
 
 
@@ -27,9 +29,6 @@ def setupTopology(controller_addr,dns_address, interface):
     print "mininet created"
 
     c1 = net.addController('c1', ip=controller_addr,port=6653)
-    print "addController ", controller_addr
-    net1 = Mininet(controller=RemoteController)
-    c2 = net1.addController('c2', ip="127.0.0.1",port=6673)
 
 
     # h1: IOT Device.
@@ -53,9 +52,9 @@ def setupTopology(controller_addr,dns_address, interface):
     h6 = net.addHost('h6')
 
     # Switch s2 is the "multiplexer".
-    s2 = net1.addSwitch('s2')
+    s2 = net.addSwitch('s2')
 
-    s3 = net1.addSwitch('s3')
+    s3 = net.addSwitch('s3')
 
     h7 = net.addHost('h7')
 
@@ -63,7 +62,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h8 = net.addHost('h8')
 
     # This is our fake www.nist.local host.
-    h9 = net1.addHost('h9')
+    h9 = net.addHost('h9')
    
     s2.linkTo(h6)
     #h7 is the router -- no direct link between S2 and S3
@@ -94,15 +93,14 @@ def setupTopology(controller_addr,dns_address, interface):
     h7.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
 
     net.build()
-    net1.build()
+    net.build()
     c1.start()
-    c2.start()
     s1.start([c1])
     s2.start([c1])
-    s3.start([c2])
+    s3.start([c1])
 
     net.start()
-    net1.start()
+    net.start()
      
 
     # Clean up any traces of the previous invocation (for safety)
@@ -117,9 +115,6 @@ def setupTopology(controller_addr,dns_address, interface):
     h7.setMAC("00:00:00:00:00:07","h7-eth0")
     h8.setMAC("00:00:00:00:00:08","h8-eth0")
     h9.setMAC("00:00:00:00:00:09","h9-eth0")
-
-    
-    
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -171,8 +166,6 @@ def setupTopology(controller_addr,dns_address, interface):
     
     # Start the IDS on node 8
 
-    h8.cmdPrint("python packet-sniffer.py &")
-
 
     print "*********** System ready *********"
 
@@ -184,12 +177,16 @@ def setupTopology(controller_addr,dns_address, interface):
     print "Exercise system python udpping.py --client --host 10.0.0.6 --port 8002"
 
 
+    h1.cmdPrint("python udpping.py --port 4000 --host 10.0.0.2 --client")
+
+    h1.cmdPrint("wget http://www.nist.local")
+
     cli = CLI( net )
     h1.terminate()
     h2.terminate()
     h3.terminate()
     net.stop()
-    #net1.stop()
+    #net.stop()
 
 def startTestServer(host):
     """
@@ -211,36 +208,13 @@ if __name__ == '__main__':
     
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
     parser.add_argument("-t",help="Host only adapter address for test server",default = "192.168.56.102")
-    parser.add_argument("-r",help="Ryu home (where you have the ryu distro git pulled)", default="/home/odl-developer/host/ryu/")
     args = parser.parse_args()
     controller_addr = args.c
     dns_address = args.d
     host_addr = args.t
     interface = args.i
-    ryu_home = args.r
 
-    # Pkill dnsmasq. We will start one up later on h3
-    cmd = ['sudo','pkill','ryu-manager']
-    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
 
-    # restart ryu-manager (this is for s2)
-    RYU_MANAGER = os.path.abspath(find_executable("ryu-manager"))
-    cmd = "/usr/bin/xterm -e \"%s --wsapi-port 9000 --ofp-tcp-listen-port 6673 app/simple_switch_13.py\"" % (RYU_MANAGER)
-    #detach the process and shield it from ctrl-c
-
-    proc = subprocess.Popen(cmd,shell=True, cwd=ryu_home + "/ryu", stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setpgrp)
-
-    time.sleep(5)
-
-    #cmd = [RYU_MANAGER ,"--ofp-tcp-listen-port", "6673",  "app/simple_switch_13.py" ]
-    #from subprocess import call
-    #call(cmd)
-    
-    
-
-    # ryu_home = args.r
-    # Clean up from the last invocation
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
@@ -260,6 +234,21 @@ if __name__ == '__main__':
     # start the test server.
     # startTestServer(host_addr)
     # setup our topology
+    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @cpenodes.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-cpe-nodes:cpe-collections
+    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @access-control-list.json  http://$CONTROLLER_ADDR:8181/restconf/config/ietf-access-control-list:access-lists
+    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @device-association.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-mud-device-association:mapping
+    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @controllerclass-mapping.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-mud-controllerclass-mapping:controllerclass-mapping
+
+    headers= {"Content-Type":"application/json"}
+    for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
+        ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        ("ietfmud.json","ietf-mud:mud")} :
+	data = json.load(open(configfile))
+	print "configfile", configfile
+        url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
+	print "url ", url
+        r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+	print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
 

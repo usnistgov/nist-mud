@@ -21,6 +21,7 @@ class MappingNotificationListener implements NistMudDeviceAssociationListener,No
 		
 		LOG.info("MappingNotificationListener: onMappingNotification ");
 		
+		
 		flowmonProvider.addMappingNotification(notification);
 		 
 	}

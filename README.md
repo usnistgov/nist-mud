@@ -43,14 +43,45 @@ a learning switch controller to set up our topology.
      cd ryu; pip install .
      pip install -r tools/optional-requires
 
+### Architecture ###
+
+Our system consists of a collection of CPE switches. MUD flow rules
+are installed only at CPE switches.  Packets that leave the CPE switch and
+are sent to the NPE switch are tagged with a VLAN tag that identifies
+the CPE switch from which they originated.  At the NPE switch the VLAN
+tag is used to direct packets to a corresponding VNF switch.
+
+The flow monitoring facility allows an IDS to indicate interest in specific classes of packets i.e:
+- Packets that have hit a MUD flow rule and successfully been fowarded:
+-- Packets that have hit a MUD rule and are forwarded from the CPE 
+-- Packets that have hit a MUD rule and are locally routed at the CPE.
+- Packets that have ht a MUD flow rule and have been rejected.
+- Packets that have no MUD rule associated with it.
+
+The flow monitoring facility consists of two parts i.e.
+- A CPE flow monitor that places flow rules attaching MPLS labels to packets of interest.
+- An VNF switch packet diverter that diverts marked packets from the VNF switch to a registered daemon. These packets 
+  can be provided to an Intrusion Detection System to analyze system behavior.
+
+
+
+
+### Software Components ###
+
+This project consists of the following components
+
+- baseapp-aggregator : The base application that lays out the table structure and defines constants and configurations used by the other subprojects.
+  This include the opendaylight l2-switch component.
+- sdnmud-aggregator : An SDN implementation of the MUD specification on opendaylight. This component can be used independently of the others.
+- vlan-aggregator : Stamps outbound packets from the CPE switches bound for the NPE switch. The NPE switch is an aggregator that sends vlan tagged packets to the appropriate VNF switch.
+- flowmon-aggreagor : Sets MPLS tags on the outbound flows of the CPE switch for those packets that need to be monitored at the VNF switch.
+
 
 ### Building ###
 
 Copy maven/settings.xml to ~/.m2
 
 Run maven
-    
-      cd sdniot-aggregator
       mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
 ### Manual Testing ###
@@ -96,14 +127,14 @@ Add the following to /etc/hosts so the java library can look up our fake host.
 
 On the host where you are running the controller, start Karaf
 
-      cd sdniot-aggregator/karaf/target/assembly/bin
+      cd sdnmud-aggregator/karaf/target/assembly/bin
       karaf clean
       
 You should see an OpenDaylight banner appear.
 
 Install the feature using in Karaf from the Karaf command line.
 
-      feature:install features-sdniot
+      feature:install features-sdnmud
 
 Start the mininet test environment. On the mininet vm:
 

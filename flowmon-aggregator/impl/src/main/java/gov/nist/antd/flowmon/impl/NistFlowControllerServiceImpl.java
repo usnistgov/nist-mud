@@ -23,6 +23,7 @@ package gov.nist.antd.flowmon.impl;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -33,11 +34,11 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.contro
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.BlockFlowInput.Scope;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.BlockFlowOutput;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.BlockFlowOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.GetRegisteredMudUrisOutput;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.GetRegisteredMudUrisOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.NistFlowControllerService;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.get.registered.mud.uris.output.MudNodeMapping;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.get.registered.mud.uris.output.MudNodeMappingBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorInput;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorOutput;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -45,131 +46,186 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 /**
- * Flow controller RPC service to shut off specific flows.
- * The design for this is still under development.
+ * Flow controller RPC service to shut off specific flows. The design for this
+ * is still under development.
  * 
  * @author mranga@nist.gov
  *
  */
 public class NistFlowControllerServiceImpl implements NistFlowControllerService {
-  class CompletedFuture<T> implements Future<T> {
-    private final T result;
 
-    public CompletedFuture(final T result) {
-      this.result = result;
-    }
+	static final Logger LOG = LoggerFactory.getLogger(NistFlowControllerService.class);
 
-    @Override
-    public boolean cancel(final boolean b) {
-      return false;
-    }
+	private FlowmonProvider flowmonProvider;
 
-    @Override
-    public boolean isCancelled() {
-      return false;
-    }
+	private HashMap<String, FlowBuilder> flowCache;
 
-    @Override
-    public boolean isDone() {
-      return true;
-    }
+	class CompletedFuture<T> implements Future<T> {
+		private final T result;
 
-    @Override
-    public T get() throws InterruptedException, ExecutionException {
-      return this.result;
-    }
+		public CompletedFuture(final T result) {
+			this.result = result;
+		}
 
-    @Override
-    public T get(final long l, final TimeUnit timeUnit)
-        throws InterruptedException, ExecutionException, TimeoutException {
-      return get();
-    }
+		@Override
+		public boolean cancel(final boolean b) {
+			return false;
+		}
 
-  }
+		@Override
+		public boolean isCancelled() {
+			return false;
+		}
 
-  private FlowmonProvider flowmonProvider;
+		@Override
+		public boolean isDone() {
+			return true;
+		}
 
-  public NistFlowControllerServiceImpl(FlowmonProvider flowmonProvider) {
-    this.flowmonProvider = flowmonProvider;
-  }
+		@Override
+		public T get() throws InterruptedException, ExecutionException {
+			return this.result;
+		}
 
-  @Override
-  public Future<RpcResult<BlockFlowOutput>> blockFlow(BlockFlowInput blockedFlowInput) {
-    Uri mudUri = blockedFlowInput.getMudUri();
-    Scope scope = blockedFlowInput.getScope();
+		@Override
+		public T get(final long l, final TimeUnit timeUnit)
+				throws InterruptedException, ExecutionException, TimeoutException {
+			return get();
+		}
 
-    String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-    int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
+	}
 
-    int modelId = InstanceIdentifierUtils.getModelId(mudUri.getValue());
+	public NistFlowControllerServiceImpl(FlowmonProvider flowmonProvider) {
+		this.flowmonProvider = flowmonProvider;
+	}
 
-    if (manufacturerId == -1 && modelId == -1) {
-      BlockFlowOutputBuilder outputBuilder =
-          new BlockFlowOutputBuilder().setStatus(-1L).setStatusMessage("Bad data");
-      RpcResult<BlockFlowOutput> result = RpcResultBuilder.success(outputBuilder).build();
-      return new CompletedFuture<RpcResult<BlockFlowOutput>>(result);
+	private static String generateSetMplsFlowIdStr(String nodeUri, String flowId) {
+		return nodeUri + ":" + flowId + ":" + "SET_MPLS";
+	}
 
-    }
+	private static String generateStripMplsFlowIdStr(String nodeUri, String flowId) {
+		return nodeUri + ":" + flowId + ":" + "STRIP_MPLS";
+	}
 
-    Collection<InstanceIdentifier<FlowCapableNode>> nodes =
-        flowmonProvider.getCpeNodes();
+	@Override
+	public Future<RpcResult<BlockFlowOutput>> blockFlow(BlockFlowInput blockedFlowInput) {
+		Uri mudUri = blockedFlowInput.getMudUri();
+		Scope scope = blockedFlowInput.getScope();
 
-    String uri = "blocked-flow:" + manufacturer;
+		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
+		int manufacturerId = flowmonProvider.getManfuacturerId(manufacturer);
 
-    for (InstanceIdentifier<FlowCapableNode> node : nodes) {
-      short tableId = SdnMudConstants.PASS_THRU_TABLE;
-      flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri, tableId, null);
-      FlowId flowId = InstanceIdentifierUtils.createFlowId(uri);
-      FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri);
-      if (modelId != -1) {
-        BigInteger metadata =
-            BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT)
-                .or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+		int modelId = flowmonProvider.getModelId(mudUri.getValue());
 
-        BigInteger metadataMask =
-            SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
-        FlowBuilder fb = FlowUtils.createMetadataMatchDropPacket(metadata, metadataMask, tableId,
-            flowCookie, flowId);
-        flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-      } else {
-        BigInteger metadata =
-            BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
-        BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
-        FlowBuilder fb = FlowUtils.createMetadataMatchDropPacket(metadata, metadataMask, tableId,
-            flowCookie, flowId);
-        flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-      }
-    }
+		if (manufacturerId == -1 && modelId == -1) {
+			BlockFlowOutputBuilder outputBuilder = new BlockFlowOutputBuilder().setStatus(-1L)
+					.setStatusMessage("Bad data");
+			RpcResult<BlockFlowOutput> result = RpcResultBuilder.success(outputBuilder).build();
+			return new CompletedFuture<RpcResult<BlockFlowOutput>>(result);
 
+		}
 
+		Collection<InstanceIdentifier<FlowCapableNode>> nodes = flowmonProvider.getCpeNodes();
 
-    BlockFlowOutputBuilder outputBuilder =
-        new BlockFlowOutputBuilder().setStatus(0L).setStatusMessage("Success");
-    RpcResult<BlockFlowOutput> result = RpcResultBuilder.success(outputBuilder).build();
-    return new CompletedFuture<RpcResult<BlockFlowOutput>>(result);
+		String uri = "blocked-flow:" + manufacturer;
 
-  }
+		for (InstanceIdentifier<FlowCapableNode> node : nodes) {
+			short tableId = BaseappConstants.PASS_THRU_TABLE;
+			flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri, tableId, null);
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(uri);
+			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri);
+			if (modelId != -1) {
+				BigInteger metadata = BigInteger.valueOf(manufacturerId)
+						.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT)
+						.or(BigInteger.valueOf(modelId).shiftLeft(FlowmonConstants.SRC_MODEL_SHIFT));
 
-  @Override
-  public Future<RpcResult<GetRegisteredMudUrisOutput>> getRegisteredMudUris() {
-    /*
-    Collection<String> cpeNodeFlowmon = flowmonProvider.getMudCpeNodeFlowmon();
-    GetRegisteredMudUrisOutputBuilder outputBuilder = new GetRegisteredMudUrisOutputBuilder();
-    List<MudNodeMapping> mudNodeMappingList = new ArrayList<MudNodeMapping>();
-    for (String cpeNodeId : cpeNodeFlowmon) {
-       List<Uri> mudUris = flowmonProvider.getRegisteredMudUrls(cpeNodeId);       
-       if (mudUris != null) {
-         MudNodeMapping mudNodeMapping = new MudNodeMappingBuilder().setNodeId(new Uri(cpeNodeId)).setMudUris(mudUris).build();
-         mudNodeMappingList.add(mudNodeMapping);
-       }
-    }
-    outputBuilder.setMudNodeMapping(mudNodeMappingList);
-    RpcResult<GetRegisteredMudUrisOutput> result = RpcResultBuilder.success(outputBuilder).build();
-    return new CompletedFuture<RpcResult<GetRegisteredMudUrisOutput>>(result);
-    */
-   return null;
-  }
+				BigInteger metadataMask = FlowmonConstants.SRC_MANUFACTURER_MASK.or(FlowmonConstants.SRC_MODEL_MASK);
+				FlowBuilder fb = FlowUtils.createMetadataMatchDropPacket(metadata, metadataMask, tableId, flowCookie,
+						flowId);
+				flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
+			} else {
+				BigInteger metadata = BigInteger.valueOf(manufacturerId)
+						.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
+				BigInteger metadataMask = FlowmonConstants.SRC_MANUFACTURER_MASK;
+				FlowBuilder fb = FlowUtils.createMetadataMatchDropPacket(metadata, metadataMask, tableId, flowCookie,
+						flowId);
+				flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
+			}
+		}
+
+		BlockFlowOutputBuilder outputBuilder = new BlockFlowOutputBuilder().setStatus(0L).setStatusMessage("Success");
+		RpcResult<BlockFlowOutput> result = RpcResultBuilder.success(outputBuilder).build();
+		return new CompletedFuture<RpcResult<BlockFlowOutput>>(result);
+
+	}
+
+	@Override
+	public Future<RpcResult<RegisterMonitorOutput>> registerMonitor(RegisterMonitorInput registerMonitorInput) {
+
+		for (Uri cpeNodeUri : registerMonitorInput.getCpeNodeIds()) {
+			InstanceIdentifier<FlowCapableNode> cpeNode = this.flowmonProvider.getNode(cpeNodeUri.getValue());
+			if (cpeNode == null) {
+				LOG.info("CPE node not yet registered");
+				continue;
+			}
+			InstanceIdentifier<FlowCapableNode> vnfNode = this.flowmonProvider.getVnfNode(cpeNodeUri.getValue());
+
+			String vnfNodeId = InstanceIdentifierUtils.getNodeUri(vnfNode);
+			FlowmonConfigData flowmonConfig = this.flowmonProvider.getFlowmonConfig(vnfNodeId);
+			for (Uri flowUri : flowmonConfig.getFlowSpec()) {
+				String flowIdStr = generateSetMplsFlowIdStr(cpeNodeUri.getValue(), flowUri.getValue());
+				FlowBuilder fb = this.flowCache.get(flowIdStr);
+				int mplsTag = InstanceIdentifierUtils.getFlowHash(flowUri.getValue());
+				if (fb == null) {
+					FlowId flowId = new FlowId(flowIdStr);
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri.getValue());
+					fb = FlowUtils.createMetadataMatchMplsTagGoToTableFlow(flowCookie, flowId,
+							BaseappConstants.PASS_THRU_TABLE, mplsTag, registerMonitorInput.getTimeout().intValue());
+					this.flowCache.put(flowIdStr, fb);
+				}
+				// This sets the MPS tag prior to the output stage
+				this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, cpeNode);
+				flowIdStr = generateStripMplsFlowIdStr(cpeNodeUri.getValue(), flowUri.getValue());
+				fb = this.flowCache.get(flowIdStr);
+				if (fb == null) {
+					FlowId flowId = new FlowId(flowIdStr);
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri.getValue());
+					fb = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
+							BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
+					this.flowCache.put(flowIdStr, fb);
+				}
+				// Push a strip MPLS rule at the CPE node.
+				this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, cpeNode);
+				if (vnfNode != null) {
+					// At the VNF node, we push a rule to strip the MPLS tag at the last
+					// stage of the pipeline.
+					flowIdStr = generateStripMplsFlowIdStr(vnfNodeId, flowUri.getValue());
+					fb = this.flowCache.get(flowIdStr);
+					if (fb == null) {
+						FlowId flowId = new FlowId(flowIdStr);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowUri.getValue());
+						fb = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
+								BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
+						this.flowCache.put(flowIdStr, fb);
+					}
+					// Push a strip MPLS rule at the CPE node.
+					this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, cpeNode);
+				
+
+				}
+
+			}
+		}
+		RegisterMonitorOutputBuilder outputBuilder = new RegisterMonitorOutputBuilder().setStatus(0L);
+		RpcResult<RegisterMonitorOutput> result = RpcResultBuilder.success(outputBuilder).build();
+		return new CompletedFuture<RpcResult<RegisterMonitorOutput>>(result);
+
+	}
 
 }

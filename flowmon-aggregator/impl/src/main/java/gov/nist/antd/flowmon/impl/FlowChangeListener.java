@@ -12,6 +12,9 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.nist.antd.baseapp.impl.BaseappConstants;
+
+
 public class FlowChangeListener implements DataTreeChangeListener<Flow> {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FlowChangeListener.class);
@@ -43,9 +46,9 @@ public class FlowChangeListener implements DataTreeChangeListener<Flow> {
 				LOG.info("FlowChangeListener : " + flowIdStr);
 
 
-				if (flow.getTableId() == SdnMudConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
-						|| flow.getTableId() == SdnMudConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-					if (flow.getCookie().equals(InstanceIdentifierUtils.createFlowCookie(SdnMudConstants.UNCLASSIFIED))) {
+				if (flow.getTableId() == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
+						|| flow.getTableId() == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+					if (flow.getCookie().equals(InstanceIdentifierUtils.createFlowCookie(FlowmonConstants.UNCLASSIFIED))) {
 						String nodeId = InstanceIdentifierUtils.getNodeIdFromFlowId(flowIdStr);
 						if (flowmonProvider.isCpeNode(nodeId)) {
 							InstanceIdentifier<FlowCapableNode> vnfNode = flowmonProvider.getVnfNode(nodeId);

@@ -65,7 +65,9 @@ public class FlowmonProvider {
 
 	private FlowmonConfigDataStoreListener flowmonConfigDataStoreListener;
 
-	private HashMap<String, MappingNotification> mappingNotificationMap = new HashMap<>();
+	private HashMap<String, MappingNotification> modelNotificationMap = new HashMap<>();
+	
+	private HashMap<String,MappingNotification> manufacturerNotifcationMap = new HashMap<>();
 
 	private class FlowmonPort {
 		private String portUri;
@@ -201,7 +203,7 @@ public class FlowmonProvider {
 		for (Iterator<String> keys = flowmonNodeToPortMap.keySet().iterator(); keys.hasNext();) {
 			String key = keys.next();
 			FlowmonPort flowmonPort = flowmonNodeToPortMap.get(key);
-			if (System.currentTimeMillis() - flowmonPort.time > 2 * SdnMudConstants.DEFAULT_IDS_IDLE_TIMEOUT * 1000) {
+			if (System.currentTimeMillis() - flowmonPort.time > 2 * FlowmonConstants.DEFAULT_IDS_IDLE_TIMEOUT * 1000) {
 				keys.remove();
 				LOG.info("removeFlowmonPort : removing " + key);
 
@@ -213,11 +215,18 @@ public class FlowmonProvider {
 
 	public void addMappingNotification(MappingNotification notification) {
 		String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
-		mappingNotificationMap.put(mudUrl, notification);
+		modelNotificationMap.put(mudUrl, notification);
+		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUrl);
+		this.manufacturerNotifcationMap.put(manufacturer,notification);
 	}
+	
 
-	public MappingNotification getMappingNotification(String mudUrl) {
-		return this.mappingNotificationMap.get(mudUrl);
+	public MappingNotification getMappingNotificationByModel(String mudUrl) {
+		return this.modelNotificationMap.get(mudUrl);
+	}
+	
+	public MappingNotification getMappingNotificationByManufacturer(String manufacturer) {
+		return this.manufacturerNotifcationMap.get(manufacturer);
 	}
 
 	public synchronized String getFlowmonPort(String flowmonNodeId) {
@@ -248,7 +257,7 @@ public class FlowmonProvider {
 		return retval;
 	}
 
-	public InstanceIdentifier getCpeNode(String vnfSwitch) {
+	public InstanceIdentifier<FlowCapableNode> getCpeNode(String vnfSwitch) {
 		for (Link link : this.topology.getLink()) {
 			if (link.getVnfSwitch().getValue().equals(vnfSwitch)) {
 				return this.uriToNodeMap.get(link.getCpeSwitch().getValue());
@@ -329,6 +338,26 @@ public class FlowmonProvider {
 			}
 		}
 		return null;
+	}
+
+	public int getManfuacturerId(String manufacturer) {
+		if ( this.manufacturerNotifcationMap.containsKey(manufacturer)) {
+			return this.manufacturerNotifcationMap.get(manufacturer).getManufacturerId().intValue();
+		} else {
+			return -1;
+		}
+	}
+
+	public int getModelId(String mudUri) {
+		if ( this.modelNotificationMap.containsKey(mudUri)) {
+			return this.modelNotificationMap.get(mudUri).getModelId().intValue();
+		} else {
+			return -1;
+		}
+	}
+
+	public FlowmonConfigData getFlowmonConfig(String nodeId) {
+		return this.flowmonConfigMap.get(nodeId);
 	}
 
 }

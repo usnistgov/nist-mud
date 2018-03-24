@@ -70,8 +70,8 @@ public class InstanceIdentifierUtils {
 
 	static {
 		// Dummy constants
-		models.add(SdnMudConstants.NONE);
-		manufacturers.add(SdnMudConstants.NONE);
+		models.add(FlowmonConstants.NONE);
+		manufacturers.add(FlowmonConstants.NONE);
 	}
 
 	private InstanceIdentifierUtils() {
@@ -102,69 +102,6 @@ public class InstanceIdentifierUtils {
 		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
 	}
 
-	/**
-	 * Get an instance Identifier for the given flow table.
-	 * 
-	 * @param nodeId
-	 *            -- Instance Identifier for the node.
-	 * 
-	 * @param flowTableId
-	 *            -- flow table identifier.
-	 * 
-	 * @return -- instance identifier for the table.
-	 */
-
-	public static final InstanceIdentifier<Table> getTableInstanceId(InstanceIdentifier<Node> nodeId,
-			Short flowTableId) {
-		// get flow table key
-		TableKey flowTableKey = new TableKey(flowTableId);
-		return nodeId.builder().augmentation(FlowCapableNode.class).child(Table.class, flowTableKey).build();
-	}
-
-	/**
-	 * Creates a path for particular flow, by appending flow-specific
-	 * information to table path.
-	 *
-	 * @param tablePath
-	 * @param flowKey
-	 * @return path to flow
-	 */
-	public static final InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
-			final FlowKey flowKey) {
-		return tablePath.child(Flow.class, flowKey);
-	}
-
-	/**
-	 * Create an instance Identifier for the flow.
-	 * 
-	 * @param tablePath
-	 *            -- instance Identifier for the table.
-	 * 
-	 * @param flowId
-	 *            -- the flow Id.
-	 * 
-	 * @return -- instance Identifier for the flow.
-	 */
-	public static InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
-			final FlowId flowId) {
-		return tablePath.child(Flow.class, new FlowKey(flowId));
-	}
-
-	/**
-	 * Create standard flow Instance Identifier for this application.
-	 * 
-	 * @param tableId
-	 *            -- table instance Id.
-	 * 
-	 * @return -- instance Identifier for the flow.
-	 */
-
-	public static InstanceIdentifier<Flow> createFlowInstanceId(InstanceIdentifier<Table> tableId) {
-		// generate unique flow key
-		FlowId flowId = new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-		FlowKey flowKey = new FlowKey(flowId);
-		return tableId.child(Flow.class, flowKey);
-	}
 
 	public static final InstanceIdentifier<NodeConnector> createNodeConnectorPath(
 			final InstanceIdentifier<Node> nodeKey, final NodeConnectorKey nodeConnectorKey) {
@@ -184,8 +121,8 @@ public class InstanceIdentifierUtils {
 		return new FlowRef(flowPath);
 	}
 
-	public static FlowId createFlowId(String mudUrl) {
-		return new FlowId(mudUrl + "/" + String.valueOf(flowIdInc.getAndIncrement()));
+	public static FlowId createFlowId(String uri) {
+		return new FlowId(uri + "/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	public static FlowCookie createFlowCookie(String flowCookieId) {
@@ -208,57 +145,11 @@ public class InstanceIdentifierUtils {
 		return authority;
 	}
 
-	static String getModel(String uri) {
-
-		int index = uri.indexOf("//");
-		if (index == -1) {
-			LOG.error("getModel : Malformed URI " + uri);
-			return "";
-		}
-		String rest = uri.substring(index + 2);
-		index = rest.indexOf(".well-known/mud/") + ".well-known/mud/".length();
-		if (index == -1) {
-			LOG.error("getModel: malformed MUD uri" + uri);
-			return "";
-		}
-		String model = rest.substring(index);
-		return model;
-	}
-
-	/**
-	 * Create the MPLS label from the flow spec.
-	 * 
-	 * @param flowSpec
-	 *            -- the flow spec to hash.
-	 * 
-	 */
+	
 	public static int getFlowHash(String flowSpec) {
 		// Has to be within the size of an mpls label.
 		// or the flow does not appear.
 		return Math.abs(flowSpec.hashCode()) % (1 << 20);
-	}
-
-	public static int getFlowHash(String manufacturer, String flowType) {
-		String flowSpec = "flow:" + manufacturer + ":" + flowType;
-		return getFlowHash(flowSpec);
-	}
-
-	public synchronized static int getManfuacturerId(String manufacturer) {
-		int index = manufacturers.indexOf(manufacturer);
-		if (index == -1) {
-			manufacturers.add(manufacturer);
-			index = manufacturers.indexOf(manufacturer);
-		}
-		return index;
-	}
-
-	public synchronized static int getModelId(String model) {
-		int index = models.indexOf(model);
-		if (index == -1) {
-			models.add(model);
-			index = models.indexOf(model);
-		}
-		return index;
 	}
 
 
@@ -266,6 +157,11 @@ public class InstanceIdentifierUtils {
 	public static String getNodeIdFromFlowId(String flowIdStr) {
 		String[] pieces = flowIdStr.split("/");
 		return pieces[0];
+	}
+
+
+	public static FlowId createStaticFlowId(String uri) {
+		return new FlowId(uri);
 	}
 
 }

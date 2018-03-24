@@ -261,6 +261,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		int etherType = ethernet.getEtherType() < 0 ? 0xffff + ethernet.getEtherType() + 1 : ethernet.getEtherType();
 		byte[] srcMacRaw = ethernet.getSourceMACAddress();
 		byte[] dstMacRaw = ethernet.getDestinationMACAddress();
+		
 
 		// Extract the src mac address from the packet.
 		MacAddress srcMac = rawMacToMac(srcMacRaw);

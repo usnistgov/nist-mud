@@ -27,7 +27,7 @@ package gov.nist.antd.flowmon.impl;
 import java.math.BigInteger;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
-public interface SdnMudConstants {
+public interface FlowmonConstants {
 	public static final int DNS_PORT = 53;
 	public static final int DHCP_SERVER_PORT = 67;
 	public static final int DHCP_CLIENT_PORT = 68;
@@ -38,36 +38,9 @@ public interface SdnMudConstants {
 	public static final short ICMP_PROTOCOL = 1;
 	public static final int ETHERTYPE_IPV4 = 0x0800;
 
-	// Pipeline
-	public static final short FIRST_TABLE = 0;
-	public static final Short DETECT_EXTERNAL_ARP_TABLE = (short) FIRST_TABLE;
-	public static final Short PUSH_VLAN_ON_ARP_TABLE = (short) (FIRST_TABLE + 1);
-	public static final Short STRIP_VLAN_TABLE = (short) (FIRST_TABLE + 2);
-
-	public static final Short SRC_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 3);
-	public static final Short DST_DEVICE_MANUFACTURER_STAMP_TABLE = (short) (FIRST_TABLE + 4);
-	public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
-	public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
-	public static final Short SET_VLAN_RULE_TABLE = (short) (FIRST_TABLE + 7);
-	public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 8);
-	public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 9);
-	public static final Short MAX_TID = L2SWITCH_TABLE;
-	public static final Short DROP_TABLE = (short) (MAX_TID + 1);
-
-	// Flow table priorities.
-	public static final Integer BASE_PRIORITY = 30;
-	public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
-
-	// Flow entry for dropping flows on a match.
-	public static final Integer MAX_PRIORITY = BASE_PRIORITY + 20;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH = BASE_PRIORITY + 15;
-	public static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
-	public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
-	public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
-	public static final String DNS_SERVER_URI = "urn:ietf:params:mud:dns";
-	public static final String NTP_SERVER_URI = "urn:ietf:params:mud:ntp";
-
+	
+	
+	
 	public static final String LOCAL = "local";
 	public static final String REMOTE = "remote";
 	public static final String PASSTHRU = "PASSTHRU";
@@ -107,8 +80,8 @@ public interface SdnMudConstants {
 	public static final BigInteger IDS_REGISTRATION_METADATA = BigInteger.valueOf(0xdeadbeefL);
 	public static final FlowCookie IDS_REGISTRATION_FLOW_COOKIE = InstanceIdentifierUtils
 			.createFlowCookie("flowmon-registration-flow-cookie");
-	public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
-			.createFlowCookie("send-to-controller-flow-cookie");
+	public static final FlowCookie PACKET_DIVERSION_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("packet-diversion-flow-cookie");
+    public static final FlowCookie MPLS_PASS_THRU_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("mpls-pass-thru-flow-cookie");
 
 	// 0 means no caching.
 	public static final Integer CACHE_TIMEOUT = 120;
@@ -118,5 +91,5 @@ public interface SdnMudConstants {
 	
 	public static final String UNCONDITIONAL_GOTO = "UNCONDITIONAL_GOTO";
 	public static final String UNCLASSIFIED = "UNCLASSIFIED";
-
+	
 }

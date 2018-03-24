@@ -192,9 +192,7 @@ def setupTopology(controller_addr,dns_address, interface):
     # h6 is a localhost peer.
     h6.cmdPrint("python udpping.py --port 8002 --server &")
     
-    # Start the IDS on node 8
-
-    #h8.cmdPrint("python packet-sniffer.py &")
+    h1.cmdPrint("ping www.nist.local")
 
 
     print "*********** System ready *********"
@@ -254,3 +252,13 @@ if __name__ == '__main__':
 
     setupTopology(controller_addr,dns_address,interface)
 
+    headers= {"Content-Type":"application/json"}
+    for (configfile,suffix) in {("npenodes.json","nist-network-topology:topology")}:
+	data = json.load(open(configfile))
+	print "configfile", configfile
+        url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
+	print "url ", url
+        r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+	print "response ", r
+
+    setupTopology(controller_addr,dns_address,interface)

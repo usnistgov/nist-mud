@@ -151,10 +151,6 @@ public abstract class PacketUtils {
 		return mac;
 	}
 
-	public static int bytesToEtherType(final byte[] bytes) {
-		int etherType = (0x0000ffff & ByteBuffer.wrap(bytes).getShort());
-		return etherType;
-	}
 
 	/**
 	 * get the src MacAddress
@@ -164,17 +160,8 @@ public abstract class PacketUtils {
 		return rawMacToMac(srcMac);
 	}
 
-	/**
-	 * get the dst MacAddress
-	 */
-	public static MacAddress extractDstMacAddress(byte[] payload) {
-		byte[] dstMac = extractDstMac(payload);
-		return rawMacToMac(dstMac);
-	}
+	
 
-	/**
-	 * Get the src IP address.
-	 */
 	/**
 	 * Given a raw packet, return the SrcIp.
 	 *

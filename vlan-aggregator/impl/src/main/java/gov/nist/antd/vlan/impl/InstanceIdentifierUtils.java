@@ -61,36 +61,17 @@ import org.slf4j.LoggerFactory;
 
 class InstanceIdentifierUtils {
 	private static AtomicLong flowIdInc = new AtomicLong();
-	private static String FLOW_ID_PREFIX = "vlan:";
-	private static ArrayList<String> manufacturers = new ArrayList<String>();
-	private static ArrayList<String> models = new ArrayList<String>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
 
-	static {
-		// Dummy constants
-		models.add(VlanConstants.NONE);
-		manufacturers.add(VlanConstants.NONE);
-	}
-
+	
 	private InstanceIdentifierUtils() {
 		// hiding constructor for util class
 	}
 
-
-	static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
-		return node.firstKeyOf(Node.class).getId().getValue();
-
-	}
-
-
-	static FlowId createFlowId() {
-		return new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-	}
-
 	
-	static FlowId createFlowId(String mudUrl) {
-		return new FlowId(mudUrl + "/" + String.valueOf(flowIdInc.getAndIncrement()));
+	static FlowId createFlowId(String uri) {
+		return new FlowId(uri + "/vlan/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	static FlowCookie createFlowCookie(String flowCookieId) {

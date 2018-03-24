@@ -1,22 +1,4 @@
 /*
- *  Copyright (c) 2014, 2015 Cisco Systems, Inc. and others. All rights reserved.
- *
- * This program and the accompanying materials are made available under the terms of the Eclipse
- * Public License v1.0 which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- * 
- * Copyright (c) 2014, 2015 Cisco Systems, Inc. and others. All rights reserved.
- *
- * NIST disclaimer (for code added by NIST employees)
- * This program and the accompanying materials are made available under the terms of the Eclipse
- * Public License v1.0 which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- * Copyright (c) 2013, 2015 Red Hat, Inc. and others. All rights reserved.
- * 
- * This program and the accompanying materials are made available under the terms of the Eclipse
- * Public License v1.0 which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
  * 
  * This file includes code developed by employees of the National Institue of Standards and Technology (NIST).
  * 
@@ -60,7 +42,6 @@ import org.slf4j.LoggerFactory;
 
 public class InstanceIdentifierUtils {
 	private static AtomicLong flowIdInc = new AtomicLong();
-	private static String FLOW_ID_PREFIX = "sdnmud:";
 	private static ArrayList<String> manufacturers = new ArrayList<String>();
 	private static ArrayList<String> models = new ArrayList<String>();
 	static {
@@ -68,7 +49,7 @@ public class InstanceIdentifierUtils {
 		models.add("NONE");
 	}
 
-	static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
+	private static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
 
 	static {
 		// Dummy constants
@@ -103,90 +84,8 @@ public class InstanceIdentifierUtils {
 		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
 	}
 
-	/**
-	 * Get an instance Identifier for the given flow table.
-	 * 
-	 * @param nodeId
-	 *            -- Instance Identifier for the node.
-	 * 
-	 * @param flowTableId
-	 *            -- flow table identifier.
-	 * 
-	 * @return -- instance identifier for the table.
-	 */
-
-	public static final InstanceIdentifier<Table> getTableInstanceId(InstanceIdentifier<Node> nodeId,
-			Short flowTableId) {
-		// get flow table key
-		TableKey flowTableKey = new TableKey(flowTableId);
-		return nodeId.builder().augmentation(FlowCapableNode.class).child(Table.class, flowTableKey).build();
-	}
-
-	/**
-	 * Creates a path for particular flow, by appending flow-specific
-	 * information to table path.
-	 *
-	 * @param tablePath
-	 * @param flowKey
-	 * @return path to flow
-	 */
-	public static final InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
-			final FlowKey flowKey) {
-		return tablePath.child(Flow.class, flowKey);
-	}
-
-	/**
-	 * Create an instance Identifier for the flow.
-	 * 
-	 * @param tablePath
-	 *            -- instance Identifier for the table.
-	 * 
-	 * @param flowId
-	 *            -- the flow Id.
-	 * 
-	 * @return -- instance Identifier for the flow.
-	 */
-	public static InstanceIdentifier<Flow> createFlowPath(final InstanceIdentifier<Table> tablePath,
-			final FlowId flowId) {
-		return tablePath.child(Flow.class, new FlowKey(flowId));
-	}
-
-	/**
-	 * Create standard flow Instance Identifier for this application.
-	 * 
-	 * @param tableId
-	 *            -- table instance Id.
-	 * 
-	 * @return -- instance Identifier for the flow.
-	 */
-
-	public static InstanceIdentifier<Flow> createFlowInstanceId(InstanceIdentifier<Table> tableId) {
-		// generate unique flow key
-		FlowId flowId = new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-		FlowKey flowKey = new FlowKey(flowId);
-		return tableId.child(Flow.class, flowKey);
-	}
-
-	public static final InstanceIdentifier<NodeConnector> createNodeConnectorPath(
-			final InstanceIdentifier<Node> nodeKey, final NodeConnectorKey nodeConnectorKey) {
-		return nodeKey.child(NodeConnector.class, nodeConnectorKey);
-	}
-
-	public static FlowId createFlowId() {
-		return new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
-	}
-
-	public static FlowRef buildFlowPath(final InstanceIdentifier<Node> nodePath, final short tableId,
-			final FlowId flowId) {
-
-		final KeyedInstanceIdentifier<Flow, FlowKey> flowPath = nodePath.augmentation(FlowCapableNode.class)
-				.child(Table.class, new TableKey(tableId)).child(Flow.class, new FlowKey(new FlowId(flowId)));
-
-		return new FlowRef(flowPath);
-	}
-
 	public static FlowId createFlowId(String prefix) {
-		return new FlowId(prefix + "/" + String.valueOf(flowIdInc.getAndIncrement()));
+		return new FlowId(prefix + "/sdnmud/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	public static FlowCookie createFlowCookie(String flowCookieId) {

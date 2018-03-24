@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import org.opendaylight.controller.liblldp.Ethernet;
+import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -27,6 +29,8 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 class PacketProcessingListenerImpl implements PacketProcessingListener {
 
@@ -60,7 +64,17 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 		this.listenerRegistration = registration;
 	}
 
-
+	private static MacAddress rawMacToMac(final byte[] rawMac) {
+		MacAddress mac = null;
+		if (rawMac != null) {
+			StringBuilder sb = new StringBuilder();
+			for (byte octet : rawMac) {
+				sb.append(String.format(":%02X", octet));
+			}
+			mac = new MacAddress(sb.substring(1));
+		}
+		return mac;
+	}
 
 	@Override
 	public void onPacketReceived(PacketReceived notification) {
@@ -69,11 +83,25 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 			return;
 		}
 		// Extract the src mac address from the packet.
-		byte[] srcMacRaw = PacketUtils.extractSrcMac(notification.getPayload());
-		MacAddress srcMac = PacketUtils.rawMacToMac(srcMacRaw);
+		Ethernet ethernet = new Ethernet();
 
-		byte[] dstMacRaw = PacketUtils.extractDstMac(notification.getPayload());
-		MacAddress dstMac = PacketUtils.rawMacToMac(dstMacRaw);
+		try {
+			ethernet.deserialize(notification.getPayload(), 0,
+					notification.getPayload().length * NetUtils.NumBitsInAByte);
+
+		} catch (Exception ex) {
+			LOG.error("Error deserializing packet", ex);
+		}
+
+		// Extract various fields from the ethernet packet.
+
+		int etherType = ethernet.getEtherType() < 0 ? 0xffff + ethernet.getEtherType() + 1 : ethernet.getEtherType();
+		byte[] srcMacRaw = ethernet.getSourceMACAddress();
+		byte[] dstMacRaw = ethernet.getDestinationMACAddress();
+
+		// Extract the src mac address from the packet.
+		MacAddress srcMac = rawMacToMac(srcMacRaw);
+		MacAddress dstMac = rawMacToMac(dstMacRaw);
 
 		short tableId = notification.getTableId().getValue();
 
@@ -87,15 +115,38 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
 
-		if (notification.getFlowCookie().getValue().equals(SdnMudConstants.IDS_REGISTRATION_FLOW_COOKIE.getValue())) {
+		if (notification.getFlowCookie().getValue().equals(FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE.getValue())) {
 			LOG.debug("IDS Registration seen on : " + matchInPortUri);
 			// TODO -- authenticate the IDS by checking his MAC and token.
-			if ( this.flowmonProvider.isNpeSwitch(destinationId)) {
-			    this.flowmonProvider.addFlowmonPort(destinationId, matchInPortUri);
-			} else if ( this.flowmonProvider.isCpeNode(destinationId)) {
-				this.flowmonProvider.setFlowmonOutputPort(destinationId,matchInPortUri);
-			}
+			this.flowmonProvider.setFlowmonOutputPort(destinationId, matchInPortUri);
 			return;
+		} else if (tableId == BaseappConstants.PASS_THRU_TABLE) {
+			// Create a higher priority MPLS flow so we don't get interrupted
+			// again.
+			int mplsTag = notification.getFlowCookie().getValue().intValue();
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+			FlowBuilder fb = FlowUtils.createOnMplsMatchGoToTable(FlowmonConstants.MPLS_PASS_THRU_FLOW_COOKIE, flowId,
+					mplsTag, BaseappConstants.PASS_THRU_TABLE, BaseappConstants.CACHE_TIMEOUT);
+			InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
+			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, flowmonNode);
+
+			// Packet diverted for outbound flow. Create a mac to mac flow for
+			// the return packet.
+			// Reverse the source and destination address
+			// First delete the packet diversion flow. Push a higher priority
+			// flow
+
+			flowId = InstanceIdentifierUtils.createFlowId(destinationId);
+
+			String outputPortUri = flowmonProvider.getFlowmonOutputPort(destinationId);
+
+			if (outputPortUri != null) {
+				fb = FlowUtils.onSrcDstMacMatchSendToPortAndGoToTable(FlowmonConstants.PACKET_DIVERSION_FLOW_COOKIE,
+						flowId, dstMac, srcMac, outputPortUri, BaseappConstants.PASS_THRU_TABLE,
+						BaseappConstants.CACHE_TIMEOUT);
+				flowmonProvider.getFlowCommitWrapper().writeFlow(fb, flowmonNode);
+			}
+
 		}
 	}
 
