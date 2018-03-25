@@ -1,3 +1,6 @@
+
+### THIS PAGE IS UNDER CONSTRUCTION ###
+
 # IOT MUD implementation on Open Daylight #
 
 This includes two features:
@@ -15,6 +18,7 @@ On the Controller host:
 ## How to build and test it it using mininet ##
 
 Create a virtual machine running Ubuntu 16. 
+
 
 ### Pre-requisites for the Test VM ###
 
@@ -45,6 +49,8 @@ a learning switch controller to set up our topology.
 
 ### Architecture ###
 
+### TBD ###
+
 Our system consists of a collection of CPE switches. MUD flow rules
 are installed only at CPE switches.  Packets that leave the CPE switch and
 are sent to the NPE switch are tagged with a VLAN tag that identifies
@@ -52,11 +58,9 @@ the CPE switch from which they originated.  At the NPE switch the VLAN
 tag is used to direct packets to a corresponding VNF switch.
 
 The flow monitoring facility allows an IDS to indicate interest in specific classes of packets i.e:
-- Packets that have hit a MUD flow rule and successfully been fowarded:
--- Packets that have hit a MUD rule and are forwarded from the CPE 
--- Packets that have hit a MUD rule and are locally routed at the CPE.
-- Packets that have ht a MUD flow rule and have been rejected.
-- Packets that have no MUD rule associated with it.
+- Packets that have hit a MUD flow rule and successfully been fowarded.
+- Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
+
 
 The flow monitoring facility consists of two parts i.e.
 - A CPE flow monitor that places flow rules attaching MPLS labels to packets of interest.
