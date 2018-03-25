@@ -6,6 +6,8 @@ import java.util.Collection;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -17,7 +19,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
-
 
 public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapableNode> {
 	private static final Logger LOG = LoggerFactory.getLogger(WakeupOnFlowCapableNode.class);
@@ -55,6 +56,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	}
 
+	private static String getFlowType(Uri flowSpec) {
+
+		if (flowSpec.getValue().equals(FlowmonConstants.PASSTHRU))
+			return FlowmonConstants.PASSTHRU;
+		String[] pieces = flowSpec.getValue().split(":");
+		return pieces[1];
+	}
+
 	/**
 	 * Flow to send the IDS HELLO to the controller if it has not already been
 	 * installed.
@@ -64,7 +73,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 */
 	private synchronized void installSendFlowmonHelloToControllerFlow(String nodeUri,
 			InstanceIdentifier<FlowCapableNode> node) {
-		if (!flowmonProvider.getFlowCommitWrapper().flowExists(nodeUri + ":", BaseappConstants.FIRST_TABLE, node)) {
+		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+		if (flowmonProvider.isVnfSwitch(nodeId)) {
 			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":flowmon");
 			FlowCookie flowCookie = FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE;
 			LOG.info("IDS_REGISTRATION_FLOW_COOKIE " + flowCookie.getValue().toString(16));
@@ -72,19 +82,81 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 					FlowmonConstants.IDS_REGISTRATION_PORT, BaseappConstants.FIRST_TABLE, flowCookie, flowId,
 					FlowmonConstants.IDS_REGISTRATION_METADATA);
 			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		}
-	}
-	
-	public void installDefaultFlows() {
-		for ( InstanceIdentifier<FlowCapableNode> flowCapableNode : this.pendingNodes) {
-			String nodeUri = InstanceIdentifierUtils.getNodeUri(flowCapableNode);
-			if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isNpeSwitch(nodeUri)) {
-				this.installSendFlowmonHelloToControllerFlow(nodeUri,flowCapableNode);
+		} else if (flowmonProvider.isCpeNode(nodeId)) {
+			/* get the cpe nodes corresponding to this VNF node */
+
+			if (node != null) {
+				for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
+
+					for (Uri uri : flowmonConfigData.getFlowSpec()) {
+						if (flowmonProvider.isCpeNode(nodeId)) {
+
+							flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
+									BaseappConstants.PASS_THRU_TABLE, null);
+
+							String flowType = getFlowType(uri);
+
+							if (flowType.equals(FlowmonConstants.REMOTE)){
+								/*
+								 * IDS is configured to look for remote flows.
+								 */
+								FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+								/*
+								 * Match on metadata, set the MPLS tag and send
+								 * to NPE switch and go to l2 switch.
+								 */
+
+								FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+								
+								int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
+
+								FlowBuilder fb = FlowUtils.createMetadataMatchMplsTagGoToTableFlow(
+										flowCookie, flowId, BaseappConstants.PASS_THRU_TABLE, mplsTag,
+										0);
+								// Write the flow to the data store.
+								flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
+								// Install a flow to strip the mpls label.
+								flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+								// Strip MPLS tag and go to the L2 switch.
+								FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, 
+										BaseappConstants.STRIP_MPLS_RULE_TABLE,
+										mplsTag);
+
+								this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+								
+							} else {
+								LOG.error("Flow diversion not implemented for this flow type " + uri.getValue());
+							}
+						} else if (flowmonProvider.isVnfSwitch(nodeId)) {
+							FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+							int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
+							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+							// Strip MPLS tag and go to the L2 switch.
+							FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, 
+									BaseappConstants.STRIP_MPLS_RULE_TABLE,
+									mplsTag);
+
+							this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+							
+						}
+					}
+				}
 			}
+
 		}
+
 	}
 
 	
+
+	public void installDefaultFlows() {
+		for (InstanceIdentifier<FlowCapableNode> flowCapableNode : this.pendingNodes) {
+			String nodeUri = InstanceIdentifierUtils.getNodeUri(flowCapableNode);
+			if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isNpeSwitch(nodeUri)) {
+				this.installSendFlowmonHelloToControllerFlow(nodeUri, flowCapableNode);
+			}
+		}
+	}
 
 	/**
 	 * This gets invoked when a switch appears and connects.
@@ -102,11 +174,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
 		// Stash away the URI to node path so we can reference it later.
 		this.flowmonProvider.putInUriToNodeMap(nodeUri, nodePath);
-		if ( flowmonProvider.getTopology() == null) {
+		if (flowmonProvider.getTopology() == null) {
 			this.pendingNodes.add(nodePath);
 		}
 		if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isNpeSwitch(nodeUri)) {
-			this.installSendFlowmonHelloToControllerFlow(nodeUri,nodePath);
+			this.installSendFlowmonHelloToControllerFlow(nodeUri, nodePath);
 		}
 
 	}

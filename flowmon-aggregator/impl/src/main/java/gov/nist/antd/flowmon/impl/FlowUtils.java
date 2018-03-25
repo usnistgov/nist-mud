@@ -1095,8 +1095,10 @@ public class FlowUtils {
 
 		instructions.add(createMplsTag);
 
+		short nextTable = (short) (tableId + 1);
+		
 		Instruction goToTableInstruction = new InstructionBuilder().setInstruction(new GoToTableCaseBuilder()
-				.setGoToTable(new GoToTableBuilder().setTableId(BaseappConstants.L2SWITCH_TABLE).build()).build())
+				.setGoToTable(new GoToTableBuilder().setTableId(nextTable).build()).build())
 				.setKey(new InstructionKey(2)).setOrder(2).build();
 
 		instructions.add(goToTableInstruction);

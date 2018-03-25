@@ -146,14 +146,7 @@ public class FlowmonProvider {
 				LogicalDatastoreType.OPERATIONAL, getWildcardPath());
 		this.wakeupOnFlowCapableNodeRegistration = this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier,
 				wakeupListener);
-
-		InstanceIdentifier<Flow> flowPath = InstanceIdentifier.builder(Nodes.class).child(Node.class)
-				.augmentation(FlowCapableNode.class).child(Table.class).child(Flow.class).build();
-		final DataTreeIdentifier<Flow> flowDataTreeIdentifier = new DataTreeIdentifier<Flow>(
-				LogicalDatastoreType.CONFIGURATION, flowPath);
-		FlowChangeListener flowChangeListener = new FlowChangeListener(this);
-		dataBroker.registerDataTreeChangeListener(flowDataTreeIdentifier, flowChangeListener);
-
+		
 		this.rpcProviderRegistry.addRpcImplementation(NistFlowControllerService.class,
 				new NistFlowControllerServiceImpl(this));
 

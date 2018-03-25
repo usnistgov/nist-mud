@@ -1,4 +1,3 @@
-
 from mininet.node import OVSController
 from mininet.cli import CLI
 from mininet.log import setLogLevel
@@ -15,9 +14,15 @@ from distutils.spawn import find_executable
 from subprocess import call
 from functools import partial
 import time
+import json
+import requests
 from mininet.node import Host
 from mininet.log import setLogLevel 
 
+"""
+Set up a VLAN topology and ping from h1 to a host on the VLAN to test setting and
+stripping of VLAN tags.
+"""
 
 class VLANHost( Host ):
     "Host connected to VLAN interface"
@@ -42,7 +47,7 @@ class VLANHost( Host ):
         # add VLAN interface to host's name to intf map
         self.nameToIntf[ newName ] = intf
 
-	return r
+        return r
 
 
 def setupTopology(controller_addr,dns_address, interface):
@@ -54,6 +59,8 @@ def setupTopology(controller_addr,dns_address, interface):
 
     c1 = net.addController('c1', ip=controller_addr,port=6653)
     print "addController ", controller_addr
+    net1 = Mininet(controller=RemoteController)
+    c2 = net1.addController('c2', ip="127.0.0.1",port=6673)
 
 
     # h1: IOT Device.
@@ -78,7 +85,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h6 = net.addHost('h6')
 
     # Switch s2 is the "multiplexer".
-    s2 = net.addSwitch('s2')
+    s2 = net1.addSwitch('s2')
 
     s3 = net.addSwitch('s3')
 
@@ -113,32 +120,15 @@ def setupTopology(controller_addr,dns_address, interface):
     # Direct link between S1 and S2
     s1.linkTo(s2)
 
-    """
-    intf = 'h7-eth0'
-    h7.cmd( 'ifconfig %s inet 0' % intf )
-    h7.cmd( 'ip link set %s down' % intf)
-    h7.cmd( 'vconfig add %s %d' % ( intf , 772 ) )
-    h7.cmd( 'ip addr add 10.0.0.7/24 dev %s.772' % intf )
-    h7.cmd( 'ip link set %s.772 up' % intf )
-    h7.cmd( 'ifconfig')
-
-    intf = 'h9-eth0'
-    h9.cmd( 'ifconfig %s inet 0' % intf )
-    h9.cmd( 'ip link set %s down' % intf)
-    h9.cmd( 'vconfig add %s %d' % ( intf , 772 ) )
-    h9.cmd( 'ip addr add 10.0.0.9/24 dev %s.772' % intf )
-    h9.cmd( 'ip link set %s.772 up' % intf )
-    h7.cmd( 'ifconfig')
-    """
 
     net.build()
-    net1.build()
     c1.start()
     s1.start([c1])
-    s2.start([c1])
+    s2.start([c2])
     s3.start([c1])
 
     net.start()
+    net1.start()
      
 
     # Clean up any traces of the previous invocation (for safety)
@@ -186,13 +176,8 @@ def setupTopology(controller_addr,dns_address, interface):
     # Start dnsmasq (our dns server).
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
 
-    #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    #h2 is our peer same manufacturer host.
-    h2.cmdPrint("python udpping.py --port 4000 --server &")
-    # h6 is a localhost peer.
-    h6.cmdPrint("python udpping.py --port 8002 --server &")
     
-    h1.cmdPrint("ping www.nist.local")
+    h1.cmdPrint("ping 10.0.0.7")
 
 
     print "*********** System ready *********"
@@ -202,7 +187,6 @@ def setupTopology(controller_addr,dns_address, interface):
     h2.terminate()
     h3.terminate()
     net.stop()
-    #net1.stop()
 
 def startTestServer(host):
     """
@@ -220,6 +204,7 @@ if __name__ == '__main__':
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
     parser.add_argument("-i",help="Host interface to route packets out (the second NATTed interface)",default="eth2")
+    parser.add_argument("-r",help="Ryu home (where you have the ryu distro git pulled)", default="/home/odl-developer/host/ryu/")
     #parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="192.168.11.1")
     
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
@@ -229,6 +214,7 @@ if __name__ == '__main__':
     dns_address = args.d
     host_addr = args.t
     interface = args.i
+    ryu_home = args.r
 
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -250,15 +236,27 @@ if __name__ == '__main__':
     # startTestServer(host_addr)
     # setup our topology
 
-    setupTopology(controller_addr,dns_address,interface)
+    cmd = ['sudo','pkill','ryu-manager']
+    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+
+    RYU_MANAGER = os.path.abspath(find_executable("ryu-manager"))
+    cmd = "/usr/bin/xterm -e \"%s --wsapi-port 9000 --ofp-tcp-listen-port 6673 app/simple_switch_13.py\"" % (RYU_MANAGER)
+    #detach the process and shield it from ctrl-c
+
+    proc = subprocess.Popen(cmd,shell=True, cwd=ryu_home + "/ryu", stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setpgrp)
+
+    time.sleep(5)
+
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("npenodes.json","nist-network-topology:topology")}:
-	data = json.load(open(configfile))
-	print "configfile", configfile
+        print "configfile ",configfile
+        data = json.load(open(configfile))
+        print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
-	print "url ", url
+        print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-	print "response ", r
+        print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)

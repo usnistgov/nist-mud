@@ -13,9 +13,11 @@ import sys
 import signal
 from distutils.spawn import find_executable
 from subprocess import call
+from functools import partial
 import time
+from mininet.node import Host
+from mininet.node import Switch
 from mininet.log import setLogLevel 
-
 
 
 
@@ -27,82 +29,57 @@ def setupTopology(controller_addr,dns_address, interface):
     print "mininet created"
 
     c1 = net.addController('c1', ip=controller_addr,port=6653)
-    print "addController ", controller_addr
-    net1 = Mininet(controller=RemoteController)
-    c2 = net1.addController('c2', ip="127.0.0.1",port=6673)
 
 
     # h1: IOT Device.
     # h2 : StatciDHCPD
-    # h3 : router / NAT
+    # h3# : router / NAT
     # h4 : Non IOT device.
-
-    h1,h2,h3,h4,h5= net.addHost('h1'),net.addHost('h2'),net.addHost('h3'),net.addHost('h4'),net.addHost('h5')
+	
+    h1 = net.addHost('h1')
+    h2 = net.addHost('h2')
+    h3 = net.addHost('h3')
+    h4 = net.addHost('h4')
+    h5 = net.addHost('h5')
+    h6 = net.addHost('h6')
+    h7 = net.addHost('h7')
+    h8 = net.addHost('h8')
+    h9 = net.addHost('h9')
+    h10 = net.addHost('h10')
+	
 
     s1 = net.addSwitch('s1')
-    # The host for dhclient
-    s1.linkTo(h1)
-    # The IOT device
-    s1.linkTo(h2)
-    # The MUD controller
-    s1.linkTo(h3)
-    # The MUD server runs here.
-    s1.linkTo(h4)
-    # The non-iot client runs here
-    s1.linkTo(h5)
-    h6 = net.addHost('h6')
-
-    # Switch s2 is the "multiplexer".
     s2 = net.addSwitch('s2')
+    s3 = net.addSwitch('s3')
+    s4 = net.addSwitch('s4')
+    s1.linkTo(s2)
+    s2.linkTo(s3)
 
-    s3 = net1.addSwitch('s3')
+    s1.linkTo(h1)
+    s1.linkTo(h2)
+    s1.linkTo(h3)
+    s1.linkTo(h4)
+    s1.linkTo(h5)
+    s1.linkTo(h6)
 
-    h7 = net.addHost('h7')
-
-    # This is the IDS node.
-    h8 = net.addHost('h8')
-
-    # This is our fake www.nist.local host.
-    h9 = net1.addHost('h9')
-   
-    s2.linkTo(h6)
-    #h7 is the router -- no direct link between S2 and S3
-    # h7 linked to both s2 and s3
-    s2.linkTo(h7)
     s3.linkTo(h7)
-    # h8 is the ids.
-    s2.linkTo(h8)
-    # h9 is our fake server.
-    # s2 linked to s3 via our router.
+    s3.linkTo(h8)
     s3.linkTo(h9)
 
-    # S2 is the NPE switch.
-    # Direct link between S1 and S2
-    s1.linkTo(s2)
+    s4.linkTo(h7)
+    s4.linkTo(h10)
 
 
-    h7.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
-    # Flush old rules.
-    h7.cmdPrint('iptables -F')
-    h7.cmdPrint('iptables -t nat -F')
-    h7.cmdPrint('iptables -t mangle -F')
-    h7.cmdPrint('iptables -X')
 
-    # Set up h3 to be our router (it has two interfaces).
-    h7.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
-    # Set up iptables to forward as NAT
-    h7.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
 
     net.build()
-    net1.build()
     c1.start()
-    c2.start()
     s1.start([c1])
     s2.start([c1])
-    s3.start([c2])
+    s3.start([c1])
+    s4.start([c1])
 
     net.start()
-    net1.start()
      
 
     # Clean up any traces of the previous invocation (for safety)
@@ -117,10 +94,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h7.setMAC("00:00:00:00:00:07","h7-eth0")
     h8.setMAC("00:00:00:00:00:08","h8-eth0")
     h9.setMAC("00:00:00:00:00:09","h9-eth0")
-
-    
-    
-
+    h10.setMAC("00:00:00:00:00:10","h10-eth0")
     
     # Set up a routing rule on h2 to route packets via h3
     h1.cmdPrint('ip route del default')
@@ -150,18 +124,12 @@ def setupTopology(controller_addr,dns_address, interface):
     h8.cmdPrint('ip route del default')
     h8.cmdPrint('ip route add default via 10.0.0.7 dev h8-eth0')
 
-    # h9 is our fake host. It runs our "internet" web server.
-    h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
-    # Start a web server there.
-    h9.cmdPrint('python http-server.py -H 203.0.113.13&')
+    # The IDS runs on h8
+    h9.cmdPrint('ip route del default')
+    h9.cmdPrint('ip route add default via 10.0.0.7 dev h7-eth0')
 
     # Start dnsmasq (our dns server).
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
-
-    # Set up our router routes.
-    h7.cmdPrint('ip route add 203.0.113.13/32 dev h7-eth1')
-    h7.cmdPrint('ifconfig h7-eth1 203.0.113.1 netmask 255.255.255.0')
-    
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     #h2 is our peer same manufacturer host.
@@ -171,7 +139,30 @@ def setupTopology(controller_addr,dns_address, interface):
     
     # Start the IDS on node 8
 
-    #h8.cmdPrint("python packet-sniffer.py &")
+    h8.cmdPrint("python packet-sniffer.py &")
+
+    h7.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
+    # Flush old rules.
+    h7.cmdPrint('iptables -F')
+    h7.cmdPrint('iptables -t nat -F')
+    h7.cmdPrint('iptables -t mangle -F')
+    h7.cmdPrint('iptables -X')
+    # Set up h7 to be our router (it has two interfaces).
+    h7.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
+    # Set up iptables to forward as NAT
+    h7.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
+    # Set up our router routes.
+    h7.cmdPrint('ip route add 203.0.113.13/32 dev h7-eth1')
+    h7.cmdPrint('ifconfig h7-eth1 203.0.113.1 netmask 255.255.255.0')
+
+    # Set up a router to reach the 'internet'
+    h10.cmdPrint('ifconfig h10-eth0 203.0.113.13 netmask 255.255.255.0')
+    # Start a web server there.
+    h10.cmdPrint('python http-server.py -H 203.0.113.13&')
+
+    # Ping the VNF host (past the lan)
+  
+    h1.cmdPrint('ping -c 10 203.0.113.13')
 
 
     print "*********** System ready *********"
@@ -189,7 +180,6 @@ def setupTopology(controller_addr,dns_address, interface):
     h2.terminate()
     h3.terminate()
     net.stop()
-    #net1.stop()
 
 def startTestServer(host):
     """
@@ -211,35 +201,12 @@ if __name__ == '__main__':
     
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
     parser.add_argument("-t",help="Host only adapter address for test server",default = "192.168.56.102")
-    parser.add_argument("-r",help="Ryu home (where you have the ryu distro git pulled)", default="/home/odl-developer/host/ryu/")
     args = parser.parse_args()
     controller_addr = args.c
     dns_address = args.d
     host_addr = args.t
     interface = args.i
-    ryu_home = args.r
 
-    # Pkill dnsmasq. We will start one up later on h3
-    cmd = ['sudo','pkill','ryu-manager']
-    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-
-    # restart ryu-manager (this is for s2)
-    RYU_MANAGER = os.path.abspath(find_executable("ryu-manager"))
-    cmd = "/usr/bin/xterm -e \"%s --wsapi-port 9000 --ofp-tcp-listen-port 6673 app/simple_switch_13.py\"" % (RYU_MANAGER)
-    #detach the process and shield it from ctrl-c
-
-    proc = subprocess.Popen(cmd,shell=True, cwd=ryu_home + "/ryu", stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setpgrp)
-
-    time.sleep(5)
-
-    #cmd = [RYU_MANAGER ,"--ofp-tcp-listen-port", "6673",  "app/simple_switch_13.py" ]
-    #from subprocess import call
-    #call(cmd)
-    
-    
-
-    # ryu_home = args.r
     # Clean up from the last invocation
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -260,6 +227,16 @@ if __name__ == '__main__':
     # start the test server.
     # startTestServer(host_addr)
     # setup our topology
+    headers= {"Content-Type":"application/json"}
+    for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
+        ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        ("ietfmud.json","ietf-mud:mud"),("npenodes.json","nist-network-topology:topology")} :
+        data = json.load(open(configfile))
+        print "configfile", configfile
+        url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
+        print "url ", url
+        r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+	    print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
 

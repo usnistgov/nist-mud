@@ -231,24 +231,17 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    # start the test server.
-    # startTestServer(host_addr)
-    # setup our topology
-    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @cpenodes.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-cpe-nodes:cpe-collections
-    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @access-control-list.json  http://$CONTROLLER_ADDR:8181/restconf/config/ietf-access-control-list:access-lists
-    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @device-association.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-mud-device-association:mapping
-    # curl -v -X PUT -u admin:admin --header "Content-Type:application/json"  --data @controllerclass-mapping.json  http://$CONTROLLER_ADDR:8181/restconf/config/nist-mud-controllerclass-mapping:controllerclass-mapping
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
         ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
         ("ietfmud.json","ietf-mud:mud")} :
-	data = json.load(open(configfile))
-	print "configfile", configfile
+        data = json.load(open(configfile))
+        print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
-	print "url ", url
+        print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-	print "response ", r
+	    print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
 
