@@ -38,7 +38,8 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.contro
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorInput;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorOutput;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.RegisterMonitorOutputBuilder;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfig;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -64,7 +65,7 @@ public class NistFlowControllerServiceImpl implements NistFlowControllerService 
 
 	private FlowmonProvider flowmonProvider;
 
-	private HashMap<String, FlowBuilder> flowCache;
+	private HashMap<String, FlowBuilder> flowCache = new HashMap<String,FlowBuilder>();
 
 	class CompletedFuture<T> implements Future<T> {
 		private final T result;
@@ -116,7 +117,6 @@ public class NistFlowControllerServiceImpl implements NistFlowControllerService 
 	@Override
 	public Future<RpcResult<BlockFlowOutput>> blockFlow(BlockFlowInput blockedFlowInput) {
 		Uri mudUri = blockedFlowInput.getMudUri();
-		Scope scope = blockedFlowInput.getScope();
 
 		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
 		int manufacturerId = flowmonProvider.getManfuacturerId(manufacturer);
@@ -175,6 +175,11 @@ public class NistFlowControllerServiceImpl implements NistFlowControllerService 
 				continue;
 			}
 			InstanceIdentifier<FlowCapableNode> vnfNode = this.flowmonProvider.getVnfNode(cpeNodeUri.getValue());
+			
+			if ( vnfNode == null) {
+				LOG.info("Null vnfNodeId returned for " + cpeNodeUri.getValue());
+				continue;
+			}
 
 			String vnfNodeId = InstanceIdentifierUtils.getNodeUri(vnfNode);
 			FlowmonConfigData flowmonConfig = this.flowmonProvider.getFlowmonConfig(vnfNodeId);

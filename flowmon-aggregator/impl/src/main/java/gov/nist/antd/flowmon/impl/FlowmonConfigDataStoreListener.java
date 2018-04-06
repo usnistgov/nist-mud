@@ -1,78 +1,45 @@
 package gov.nist.antd.flowmon.impl;
 
 import java.util.Collection;
-import java.util.List;
+
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfig;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gov.nist.antd.baseapp.impl.BaseappConstants;
+class FlowmonConfigDataStoreListener implements DataTreeChangeListener<FlowmonConfig> {
 
-public class FlowmonConfigDataStoreListener implements DataTreeChangeListener<FlowmonConfigData> {
+	private FlowmonProvider flowmonProvider;
+	private static final Logger LOG = LoggerFactory.getLogger(FlowmonConfigDataStoreListener.class);
 
-  private FlowmonProvider flowmonProvider;
-  private static final Logger LOG = LoggerFactory.getLogger(FlowmonConfigDataStoreListener.class);
-  private FlowmonConfigData flowmonConfigData;
+	FlowmonConfigDataStoreListener(FlowmonProvider flowmonProvider) {
+		this.flowmonProvider = flowmonProvider;
+	}
 
-  public FlowmonConfigDataStoreListener(FlowmonProvider flowmonProvider) {
-    this.flowmonProvider = flowmonProvider;
-  }
 
-  private void installSendFlowmonHelloToControllerFlow(String nodeUri,
-      InstanceIdentifier<FlowCapableNode> node) {
-    if (!flowmonProvider.getFlowCommitWrapper().flowExists(nodeUri + ":flowmon",
-        BaseappConstants.FIRST_TABLE, node)) {
-      FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":flowmon");
-      FlowCookie flowCookie = FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE;
-      LOG.info("IDS_REGISTRATION_FLOOW_COOKIE " + flowCookie.getValue().toString(16));
-      FlowBuilder fb =
-          FlowUtils.createDestIpMatchSendToController(FlowmonConstants.IDS_REGISTRATION_ADDRESS,
-              FlowmonConstants.IDS_REGISTRATION_PORT, BaseappConstants.FIRST_TABLE, flowCookie,
-              flowId, FlowmonConstants.IDS_REGISTRATION_METADATA);
-      flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-    }
-  }
+	@Override
+	public void onDataTreeChanged(Collection<DataTreeModification<FlowmonConfig>> changes) {
 
-  @Override
-  public void onDataTreeChanged(Collection<DataTreeModification<FlowmonConfigData>> changes) {
+		LOG.info("FlowmonConfigDataStoreListener: onDataTreeChanged: got an flowmon registration");
+		
 
-    LOG.info("FlowmonConfigDataStoreListener: onDataTreeChanged: got an flowmon registration");
+		for (DataTreeModification<FlowmonConfig> change : changes) {
+			FlowmonConfig flowmonConfig = change.getRootNode().getDataAfter();
 
-    for (DataTreeModification<FlowmonConfigData> change : changes) {
-      FlowmonConfigData flowmonConfigData = change.getRootNode().getDataAfter();
-      this.flowmonConfigData = flowmonConfigData;
-      Uri flowmonNodeUri = this.flowmonConfigData.getFlowmonNode();
-      flowmonProvider.addFlowmonConfig(flowmonNodeUri, flowmonConfigData);
-      InstanceIdentifier<FlowCapableNode> nodePath = flowmonProvider.getNode(flowmonNodeUri.getValue());
-      if (nodePath != null) {
-        installSendFlowmonHelloToControllerFlow(flowmonNodeUri.getValue(), nodePath);
-      } else {
-        LOG.info("IDS node has not appeared");
-      }
-      
-    }
-  }
+			for (FlowmonConfigData flowmonConfigData : flowmonConfig.getFlowmonConfigData()) {
+				Uri flowmonNodeUri = flowmonConfigData.getFlowmonNode();
+				flowmonProvider.addFlowmonConfig(flowmonNodeUri, flowmonConfigData);
+			}
 
-  public List<Uri> getFlowSpec() {
-    if (flowmonConfigData == null)
-      return null;
-    else
-      return flowmonConfigData.getFlowSpec();
-  }
+		}
+		
+		flowmonProvider.getWakeupListener().installDefaultFlows();	
+	}
 
-  public Uri getFlowmonNode() {
-    if (flowmonConfigData == null)
-      return null;
-    else
-      return flowmonConfigData.getFlowmonNode();
-  }
 
 }

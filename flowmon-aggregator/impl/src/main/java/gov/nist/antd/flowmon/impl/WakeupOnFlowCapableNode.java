@@ -7,10 +7,11 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.Mod
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -64,6 +65,80 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return pieces[1];
 	}
 
+	public synchronized void installSetMplsTagFlows(InstanceIdentifier<FlowCapableNode> node) {
+
+		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+		/* get the cpe nodes corresponding to this VNF node */
+		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
+
+			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
+			//Collection<String> cpeSwitches = flowmonProvider.getCpeNodes(npeSwitch);
+			String cpeSwitch = flowmonProvider.getCpeNodeId(vnfSwitch);
+		
+
+			if (cpeSwitch == null) {
+				LOG.error("CPE switches not found for vnfSwitch");
+				return;
+			}
+
+			LOG.info("installSetMplsTagFlows : nodeId " + nodeId + " Switch " + vnfSwitch);
+
+			for (Uri uri : flowmonConfigData.getFlowSpec()) {
+				if (cpeSwitch.equals(nodeId)) {
+
+					flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
+							BaseappConstants.PASS_THRU_TABLE, null);
+					String flowType = getFlowType(uri);
+
+					if (flowType.equals(FlowmonConstants.REMOTE)) {
+						/*
+						 * IDS is configured to look for remote flows.
+						 */
+						FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+						/*
+						 * Match on metadata, set the MPLS tag and send to NPE
+						 * switch and go to l2 switch.
+						 */
+
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+
+						int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
+
+						FlowBuilder fb = FlowUtils.createMetadataMatchMplsTagGoToTableFlow(flowCookie, flowId,
+								BaseappConstants.PASS_THRU_TABLE, mplsTag, 0);
+						// Write the flow to the data store.
+						flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
+						
+						
+						// Install a flow to strip the mpls label.
+						flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+						// Strip MPLS tag and go to the L2 switch.
+						FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
+								BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
+								
+
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node); 
+
+					} else {
+						LOG.error("Flow diversion not implemented for this flow type " + uri.getValue());
+					}
+				} else if (nodeId.equals(vnfSwitch)) {
+					LOG.info("setMplsTagFlows : " + nodeId  + " isVnfSwitch true");
+					FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
+					int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
+					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+					// Strip MPLS tag and go to the L2 switch.
+					FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
+							BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
+
+					this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+
+				}
+			}
+		}
+
+	}
+
 	/**
 	 * Flow to send the IDS HELLO to the controller if it has not already been
 	 * installed.
@@ -71,91 +146,39 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 * @param nodeUri
 	 * @param node
 	 */
-	private synchronized void installSendFlowmonHelloToControllerFlow(String nodeUri,
-			InstanceIdentifier<FlowCapableNode> node) {
+	private synchronized void installSendFlowmonHelloToControllerFlows(InstanceIdentifier<FlowCapableNode> node) {
 		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
 		if (flowmonProvider.isVnfSwitch(nodeId)) {
-			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":flowmon");
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId + ":flowmon");
 			FlowCookie flowCookie = FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE;
 			LOG.info("IDS_REGISTRATION_FLOW_COOKIE " + flowCookie.getValue().toString(16));
 			FlowBuilder fb = FlowUtils.createDestIpMatchSendToController(FlowmonConstants.IDS_REGISTRATION_ADDRESS,
 					FlowmonConstants.IDS_REGISTRATION_PORT, BaseappConstants.FIRST_TABLE, flowCookie, flowId,
 					FlowmonConstants.IDS_REGISTRATION_METADATA);
 			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		} else if (flowmonProvider.isCpeNode(nodeId)) {
-			/* get the cpe nodes corresponding to this VNF node */
-
-			if (node != null) {
-				for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
-
-					for (Uri uri : flowmonConfigData.getFlowSpec()) {
-						if (flowmonProvider.isCpeNode(nodeId)) {
-
-							flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
-									BaseappConstants.PASS_THRU_TABLE, null);
-
-							String flowType = getFlowType(uri);
-
-							if (flowType.equals(FlowmonConstants.REMOTE)){
-								/*
-								 * IDS is configured to look for remote flows.
-								 */
-								FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-								/*
-								 * Match on metadata, set the MPLS tag and send
-								 * to NPE switch and go to l2 switch.
-								 */
-
-								FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
-								
-								int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
-
-								FlowBuilder fb = FlowUtils.createMetadataMatchMplsTagGoToTableFlow(
-										flowCookie, flowId, BaseappConstants.PASS_THRU_TABLE, mplsTag,
-										0);
-								// Write the flow to the data store.
-								flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-								// Install a flow to strip the mpls label.
-								flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-								// Strip MPLS tag and go to the L2 switch.
-								FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, 
-										BaseappConstants.STRIP_MPLS_RULE_TABLE,
-										mplsTag);
-
-								this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
-								
-							} else {
-								LOG.error("Flow diversion not implemented for this flow type " + uri.getValue());
-							}
-						} else if (flowmonProvider.isVnfSwitch(nodeId)) {
-							FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-							int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
-							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
-							// Strip MPLS tag and go to the L2 switch.
-							FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, 
-									BaseappConstants.STRIP_MPLS_RULE_TABLE,
-									mplsTag);
-
-							this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
-							
-						}
-					}
-				}
-			}
-
 		}
 
 	}
 
-	
-
 	public void installDefaultFlows() {
+		if (flowmonProvider.getTopology() == null || flowmonProvider.getFlowmonConfigs().isEmpty()) {
+			LOG.info("WakeupOnFlowCapableNode : installDefaultFlows : configuration is incomplete");
+			return;
+		}
 		for (InstanceIdentifier<FlowCapableNode> flowCapableNode : this.pendingNodes) {
 			String nodeUri = InstanceIdentifierUtils.getNodeUri(flowCapableNode);
-			if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isNpeSwitch(nodeUri)) {
-				this.installSendFlowmonHelloToControllerFlow(nodeUri, flowCapableNode);
+			LOG.info("WakeupOnFlowCapableNode : installDefaultFlows " + nodeUri + " isVnfSwitch = "
+					+ this.flowmonProvider.isVnfSwitch(nodeUri) + " iscpeSwitch = "
+					+ this.flowmonProvider.isCpeNode(nodeUri));
+			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
+				this.installSendFlowmonHelloToControllerFlows(flowCapableNode);
+			}
+
+			if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isCpeNode(nodeUri)) {
+				this.installSetMplsTagFlows(flowCapableNode);
 			}
 		}
+		this.pendingNodes.clear();
 	}
 
 	/**
@@ -169,16 +192,21 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
 
-		LOG.info("onFlowCapableSwitchAppeared");
+		LOG.info("WakeupOnFlowCapableNode : onFlowCapableSwitchAppeared");
 		// The URI identifies the node instance.
 		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
 		// Stash away the URI to node path so we can reference it later.
 		this.flowmonProvider.putInUriToNodeMap(nodeUri, nodePath);
-		if (flowmonProvider.getTopology() == null) {
+		if (flowmonProvider.getTopology() == null || flowmonProvider.getFlowmonConfigs().isEmpty()) {
+			LOG.info("WakeupOnFlowCapableNode : adding node to pending nodes");
 			this.pendingNodes.add(nodePath);
+			return;
 		}
-		if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isNpeSwitch(nodeUri)) {
-			this.installSendFlowmonHelloToControllerFlow(nodeUri, nodePath);
+		if (this.flowmonProvider.isCpeNode(nodeUri) || this.flowmonProvider.isVnfSwitch(nodeUri)) {
+			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
+				this.installSendFlowmonHelloToControllerFlows(nodePath);
+			}
+			this.installSetMplsTagFlows(nodePath);
 		}
 
 	}

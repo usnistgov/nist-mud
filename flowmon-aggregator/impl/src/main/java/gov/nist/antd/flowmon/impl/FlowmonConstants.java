@@ -43,10 +43,10 @@ public interface FlowmonConstants {
 	
 	public static final String LOCAL = "local";
 	public static final String REMOTE = "remote";
-	public static final String PASSTHRU = "PASSTHRU";
 	
 	public static final String NONE = "NONE";
 	public static final String MUD_FLOW_MISS = "drop";
+	public static final String PASSTHRU = "UNCLASSIFIED";
 
 	// The "well known" IDS registration message.
 

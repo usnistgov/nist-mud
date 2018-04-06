@@ -13,7 +13,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.TimerTask;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
@@ -101,13 +101,19 @@ public class FlowmonRegistrationScanner extends TimerTask {
 
 	@Override
 	public void run() {
+		LOG.info("FlowmonRegistrationScanner : starting");
+		if ( this.flowmonProvider.getTopology() == null) {
+			LOG.debug("Topology not fouond ");
+			return;
+		}
+		
 		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
 			List<Uri> flowSpec = flowmonConfigData.getFlowSpec();
 			for (Link link : this.flowmonProvider.getTopology().getLink()) {
 				String flowmonNodeId = link.getVnfSwitch().getValue();
 				InstanceIdentifier<FlowCapableNode> flowmonNode = this.flowmonProvider.getNode(flowmonNodeId);
 				if (flowmonNode == null) {
-					LOG.info("IDS node not found");
+					LOG.debug("IDS node not found");
 					return;
 				}
 				FlowCommitWrapper flowCommitWrapper = flowmonProvider.getFlowCommitWrapper();

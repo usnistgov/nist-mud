@@ -130,11 +130,11 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 			InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
 			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, flowmonNode);
 
-			// Packet diverted for outbound flow. Create a mac to mac flow for
-			// the return packet.
-			// Reverse the source and destination address
-			// First delete the packet diversion flow. Push a higher priority
-			// flow
+			/*
+			 * Packet diverted for outbound flow. Create a mac to mac flow for
+			 * the return packet. Reverse the source and destination
+			 * address 
+			 */
 
 			flowId = InstanceIdentifierUtils.createFlowId(destinationId);
 

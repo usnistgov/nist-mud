@@ -4,10 +4,12 @@
  */
 package gov.nist.antd.flowmon.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Timer;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
@@ -16,7 +18,8 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.NistFlowControllerService;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfig;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
@@ -106,8 +109,8 @@ public class FlowmonProvider {
 		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
 	}
 
-	private static InstanceIdentifier<FlowmonConfigData> getFlowmonConfigWildCardPath() {
-		return InstanceIdentifier.create(FlowmonConfigData.class);
+	private static InstanceIdentifier<FlowmonConfig> getFlowmonConfigWildCardPath() {
+		return InstanceIdentifier.create(FlowmonConfig.class);
 	}
 
 	public FlowmonProvider(final DataBroker dataBroker, PacketProcessingService packetProcessingService,
@@ -125,11 +128,6 @@ public class FlowmonProvider {
 	 */
 	public void init() {
 		LOG.info("FlowmonProvider Session Initiated");
-
-		// metadata mapping notification listener
-
-		this.notificationService.registerNotificationListener(new MappingNotificationListener(this));
-
 		InstanceIdentifier<Topology> topoWildCardPath = getTopologyWildCardPath();
 		final DataTreeIdentifier<Topology> topoId = new DataTreeIdentifier<Topology>(LogicalDatastoreType.CONFIGURATION,
 				topoWildCardPath);
@@ -137,7 +135,7 @@ public class FlowmonProvider {
 		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
 
 		this.flowmonConfigDataStoreListener = new FlowmonConfigDataStoreListener(this);
-		final DataTreeIdentifier<FlowmonConfigData> flowmonConfigId = new DataTreeIdentifier<FlowmonConfigData>(
+		final DataTreeIdentifier<FlowmonConfig> flowmonConfigId = new DataTreeIdentifier<FlowmonConfig>(
 				LogicalDatastoreType.CONFIGURATION, getFlowmonConfigWildCardPath());
 		this.dataBroker.registerDataTreeChangeListener(flowmonConfigId, flowmonConfigDataStoreListener);
 
@@ -154,6 +152,16 @@ public class FlowmonProvider {
 		ListenerRegistration<PacketProcessingListenerImpl> registration = getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 		packetInDispatcher.setListenerRegistration(registration);
+		
+	    this.rpcProviderRegistry.addRpcImplementation(NistFlowControllerService.class,
+	            new NistFlowControllerServiceImpl(this));
+
+	    FlowmonRegistrationScanner scanner = new FlowmonRegistrationScanner(this);
+	    Timer timer = new Timer();
+
+	    timer.scheduleAtFixedRate(scanner, 0, 60 * 1000);
+	    LOG.info("start() <--");
+
 	}
 
 	/**
@@ -258,6 +266,15 @@ public class FlowmonProvider {
 		}
 		return null;
 	}
+	
+	public String getCpeNodeId(String vnfSwitch) {
+		for (Link link : this.topology.getLink()) {
+			if (link.getVnfSwitch().getValue().equals(vnfSwitch)) {
+				return link.getCpeSwitch().getValue();
+			}
+		}
+		return null;
+	}
 
 	public Collection<InstanceIdentifier<FlowCapableNode>> getNpeNodes() {
 		Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
@@ -316,11 +333,11 @@ public class FlowmonProvider {
 		return this.wakeupListener;
 	}
 
-	public void setFlowmonOutputPort(String destinationId, String matchInPortUri) {
+	void setFlowmonOutputPort(String destinationId, String matchInPortUri) {
 		this.flowmonOutputPortMap.put(destinationId, matchInPortUri);
 	}
 
-	public String getFlowmonOutputPort(String nodeId) {
+	String getFlowmonOutputPort(String nodeId) {
 		return this.flowmonOutputPortMap.get(nodeId);
 	}
 
@@ -351,6 +368,20 @@ public class FlowmonProvider {
 
 	public FlowmonConfigData getFlowmonConfig(String nodeId) {
 		return this.flowmonConfigMap.get(nodeId);
+	}
+
+	public Collection<String> getCpeNodes(String npeSwitch) {
+		if ( this.getTopology() == null) {
+			return null;
+		}
+		HashSet<String> retval = new HashSet<>();
+		
+		for (Link link: topology.getLink() ) {
+			if ( link.getNpeSwitch().getValue().equals(npeSwitch)) {
+				retval.add(link.getCpeSwitch().getValue());
+			}
+		}
+		return retval;
 	}
 
 }

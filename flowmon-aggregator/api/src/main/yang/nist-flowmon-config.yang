@@ -36,7 +36,8 @@ module nist-flowmon-config {
 
 
 
-   container flowmon-config-data {
+   container flowmon-config {
+       list flowmon-config-data {
         leaf-list flow-spec {
              description
                     "The flows of interest. These identify the flows of interest. e.g. 
@@ -56,6 +57,7 @@ module nist-flowmon-config {
            description
                 "The node id where the Flow Monitor will appear e.g. openflow:1 ";
            type inet:uri;
+           mandatory true;
         }
 
         leaf filter-duration {
@@ -71,7 +73,7 @@ module nist-flowmon-config {
             type int32;
             default 60000;
         }
-
+     }
    }
 
 }

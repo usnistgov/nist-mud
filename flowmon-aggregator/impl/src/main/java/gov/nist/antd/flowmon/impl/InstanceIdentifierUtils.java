@@ -79,53 +79,27 @@ public class InstanceIdentifierUtils {
 	}
 
 
-	/**
-	 * Shorten's node child path to node path.
-	 *
-	 * @param nodeChild
-	 *            child of node, from which we want node path.
-	 * @return
-	 */
-	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
+	
 
-		return nodeChild.firstIdentifierOf(Node.class);
-	}
-
-	public static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
+	static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
 		return node.firstKeyOf(Node.class).getId().getValue();
 
 	}
 
-	public static final InstanceIdentifier<FlowCapableNode> getFlowCapableNodePath(
-			final InstanceIdentifier<?> nodeChild) {
-
-		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
-	}
 
 
-	public static final InstanceIdentifier<NodeConnector> createNodeConnectorPath(
-			final InstanceIdentifier<Node> nodeKey, final NodeConnectorKey nodeConnectorKey) {
-		return nodeKey.child(NodeConnector.class, nodeConnectorKey);
-	}
 
-	public static FlowId createFlowId() {
+	static FlowId createFlowId() {
 		return new FlowId(FLOW_ID_PREFIX + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
-	public static FlowRef buildFlowPath(final InstanceIdentifier<Node> nodePath, final short tableId,
-			final FlowId flowId) {
+	
 
-		final KeyedInstanceIdentifier<Flow, FlowKey> flowPath = nodePath.augmentation(FlowCapableNode.class)
-				.child(Table.class, new TableKey(tableId)).child(Flow.class, new FlowKey(new FlowId(flowId)));
-
-		return new FlowRef(flowPath);
-	}
-
-	public static FlowId createFlowId(String uri) {
+	static FlowId createFlowId(String uri) {
 		return new FlowId(uri + "/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
-	public static FlowCookie createFlowCookie(String flowCookieId) {
+	static FlowCookie createFlowCookie(String flowCookieId) {
 		return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
 	}
 
