@@ -58,11 +58,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
 
-	// PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode>
-	// node,
-	// IMdsalApiManager mdsalApiManager,
-	// FlowCommitWrapper flowCommitWrapper, SdnmudProvider sdnmudProvider)
-	//
 	public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
 		this.sdnmudProvider = sdnMudProvider;
 		dataStoreAccessor = sdnmudProvider.getFlowCommitWrapper();
@@ -145,13 +140,15 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	/* public void uninstallDefaultFlows(String nodeUri) {
-		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(nodeUri);
-		if (node != null) {
-			for (short tid = 0; tid < SdnMudConstants.MAX_TID + 1; tid++)
-				sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, nodeUri, tid, null);
-		}
-	} */
+	
+	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId("SDNMUD");
+		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
+		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
+				 flowId, flowCookie);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
+	}
+	
 
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
 			Short dropPacketTable) {
@@ -197,6 +194,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		}
+		
+		installUnconditionalGoToTable(nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
 
 		/*
 		 * Install an unconditional packet drop in the DROP_TABLE (this is 

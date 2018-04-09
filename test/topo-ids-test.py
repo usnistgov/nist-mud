@@ -15,6 +15,8 @@ from distutils.spawn import find_executable
 from subprocess import call
 from functools import partial
 import time
+import json
+import requests
 from mininet.node import Host
 from mininet.node import Switch
 from mininet.log import setLogLevel 
@@ -61,6 +63,7 @@ def setupTopology(controller_addr,dns_address, interface):
     s1.linkTo(h4)
     s1.linkTo(h5)
     s1.linkTo(h6)
+
 
     s3.linkTo(h7)
     s3.linkTo(h8)
@@ -230,13 +233,16 @@ if __name__ == '__main__':
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
         ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        ("ietfmud.json","ietf-mud:mud"),("npenodes.json","nist-network-topology:topology")} :
+	("npenodes.json","nist-network-topology:topology")
+        #,("ietfmud.json","ietf-mud:mud")
+	} :
+	#, ("ids-config.json","nist-flowmon-config:flowmon-config-data")} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-	    print "response ", r
+        print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
 

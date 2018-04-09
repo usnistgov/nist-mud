@@ -132,7 +132,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 		String destinationId = nodeConnectorRef.getValue().firstKeyOf(Node.class).getId().getValue();
 
 		LOG.info("onPacketReceived : matchInPortUri = " + matchInPortUri + " destinationId " + destinationId
-				+ " tableId " + tableId + " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
+				+ " tableId " + tableId + " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue() + " etherType = " + etherType);
 
 		if (vlanProvider.getTopology() == null) {
 			LOG.info("Topology not yet registered -- dropping packet");
@@ -208,7 +208,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 		        flowCookie = InstanceIdentifierUtils.createFlowCookie("VLAN_MATCH_" + destinationId);
 
 				fb = FlowUtils.createVlanMatchPopVlanTagAndSendToPort(flowCookie, flowId,
-						BaseappConstants.PASS_THRU_TABLE, tag, matchInPortUri, BaseappConstants.CACHE_TIMEOUT);
+						BaseappConstants.L2SWITCH_TABLE, tag, matchInPortUri, BaseappConstants.CACHE_TIMEOUT);
 				vlanProvider.getFlowCommitWrapper().writeFlow(fb, destinationNode);
 
 			}  else if (!vlanProvider.isNpeSwitch(destinationId)){

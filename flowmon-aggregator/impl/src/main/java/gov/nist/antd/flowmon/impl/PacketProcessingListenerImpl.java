@@ -120,31 +120,11 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 			// TODO -- authenticate the IDS by checking his MAC and token.
 			this.flowmonProvider.setFlowmonOutputPort(destinationId, matchInPortUri);
 			return;
-		} else if (tableId == BaseappConstants.PASS_THRU_TABLE) {
-			// Create a higher priority MPLS flow so we don't get interrupted
-			// again.
-			int mplsTag = notification.getFlowCookie().getValue().intValue();
-			FlowId flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-			FlowBuilder fb = FlowUtils.createOnMplsMatchGoToTable(FlowmonConstants.MPLS_PASS_THRU_FLOW_COOKIE, flowId,
-					mplsTag, BaseappConstants.PASS_THRU_TABLE, BaseappConstants.CACHE_TIMEOUT);
-			InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
-			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, flowmonNode);
-
-			/*
-			 * Packet diverted for outbound flow. Create a mac to mac flow for
-			 * the return packet. Reverse the source and destination
-			 * address 
-			 */
-
-			flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-
-			String outputPortUri = flowmonProvider.getFlowmonOutputPort(destinationId);
-
-			if (outputPortUri != null) {
-				fb = FlowUtils.onSrcDstMacMatchSendToPortAndGoToTable(FlowmonConstants.PACKET_DIVERSION_FLOW_COOKIE,
-						flowId, dstMac, srcMac, outputPortUri, BaseappConstants.PASS_THRU_TABLE,
-						BaseappConstants.CACHE_TIMEOUT);
-				flowmonProvider.getFlowCommitWrapper().writeFlow(fb, flowmonNode);
+		} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+		     if ( flowmonProvider.isVnfSwitch(destinationId)) {
+		    	 Uri mudUri = flowmonProvider.getMudUri(srcMac);
+		    	 InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
+		    	 MappingDataStoreListener.installStampManufacturerFlowRule(flowmonProvider, srcMac,mudUri, flowmonNode);
 			}
 
 		}

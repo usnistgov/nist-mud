@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Timer;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
@@ -17,9 +18,11 @@ import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flow.controller.rev170915.NistFlowControllerService;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.FlowmonConfig;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
@@ -33,6 +36,7 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 public class FlowmonProvider {
 
@@ -67,10 +71,20 @@ public class FlowmonProvider {
 	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;
 
 	private FlowmonConfigDataStoreListener flowmonConfigDataStoreListener;
-
-	private HashMap<String, MappingNotification> modelNotificationMap = new HashMap<>();
 	
-	private HashMap<String,MappingNotification> manufacturerNotifcationMap = new HashMap<>();
+	private Map<MacAddress, Mapping> macAddressToMappingMap = new HashMap<MacAddress, Mapping>();
+	private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
+
+
+		
+	// Stores a set of NodeIds for a given mac address (identifies the switches
+		// that have seen the mac addr).
+		private HashMap<MacAddress, HashSet<String>> macToNodeIdMap = new HashMap<>();
+
+
+	private MappingDataStoreListener mappingDataStoreListener;
+
+	private Mapping setDeviceMapping;
 
 	private class FlowmonPort {
 		private String portUri;
@@ -112,6 +126,10 @@ public class FlowmonProvider {
 	private static InstanceIdentifier<FlowmonConfig> getFlowmonConfigWildCardPath() {
 		return InstanceIdentifier.create(FlowmonConfig.class);
 	}
+	
+	private static InstanceIdentifier<Mapping> getMappingWildCardPath() {
+		return InstanceIdentifier.create(Mapping.class);
+	}
 
 	public FlowmonProvider(final DataBroker dataBroker, PacketProcessingService packetProcessingService,
 			RpcProviderRegistry rpcProviderRegistry, NotificationService notificationService) {
@@ -152,6 +170,13 @@ public class FlowmonProvider {
 		ListenerRegistration<PacketProcessingListenerImpl> registration = getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 		packetInDispatcher.setListenerRegistration(registration);
+		
+		final InstanceIdentifier<Mapping> mappingWildCardPath = getMappingWildCardPath();
+		final DataTreeIdentifier<Mapping> mappingTreeId = new DataTreeIdentifier<Mapping>(
+				LogicalDatastoreType.CONFIGURATION, mappingWildCardPath);
+		this.mappingDataStoreListener = new MappingDataStoreListener(this);
+		this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
+
 		
 	    this.rpcProviderRegistry.addRpcImplementation(NistFlowControllerService.class,
 	            new NistFlowControllerServiceImpl(this));
@@ -214,25 +239,12 @@ public class FlowmonProvider {
 
 	}
 
-	public void addMappingNotification(MappingNotification notification) {
-		String mudUrl = notification.getMappingInfo().getMudUrl().getValue();
-		modelNotificationMap.put(mudUrl, notification);
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUrl);
-		this.manufacturerNotifcationMap.put(manufacturer,notification);
-	}
-	
-
-	public MappingNotification getMappingNotificationByModel(String mudUrl) {
-		return this.modelNotificationMap.get(mudUrl);
-	}
-	
-	public MappingNotification getMappingNotificationByManufacturer(String manufacturer) {
-		return this.manufacturerNotifcationMap.get(manufacturer);
-	}
 
 	public synchronized String getFlowmonPort(String flowmonNodeId) {
 
-		return this.flowmonNodeToPortMap.get(flowmonNodeId).portUri;
+		if ( this.flowmonNodeToPortMap.containsKey(flowmonNodeId))
+			return this.flowmonNodeToPortMap.get(flowmonNodeId).portUri;
+		else return null;
 	}
 
 	public synchronized Collection<FlowmonConfigData> getFlowmonConfigs() {
@@ -349,22 +361,17 @@ public class FlowmonProvider {
 		}
 		return null;
 	}
-
-	public int getManfuacturerId(String manufacturer) {
-		if ( this.manufacturerNotifcationMap.containsKey(manufacturer)) {
-			return this.manufacturerNotifcationMap.get(manufacturer).getManufacturerId().intValue();
-		} else {
-			return -1;
+	
+	public Collection<InstanceIdentifier<FlowCapableNode>> getVnfNodes() {
+		HashSet<InstanceIdentifier<FlowCapableNode>>	 flowCapableNodes =  new HashSet<>();
+		for(Link ink : this.topology.getLink()) {
+			if (this.getNode(ink.getVnfSwitch().getValue()) != null)	 {
+				flowCapableNodes.add(this.getNode(ink.getVnfSwitch().getValue()));
+			}
 		}
+		return flowCapableNodes;
 	}
 
-	public int getModelId(String mudUri) {
-		if ( this.modelNotificationMap.containsKey(mudUri)) {
-			return this.modelNotificationMap.get(mudUri).getModelId().intValue();
-		} else {
-			return -1;
-		}
-	}
 
 	public FlowmonConfigData getFlowmonConfig(String nodeId) {
 		return this.flowmonConfigMap.get(nodeId);
@@ -383,5 +390,63 @@ public class FlowmonProvider {
 		}
 		return retval;
 	}
+
+	public void setDeviceMapping(Mapping mapping) {
+		this.setDeviceMapping = mapping;
+	}
+	
+	public Mapping getDeviceMapping() {
+		return this.setDeviceMapping;
+	}
+	
+	public synchronized void putInMacToNodeIdMap(MacAddress srcMac, String nodeId) {
+		HashSet<String> nodes;
+		if (!macToNodeIdMap.containsKey(srcMac)) {
+			nodes = new HashSet<String>();
+			this.macToNodeIdMap.put(srcMac, nodes);
+		} else {
+			nodes = macToNodeIdMap.get(srcMac);
+		}
+		nodes.add(nodeId);
+	}
+
+	public synchronized Collection<String> getNodeId(MacAddress deviceMacAddress) {
+		return this.macToNodeIdMap.get(deviceMacAddress);
+	}
+
+	private void removeMacAddress(MacAddress macAddress) {
+		Mapping mapping = macAddressToMappingMap.remove(macAddress);
+		if (mapping != null) {
+			HashSet<MacAddress> macs = uriToMacs.get(mapping.getMudUrl());
+			macs.remove(macAddress);
+			if (macs.size() == 0) {
+				uriToMacs.remove(mapping.getMudUrl());
+			}
+		}
+	}
+	
+	public Uri getMudUri(MacAddress macAddress) {
+		Mapping mapping = macAddressToMappingMap.get(macAddress);
+		if (mapping != null) {
+			return mapping.getMudUrl();
+		} else {
+			return new Uri(FlowmonConstants.UNCLASSIFIED);
+		}
+	}
+
+	public void addDeviceMapping(MacAddress mac, Mapping mapping) {
+		// TODO Auto-generated method stub
+		removeMacAddress(mac);
+		LOG.info("Put MAC address mapping " + mac + " uri " + mapping.getMudUrl().getValue());
+
+		macAddressToMappingMap.put(mac, mapping);
+		HashSet<MacAddress> macs = uriToMacs.get(mapping.getMudUrl());
+		if (macs == null) {
+			macs = new HashSet<MacAddress>();
+			uriToMacs.put(mapping.getMudUrl(), macs);
+		}
+		macs.add(mac);
+	}
+
 
 }

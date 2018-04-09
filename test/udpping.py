@@ -31,7 +31,7 @@ def udp_client(host, port) :
             print "Round Trip Time", rtt
             print
         except timeout:
-            print 'REQUEST TIMED OUT'
+            print 'ERROR : REQUEST TIMED OUT'
             print
 
 

@@ -86,6 +86,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			List<MacAddress> macAddresses = mapping.getDeviceId();
 			Uri uri = mapping.getMudUrl();
 			LOG.info("mudUri = " + uri.getValue());
+            /* TOD vvv Delete this 
             String manufacturer = InstanceIdentifierUtils.getAuthority(uri.getValue());
 	        int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
             int modelId = InstanceIdentifierUtils.getModelId(uri.getValue());
@@ -98,6 +99,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
             MappingNotification mappingNotification = mnb.setMappingInfo(mib.build()).build();
             // Publish that we just saw a new device 
             sdnmudProvider.getNotificationPublishService().offerNotification(mappingNotification);
+            TODO  ^^^ Delete this*/
             
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {

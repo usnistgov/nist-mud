@@ -209,27 +209,6 @@ public class FlowUtils {
 
 	}
 
-	private static MatchBuilder createEthernetSourceAndDestNoEthTypeMatch(MatchBuilder matchBuilder,
-			MacAddress sourceMac, MacAddress destMac) {
-		EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder();
-		EthernetSourceBuilder ethernetSourceBuilder = new EthernetSourceBuilder();
-		ethernetSourceBuilder.setAddress(sourceMac);
-		// ethernetSourceBuilder.setMask(new MacAddress("FF:FF:FF:FF:FF:FF"));
-		EthernetSource ethernetSource = ethernetSourceBuilder.build();
-
-		ethernetMatchBuilder.setEthernetSource(ethernetSource);
-		EthernetDestinationBuilder ethernetDestinationBuilder = new EthernetDestinationBuilder();
-		ethernetDestinationBuilder.setAddress(destMac);
-
-		EthernetDestination ethernetDestination = ethernetDestinationBuilder.build();
-
-		ethernetMatchBuilder.setEthernetDestination(ethernetDestination);
-		EthernetMatch ethernetMatch = ethernetMatchBuilder.build();
-		matchBuilder.setEthernetMatch(ethernetMatch);
-
-		return matchBuilder;
-	}
-
 	private static MatchBuilder createEthernetDestMatch(MatchBuilder matchBuilder, MacAddress macAddress) {
 
 		EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder();
@@ -665,19 +644,6 @@ public class FlowUtils {
 		return matchBuilder;
 	}
 
-	private static MatchBuilder createUdpPortMatch(MatchBuilder matchBuilder, int udpSrcPort, int udpDstPort) {
-		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(FlowmonConstants.UDP_PROTOCOL);
-		ipmatch.setIpProto(IpVersion.Ipv4);
-		matchBuilder.setIpMatch(ipmatch.build());
-		PortNumber portNumber = new PortNumber(udpSrcPort);
-		UdpMatchBuilder udpmatch = new UdpMatchBuilder();
-		udpmatch.setUdpSourcePort(portNumber);
-		udpmatch.setUdpDestinationPort(new PortNumber(udpDstPort));
-		matchBuilder.setLayer4Match(udpmatch.build());
-		return matchBuilder;
-	}
-
 	private static MatchBuilder createUdpProtocolMatch(MatchBuilder matchBuilder) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
 		ipmatch.setIpProtocol(FlowmonConstants.UDP_PROTOCOL);
@@ -749,73 +715,6 @@ public class FlowUtils {
 		ib.setKey(new InstructionKey(getInstructionKey()));
 		return ib.build();
 
-	}
-
-	private static Instruction createStripVlanTagInstruction1(InstructionBuilder ib, int order) {
-
-		StripVlanActionCaseBuilder stripCaseBuilder = new StripVlanActionCaseBuilder();
-		StripVlanActionBuilder stripBuilder = new StripVlanActionBuilder();
-		stripCaseBuilder.setStripVlanAction(stripBuilder.build());
-
-		ActionBuilder ab = new ActionBuilder().setAction(stripCaseBuilder.build());
-		ab.setOrder(order);
-		List<Action> actionList = new ArrayList<Action>();
-		actionList.add(ab.build());
-
-		WriteActionsBuilder wab = new WriteActionsBuilder();
-
-		wab.setAction(actionList);
-
-		// Create an Apply Action
-		ApplyActionsBuilder aab = new ApplyActionsBuilder();
-
-		aab.setAction(actionList);
-
-		// Wrap our Apply Action in an Instruction
-		ib.setInstruction(new WriteActionsCaseBuilder().setWriteActions(wab.build()).build());
-
-		ib.setOrder(order);
-		return ib.build();
-	}
-
-	private static Instruction createVlanTagPacketAndSendToOutputPortInstructions(int vlanId, String outputPortUri) {
-
-		SetVlanIdActionBuilder tab = new SetVlanIdActionBuilder();
-		tab.setVlanId(new VlanId(vlanId));
-
-		SetVlanIdActionCaseBuilder vidcb = new SetVlanIdActionCaseBuilder();
-
-		ActionBuilder ab = new ActionBuilder().setAction(vidcb.setSetVlanIdAction(tab.build()).build());
-
-		ab.setOrder(0);
-		ab.setKey(new ActionKey(getActionKey()));
-
-		List<Action> actionList = new ArrayList<Action>();
-		actionList.add(ab.build());
-
-		OutputActionBuilder output = new OutputActionBuilder();
-		output.setMaxLength(Integer.valueOf(0xffff));
-
-		Uri controllerPort = new Uri(outputPortUri);
-		output.setOutputNodeConnector(controllerPort);
-
-		ab = new ActionBuilder();
-		// ab.setKey(new ActionKey(3));
-		ab.setAction(new OutputActionCaseBuilder().setOutputAction(output.build()).build());
-		ab.setOrder(1);
-		actionList.add(ab.build());
-
-		// Create an Apply Action
-		ApplyActionsBuilder aab = new ApplyActionsBuilder();
-
-		aab.setAction(actionList);
-
-		// Wrap our Apply Action in an Instruction
-		InstructionBuilder ib = new InstructionBuilder();
-		ib.setInstruction(new ApplyActionsCaseBuilder().setApplyActions(aab.build()).build());
-		ib.setOrder(0);
-		ib.setKey(new InstructionKey(getInstructionKey()));
-		return ib.build();
 	}
 
 	private static Instruction createPushMplsAndOutputToPortInstructions(long mplsTag, String outputPortUri) {
@@ -1011,32 +910,8 @@ public class FlowUtils {
 		for (String port : ports) {
 			ab.setOrder(order);
 			ab.setKey(new ActionKey(0));
-			LOG.info("createSendToPort " + port.substring(port.lastIndexOf(":"), port.length()));
-			oab.setOutputNodeConnector(new Uri(port.substring(port.lastIndexOf(":"), port.length())));
-			ab.setAction(new OutputActionCaseBuilder().setOutputAction(oab.build()).build());
-			actionList.add(ab.build());
-			order++;
-		}
-		ApplyActionsBuilder aab = new ApplyActionsBuilder();
-		aab.setAction(actionList);
-		InstructionBuilder ib = new InstructionBuilder();
-		ib.setOrder(0);
-		ib.setInstruction(new ApplyActionsCaseBuilder().setApplyActions(aab.build()).build());
-		return ib.build();
-
-	}
-
-	private static Instruction createSendToPortsAction(List<Integer> ports) {
-		int order = 0;
-		OutputActionBuilder oab = new OutputActionBuilder();
-		oab.setMaxLength(Integer.valueOf(0xffff));
-		ActionBuilder ab = new ActionBuilder();
-		List<Action> actionList = new ArrayList<Action>();
-
-		for (int port : ports) {
-			ab.setOrder(order);
-			ab.setKey(new ActionKey(order));
-			oab.setOutputNodeConnector(new Uri(String.valueOf(port)));
+			LOG.info("createSendToPortsAction " + port);
+			oab.setOutputNodeConnector(new Uri(port));
 			ab.setAction(new OutputActionCaseBuilder().setOutputAction(oab.build()).build());
 			actionList.add(ab.build());
 			order++;
@@ -1088,7 +963,7 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createMetadataMatchMplsTagGoToTableFlow(FlowCookie flowCookie, FlowId flowId,
+	static FlowBuilder createMetadataMatchMplsTagGoToTableFlow(FlowCookie flowCookie, FlowId flowId,
 			Short tableId, int mplsTag, int duration) {
 
 		short targetTable = (short) (tableId + 1);
@@ -1636,6 +1511,9 @@ public class FlowUtils {
 		InstructionsBuilder insb = new InstructionsBuilder();
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(instruction);
+		Instruction gotoIns = FlowUtils.createGoToTableInstruction((short)(tableId + 1));
+		instructions.add(instruction);
+		instructions.add(gotoIns);
 		insb.setInstruction(instructions);
 		FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
 				.setFlowName("uncoditionalSendToController").setId(flowId).setKey(new FlowKey(flowId))
@@ -1855,7 +1733,7 @@ public class FlowUtils {
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchSendToPortsAndGotoTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
 				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(duration).setIdleTimeout(0)
+				.setHardTimeout(duration/2).setIdleTimeout(duration)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;

@@ -177,7 +177,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
 
     
-    h1.cmdPrint("ping 10.0.0.7")
+    #h1.cmdPrint("ping 10.0.0.7")
 
 
     print "*********** System ready *********"

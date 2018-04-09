@@ -1,5 +1,6 @@
 package gov.nist.antd.flowmon.impl;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -65,79 +66,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return pieces[1];
 	}
 
-	public synchronized void installSetMplsTagFlows(InstanceIdentifier<FlowCapableNode> node) {
-
-		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-		/* get the cpe nodes corresponding to this VNF node */
-		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
-
-			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
-			//Collection<String> cpeSwitches = flowmonProvider.getCpeNodes(npeSwitch);
-			String cpeSwitch = flowmonProvider.getCpeNodeId(vnfSwitch);
-		
-
-			if (cpeSwitch == null) {
-				LOG.error("CPE switches not found for vnfSwitch");
-				return;
-			}
-
-			LOG.info("installSetMplsTagFlows : nodeId " + nodeId + " Switch " + vnfSwitch);
-
-			for (Uri uri : flowmonConfigData.getFlowSpec()) {
-				if (cpeSwitch.equals(nodeId)) {
-
-					flowmonProvider.getFlowCommitWrapper().deleteFlows(node, uri.getValue(),
-							BaseappConstants.PASS_THRU_TABLE, null);
-					String flowType = getFlowType(uri);
-
-					if (flowType.equals(FlowmonConstants.REMOTE)) {
-						/*
-						 * IDS is configured to look for remote flows.
-						 */
-						FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-						/*
-						 * Match on metadata, set the MPLS tag and send to NPE
-						 * switch and go to l2 switch.
-						 */
-
-						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
-
-						int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
-
-						FlowBuilder fb = FlowUtils.createMetadataMatchMplsTagGoToTableFlow(flowCookie, flowId,
-								BaseappConstants.PASS_THRU_TABLE, mplsTag, 0);
-						// Write the flow to the data store.
-						flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
-						
-						
-						// Install a flow to strip the mpls label.
-						flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-						// Strip MPLS tag and go to the L2 switch.
-						FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
-								BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
-								
-
-						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node); 
-
-					} else {
-						LOG.error("Flow diversion not implemented for this flow type " + uri.getValue());
-					}
-				} else if (nodeId.equals(vnfSwitch)) {
-					LOG.info("setMplsTagFlows : " + nodeId  + " isVnfSwitch true");
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-					int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
-					// Strip MPLS tag and go to the L2 switch.
-					FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId,
-							BaseappConstants.STRIP_MPLS_RULE_TABLE, mplsTag);
-
-					this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
-
-				}
-			}
-		}
-
-	}
+	
 
 	/**
 	 * Flow to send the IDS HELLO to the controller if it has not already been
@@ -159,6 +88,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 
 	}
+	
+	public void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
+			InstanceIdentifier<FlowCapableNode> node) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
+		FlowCookie flowCookie = FlowmonConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
+		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerFlow(tableId, flowId, flowCookie);
+		this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
+	}
 
 	public void installDefaultFlows() {
 		if (flowmonProvider.getTopology() == null || flowmonProvider.getFlowmonConfigs().isEmpty()) {
@@ -172,10 +109,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 					+ this.flowmonProvider.isCpeNode(nodeUri));
 			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
 				this.installSendFlowmonHelloToControllerFlows(flowCapableNode);
-			}
-
-			if (this.flowmonProvider.isVnfSwitch(nodeUri) || this.flowmonProvider.isCpeNode(nodeUri)) {
-				this.installSetMplsTagFlows(flowCapableNode);
+				this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowCapableNode);
 			}
 		}
 		this.pendingNodes.clear();
@@ -202,11 +136,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			this.pendingNodes.add(nodePath);
 			return;
 		}
-		if (this.flowmonProvider.isCpeNode(nodeUri) || this.flowmonProvider.isVnfSwitch(nodeUri)) {
+		if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
 			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
 				this.installSendFlowmonHelloToControllerFlows(nodePath);
 			}
-			this.installSetMplsTagFlows(nodePath);
+			this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
 		}
 
 	}

@@ -108,6 +108,9 @@ public class InstanceIdentifierUtils {
 	}
 
 	static String getAuthority(String uri) {
+		if (uri.equals(FlowmonConstants.UNCLASSIFIED)) {
+			return FlowmonConstants.UNCLASSIFIED;
+		}
 		int index = uri.indexOf("//");
 		if (index == -1) {
 			LOG.error("getAuthority : Malformed URI " + uri);

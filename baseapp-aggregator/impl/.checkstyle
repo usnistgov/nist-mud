@@ -13,7 +13,7 @@
     <property name="checkstyle.suppressions.file" value="/home/mranga/workspace/.metadata/.plugins/org.eclipse.core.resources/.projects/baseapp-impl/com.basistech.m2e.code.quality.checkstyleConfigurator/checkstyle-suppressions-default.xml"/>
     <property name="checkstyle.header.file" value="/home/mranga/workspace/.metadata/.plugins/org.eclipse.core.resources/.projects/baseapp-impl/com.basistech.m2e.code.quality.checkstyleConfigurator/checkstyle-header-default.txt"/>
   </local-check-config>
-  <fileset name="java-sources-check-license" enabled="true" check-config-name="maven-checkstyle-plugin check-license" local="true">
+  <fileset name="java-sources-check-license" enabled="false" check-config-name="maven-checkstyle-plugin check-license" local="true">
     <file-match-pattern match-pattern="^src/main/java/.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java/.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java/.*\.java" include-pattern="true"/>

@@ -78,28 +78,5 @@ module nist-flow-controller {
     }
   }
 
-  rpc register-monitor {
-    input {
-       leaf-list cpe-node-ids {
-            description
-                "The CPE node ID where we want to install packet monitor";
-            type inet:uri;
-        }
-        leaf timeout {
-            description
-                "The CPE node ID where we want to install packet monitor";
-            type uint32;
-            default 300;
-        }
-    }
-
-    output {
-        leaf  status {
-            description
-                "The status code. (0 means OK -1 means fail)";
-            type uint32;
-        }
-    }
-  }
 
 }

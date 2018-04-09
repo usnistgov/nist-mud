@@ -1,5 +1,7 @@
 /*
- * Copyright © 2017 Public Domain and others.  All rights reserved.
+ * This program and accompanying materials are made available to the public domain 
+ * without copyright in accordance with the following disclaimer:
+ * 
  *
  */
 package gov.nist.antd.vlan.impl;

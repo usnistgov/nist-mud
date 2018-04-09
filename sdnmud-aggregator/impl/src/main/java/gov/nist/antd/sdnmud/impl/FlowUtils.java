@@ -1068,18 +1068,25 @@ public class FlowUtils {
 		return fb;
 	}
 
-	public static FlowBuilder createUnconditionalGoToNextTableFlow(short table, short nextTable, FlowId flowId,
+	public static FlowBuilder createUnconditionalGoToNextTableFlow(short table,  FlowId flowId,
 			FlowCookie flowCookie) {
 		LOG.info("createGoToTableFlow ");
 
+		
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("permitPackets").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		Instruction wmd = FlowUtils.createWriteMetadataInstruction(flowCookie.getValue(), new BigInteger("ffffffffffffffff",16));
+		instructions.add(wmd);
+		short nextTable = (short)(table + 1);
+		Instruction ins = FlowUtils.createGoToTableInstruction(nextTable);
+		instructions.add(ins);
+		InstructionsBuilder isb = new InstructionsBuilder().setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

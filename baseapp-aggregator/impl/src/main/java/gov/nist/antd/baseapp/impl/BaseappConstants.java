@@ -1,4 +1,5 @@
-/*
+/* 
+ * Copyright (c) Public Domain
  *This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *

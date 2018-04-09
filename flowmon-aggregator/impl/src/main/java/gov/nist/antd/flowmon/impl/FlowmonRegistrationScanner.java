@@ -44,8 +44,8 @@ public class FlowmonRegistrationScanner extends TimerTask {
 
 	private static String getManufacturer(Uri flowSpec) {
 
-		if (flowSpec.getValue().equals(FlowmonConstants.PASSTHRU))
-			return null;
+		if (flowSpec.getValue().equals(FlowmonConstants.UNCLASSIFIED))
+			return FlowmonConstants.UNCLASSIFIED;
 		String[] pieces = flowSpec.getValue().split(":");
 		return pieces[0];
 
@@ -53,62 +53,65 @@ public class FlowmonRegistrationScanner extends TimerTask {
 
 	private static String getFlowType(Uri flowSpec) {
 
-		if (flowSpec.getValue().equals(FlowmonConstants.PASSTHRU))
-			return FlowmonConstants.PASSTHRU;
+		if (flowSpec.getValue().equals(FlowmonConstants.UNCLASSIFIED))
+			return FlowmonConstants.UNCLASSIFIED;
 		String[] pieces = flowSpec.getValue().split(":");
 		return pieces[1];
 	}
 
-	private void installStripMplsTagAndGoToL2Switch(InstanceIdentifier<FlowCapableNode> nodePath, FlowId flowId,
-			Short stripMplsRuleTable, int label) {
+	public synchronized void installDivertToIdsFlow(InstanceIdentifier<FlowCapableNode> node, String flowmonPorts,
+			int duration) {
 
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowId.getValue());
+		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+		/* get the cpe nodes corresponding to this VNF node */
+		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
 
-		FlowBuilder flow = FlowUtils.createMplsMatchPopMplsLabelAndGoToTable(flowCookie, flowId, stripMplsRuleTable,
-				label);
+			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
 
-		this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, nodePath);
+			LOG.info("installDivertToIdsFlow : nodeId " + nodeId + " Switch " + vnfSwitch);
+			if (nodeId.equals(vnfSwitch)) {
+				for (Uri uri : flowmonConfigData.getFlowSpec()) {
+					String manufacturer = getManufacturer(uri);
+					LOG.info("installDivertToIdsFlow : manufacturer " + manufacturer);
 
-	}
+					String flowType = getFlowType(uri);
+					if (flowType.equals(FlowmonConstants.REMOTE) || flowType.equals(FlowmonConstants.UNCLASSIFIED)) {
+						FlowId flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+						// Strip MPLS tag and go to the L2 switch.
+						BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
 
-	private BigInteger createSrcModelMetadata(String mudUri) {
-		int modelId = flowmonProvider.getModelId(mudUri);
-		return BigInteger.valueOf(modelId).shiftLeft(FlowmonConstants.SRC_MODEL_SHIFT);
-	}
+						FlowBuilder flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId,
+								metadata, FlowmonConstants.SRC_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE,
+								flowmonPorts, flowmonConfigData.getFilterDuration());
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
 
-	private BigInteger createDstModelMetadata(String mudUri) {
-		return BigInteger.valueOf(flowmonProvider.getModelId(mudUri)).shiftLeft(FlowmonConstants.DST_MODEL_SHIFT);
-	}
+						flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
 
-	private BigInteger createSrcManufacturerMetadata(String manufacturer) {
-		return BigInteger.valueOf(flowmonProvider.getManfuacturerId(manufacturer))
-				.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
-	}
+						metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT);
 
-	private BigInteger createDstManufacturerModelMetadata(String mudUri) {
-		int manufacturerId = flowmonProvider.getManfuacturerId(InstanceIdentifierUtils.getAuthority(mudUri));
-		int modelId = flowmonProvider.getModelId(mudUri);
-		return BigInteger.valueOf(manufacturerId).shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(modelId).shiftLeft(FlowmonConstants.DST_MODEL_SHIFT));
-
-	}
-
-	private BigInteger createDstManufacturerMetadata(String mudUri) {
-
-		int manufacturerId = flowmonProvider.getManfuacturerId(mudUri);
-		return BigInteger.valueOf(manufacturerId).shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT);
+						flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId, metadata,
+								FlowmonConstants.DST_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE, flowmonPorts,
+								flowmonConfigData.getFilterDuration());
+						
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
 	public void run() {
 		LOG.info("FlowmonRegistrationScanner : starting");
-		if ( this.flowmonProvider.getTopology() == null) {
+		if (this.flowmonProvider.getTopology() == null) {
 			LOG.debug("Topology not fouond ");
 			return;
 		}
-		
+
 		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
-			List<Uri> flowSpec = flowmonConfigData.getFlowSpec();
 			for (Link link : this.flowmonProvider.getTopology().getLink()) {
 				String flowmonNodeId = link.getVnfSwitch().getValue();
 				InstanceIdentifier<FlowCapableNode> flowmonNode = this.flowmonProvider.getNode(flowmonNodeId);
@@ -116,9 +119,10 @@ public class FlowmonRegistrationScanner extends TimerTask {
 					LOG.debug("IDS node not found");
 					return;
 				}
-				FlowCommitWrapper flowCommitWrapper = flowmonProvider.getFlowCommitWrapper();
 				this.flowmonProvider.garbageCollectFlowmonRegistrationRecords();
 				String flowmonPorts = flowmonProvider.getFlowmonOutputPort(flowmonNodeId);
+				
+				LOG.info("flowmonPorts : "  + flowmonPorts);
 
 				// No IDS ports found.
 
@@ -133,38 +137,7 @@ public class FlowmonRegistrationScanner extends TimerTask {
 
 				LOG.debug("flowmonRegistration: duration = " + duration);
 
-				for (Uri uri : flowSpec) {
-					String flowType = getFlowType(uri);
-
-					LOG.info("Install flow rules for flow type " + flowType);
-
-					int mplsTag = InstanceIdentifierUtils.getFlowHash(uri.getValue());
-
-					/* Divert flow in the VNF switch. */
-
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(uri.getValue());
-
-					if (flowType.equals(FlowmonConstants.REMOTE)) {
-
-						/*
-						 * Send the inbound packet to the controller. When it
-						 * gets to the controller we extract the src and
-						 * destination mac address and create a MAC to MAC
-						 * flow for packet diversion to the IDS> The flow
-						 * cookie stores the mpls tag. We then override
-						 * this rule that sends packets to the controller.
-						 */
-
-						FlowCookie flowCookie = new FlowCookie(BigInteger.valueOf(mplsTag));
-						FlowBuilder fb = FlowUtils.createOnMplsMatchSendToControllerGoToTable(flowCookie, flowId,
-								mplsTag, BaseappConstants.PASS_THRU_TABLE, duration);
-						flowCommitWrapper.writeFlow(fb, flowmonNode);
-					} else {
-
-						LOG.error("Flow type not supported yet " + uri.getValue());
-					}
-
-				}
+				this.installDivertToIdsFlow(flowmonNode, flowmonPorts, duration);
 			}
 
 		}
