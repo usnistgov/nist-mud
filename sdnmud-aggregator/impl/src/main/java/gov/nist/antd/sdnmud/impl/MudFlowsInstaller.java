@@ -1,18 +1,21 @@
 /*
- * This code is released to the public domain in accordance with the following disclaimer:
- * 
- * "This software was developed at the National Institute of Standards 
- * and Technology by employees of the Federal Government in the course of 
- * their official duties. Pursuant to title 17 Section 105 of the United 
- * States Code this software is not subject to copyright protection and is 
- * in the public domain. It is an experimental system. NIST assumes no responsibility 
- * whatsoever for its use by other parties, and makes no guarantees, expressed or 
- * implied, about its quality, reliability, or any other characteristic. We would 
- * appreciate acknowledgement if the software is used. This software can be redistributed 
- * and/or modified freely provided that any derivative works bear 
- * some notice that they are derived from it, and any modified versions bear some 
- * notice that they have been modified."
- */
+*Copyright (c) 2018 Public Domain. 
+* 
+* This code is released to the public domain in accordance with the following disclaimer:
+* 
+* "This software was developed at the National Institute of Standards 
+* and Technology by employees of the Federal Government in the course of 
+* their official duties. Pursuant to title 17 Section 105 of the United 
+* States Code this software is not subject to copyright protection and is 
+* in the public domain. It is an experimental system. NIST assumes no responsibility 
+* whatsoever for its use by other parties, and makes no guarantees, expressed or 
+* implied, about its quality, reliability, or any other characteristic. We would 
+* appreciate acknowledgement if the software is used. This software can be redistributed 
+* and/or modified freely provided that any derivative works bear 
+* some notice that they are derived from it, and any modified versions bear some 
+* notice that they have been modified."
+*/
+
 package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
@@ -34,8 +37,10 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Direction;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Matches1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Tcp1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.AccessLists;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.access.lists.AccessList;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.FromDevicePolicy;
@@ -209,7 +214,7 @@ public class MudFlowsInstaller {
 	 * @param mudUri
 	 * @param dropFlowUri
 	 */
-	private void installGoToDropTableOnSrcModelMetadataMatchFlow(String mudUri, 
+	private void installGoToDropTableOnSrcModelMetadataMatchFlow(String mudUri,
 			InstanceIdentifier<FlowCapableNode> node) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
@@ -281,11 +286,19 @@ public class MudFlowsInstaller {
 
 	}
 
+	private static Direction getDirectionInitiated(Matches matches) {
+		if (matches.getL4() != null && (matches.getL4() instanceof Tcp)) {
+			return ((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class).getDirectionInitiated();
+		} else {
+			return null;
+		}
+	}
+
 	private void installPermitFromDeviceToIpAddressFlow(FlowId flowId, BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int destinationPort, short protocol, FlowCookie flowCookie) {
+			Ipv4Address address, int destinationPort, short protocol, boolean sendToController, FlowCookie flowCookie) {
 
 		FlowBuilder fb = FlowUtils.createMetadataDestIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, address,
-				destinationPort, protocol, BaseappConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
+				destinationPort, protocol, sendToController, BaseappConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, getCpeNode());
 	}
@@ -303,27 +316,33 @@ public class MudFlowsInstaller {
 		}
 
 		int port = getDestinationPort(matches);
-		if (port != -1) {
-			for (Ipv4Address address : addresses) {
-				String flowSpec = createFlowSpec(authority, address);
-				FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-				FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
-				installPermitFromDeviceToIpAddressFlow(flowId, metadata, metadataMask, address, port,
-						protocol.shortValue(), flowCookie);
+		for (Ipv4Address address : addresses) {
+			String flowSpec = createFlowSpec(authority, address);
+			FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
+			Direction direction = getDirectionInitiated(matches);
+			if (direction != null) {
+				LOG.info("MudFlowsInstaller: directionInitiated = " + direction.getName());
+			} else {
+				LOG.info("MudFlowsInstaller: direction is null ");
 			}
-		} else {
-			LOG.error("Destinaiton port not specified");
+			// We want to make sure that the first packet from device does not contain a Syn 
+			// in case the direction is ToDevice
+			boolean sendToController = direction != null && direction.getName().equals(Direction.ToDevice.getName());
+			FlowCookie flowCookie =  InstanceIdentifierUtils.createFlowCookie(flowSpec);
+			installPermitFromDeviceToIpAddressFlow(flowId, metadata, metadataMask, address, port, protocol.shortValue(),
+					sendToController, flowCookie);
 		}
 
 	}
 
 	private void installPermitFromIpToDeviceFlow(BigInteger metadata, BigInteger metadataMask, Ipv4Address address,
-			int sourcePort, short protocol, FlowCookie flowCookie, FlowId flowId,
+			int sourcePort, short protocol, boolean sendToController, FlowCookie flowCookie, FlowId flowId,
 			InstanceIdentifier<FlowCapableNode> node) {
 		try {
 			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, address,
-					sourcePort, protocol, BaseappConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
+					sourcePort, protocol, sendToController, BaseappConstants.SDNMUD_RULES_TABLE, flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
 		} catch (Exception ex) {
 			LOG.error("Error installing flow ", ex);
 		}
@@ -335,14 +354,27 @@ public class MudFlowsInstaller {
 		BigInteger metadata = createDstModelMetadata(mudUri);
 		String authority = InstanceIdentifierUtils.getAuthority(mudUri);
 		Short protocol = getProtocol(matches);
-
 		int port = getSourcePort(matches);
+
 		for (Ipv4Address address : addresses) {
 			String flowSpec = createFlowSpec(authority, address);
+			Direction direction = getDirectionInitiated(matches);
+
 			FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
+
+			boolean sendToController = direction != null && direction.getName().equals(Direction.FromDevice.getName());
+
+			if (direction != null) {
+				LOG.info("MudFlowsInstaller : InstallePermitFromAddressToDeviceFlowRules : direction "
+						+ direction.getName());
+			} else {
+				LOG.info("MudFlowsInstaller : InstallePermitFromAddressToDeviceFlowRules : direction is null");
+			}
 			FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
-			installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(), flowCookie,
-					flowId, getCpeNode());
+
+			installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(),
+					sendToController, flowCookie, flowId, getCpeNode());
+
 		}
 
 	}
@@ -653,8 +685,8 @@ public class MudFlowsInstaller {
 
 			/*
 			 * Track that we have added a node for this device MAC address for
-			 * this node. i.e. we store MUD rules for this device on the
-			 * given node.
+			 * this node. i.e. we store MUD rules for this device on the given
+			 * node.
 			 */
 
 			LOG.info("installFlows : authority (manufacturer) = " + "[" + authority + "]");
@@ -669,8 +701,8 @@ public class MudFlowsInstaller {
 			 * default drop packet flows that will drop the packet if a MUD rule
 			 * does not match.
 			 */
-			installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(),  getCpeNode());
-			installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(),  getCpeNode());
+			installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), getCpeNode());
+			installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), getCpeNode());
 
 			/*
 			 * Fetch and install the MUD ACLs. First install the "from-device"

@@ -241,7 +241,7 @@ if __name__ == '__main__':
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-	    print "response ", r
+        print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
 

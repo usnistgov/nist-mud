@@ -83,6 +83,9 @@ public abstract class PacketUtils {
 	private static final int PACKET_OFFSET_IP = 14;
 	private static final int PACKET_OFFSET_IP_SRC = PACKET_OFFSET_IP + 12;
 	private static final int PACKET_OFFSET_IP_DST = PACKET_OFFSET_IP + 16;
+	private static final int PACKET_OFFSET_TCP_SRC_PORT = PACKET_OFFSET_IP + 20;
+	private static final int PACKET_OFFSET_TCP_DST_PORT = PACKET_OFFSET_TCP_SRC_PORT + 2;
+
 
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketUtils.class);
@@ -196,6 +199,23 @@ public abstract class PacketUtils {
 			LOG.error("Exception getting Dst IP address [{}]", e.getMessage(), e);
 		}
 		return pktDstIpStr;
+	}
+	
+	public static boolean isSYNFlagOn(final byte[] rawPacket) {
+		
+        byte flags = (byte)(rawPacket[PACKET_OFFSET_TCP_SRC_PORT + 13]&63);
+        return (boolean)((flags&2) == 2);
+		
+
+	}
+	
+	public static int getTCPSourcePort(final byte[] baseHeader) {
+		 return ( ( ( baseHeader[PACKET_OFFSET_TCP_SRC_PORT] << 8 ) & 65280 ) | ( baseHeader[PACKET_OFFSET_TCP_SRC_PORT + 1 ] & 255 ));
+	}
+	
+	public static int getTCPDestinationPort(final byte[] baseHeader) {
+		 return ( ( ( baseHeader[PACKET_OFFSET_TCP_DST_PORT] << 8 ) & 65280 ) | ( baseHeader[PACKET_OFFSET_TCP_DST_PORT + 1 ] & 255 ));
+
 	}
 
 
