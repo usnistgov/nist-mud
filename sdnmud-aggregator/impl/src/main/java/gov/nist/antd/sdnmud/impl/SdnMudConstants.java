@@ -84,7 +84,7 @@ public interface SdnMudConstants {
 
 	public static final FlowCookie DROP_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("DROP");
 	
-	public static final FlowCookie UNCLASSIFIED_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("UNCLASSIFIED");
+	public static final FlowCookie UNCLASSIFIED_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie(UNCLASSIFIED);
 	
 	public static final FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("src-local-network-flow-cookie");
 
@@ -98,5 +98,6 @@ public interface SdnMudConstants {
 	
 	// Cache timeout for network and model stamping flow rules.
 	public static final int ETHERTYPE_LLDP = 0x88cc;
+	public static final BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF",16);
 
 }

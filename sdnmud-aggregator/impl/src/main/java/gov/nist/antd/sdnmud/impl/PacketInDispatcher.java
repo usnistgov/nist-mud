@@ -34,6 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
@@ -69,6 +70,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private ListenerRegistration<PacketInDispatcher> listenerRegistration;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
+
+	private HashMap<String, Flow> flowTable = new HashMap<>();
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
@@ -294,77 +297,65 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				// switch.
 				Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 				boolean isLocalAddress = isLocalAddress(sourceIpAddress);
-				if (mudUri != null) {
-					// MUD URI was found for this MAc adddress so install the
-					// rules to stamp the src manufacturer
-					installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(),
-							sdnmudProvider, node);
-				} else if (isLocalAddress) {
-					// Mud URI was not found so classify this as a local source
-					// address packet.
-					LOG.debug("MUD URI found for MAC address IS a local packet" + srcMac.getValue());
-					installSrcMacMatchStampLocalAddressFlowRules(srcMac, sdnmudProvider, node);
-				} else {
-					LOG.debug("MUD URI not found for MAC address and not a local packet" + srcMac.getValue());
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
-					FlowBuilder fb = FlowUtils.createSourceMacMatchGoToNextTableFlow(srcMac,
-							BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-				}
-
+				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(),
+						sdnmudProvider, node);
 				// TODO -- check if a match for this already exists before
 				// installing redundant rule.
 				mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
 				isLocalAddress = isLocalAddress(destIpAddress);
 
-				if (mudUri != null) {
-					/*
-					 * MUD URI was found for this MAc adddress so install the
-					 * rules to stamp the manufacturer using metadata.
-					 */
-					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(),
-							sdnmudProvider, node);
-				} else if (isLocalAddress) {
-					/*
-					 * MUD URI was not found but is local address so stamp local
-					 * address on metadata.
-					 */
-					LOG.debug("MUD URI not found for MAC address IS a local packet" + dstMac.getValue());
-					installDstMacMatchStampDstLocalAddressFlowRules(dstMac, sdnmudProvider, node);
-				} else {
-					LOG.debug("MUD URI not found for MAC address and not a local packet" + dstMac.getValue());
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
-					FlowBuilder fb = FlowUtils.createDestMacMatchGoToNextTableFlow(dstMac,
-							BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-				}
-				// transmitPacket(notification.getPayload(), matchInPortUri);
+				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(),
+						sdnmudProvider, node);
+
+				transmitPacket(notification.getPayload(), matchInPortUri);
 
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				LOG.debug("PacketInDispatcher: Got a TCP notification -- check and flag if this contains a TCP Syn");
 				byte[] rawPacket = notification.getPayload();
+				String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
+				int port = PacketUtils.getTCPSourcePort(rawPacket);
+				BigInteger metadata = notification.getMatch().getMetadata().getMetadata();
+				BigInteger metadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
 				if (PacketUtils.isSYNFlagOn(rawPacket)) {
 					LOG.debug("PacketInDispatcher: Got an illegal SYN -- blocking the flow");
+					String flowIdStr = "SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":" + dstMac.getValue() + ":"
+							+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
+					Flow fb = this.flowTable.get(flowIdStr);
+					if (fb == null) {
+						FlowId flowId = new FlowId(flowIdStr);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+
+						fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac, port,
+								SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE, metadata,
+								metadataMask, 1, flowId, flowCookie).build();
+						this.flowTable.put(flowIdStr, fb);
+					}
+
+					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
 				} else {
 					LOG.debug("PacketInDispatcher: SYN flag is OFF. Allowing the flow to pass through");
-					String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
-					int port = PacketUtils.getTCPSourcePort(rawPacket);
-					LOG.debug("PacketInDispatcher : sourcePort " + port);
-					FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-					FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-					/*
-					 * create a short term pass through flow to allow packet
-					 * through. Give it a short timeout.
-					 */
-					BigInteger metadata = notification.getMatch().getMetadata().getMetadata();
-					BigInteger metadataMask = new BigInteger("FFFFFFFFFFFFFFFF",16);
-					
-					FlowBuilder fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp),
-							dstMac, port, SdnMudConstants.TCP_PROTOCOL, tableId, metadata,metadataMask,1,  
-							flowId, flowCookie);
+					String flowIdStr = "SrcIpAddressProtocolDestMacMatchGoTo:" + srcIp + ":" + dstMac.getValue() + ":"
+							+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
+
+					Flow fb = this.flowTable.get(flowIdStr);
+
+					if (fb == null) {
+						FlowId flowId = new FlowId(flowIdStr);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+						/*
+						 * create a short term pass through flow to allow packet
+						 * through. Give it a short timeout.
+						 */
+
+						fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac, port,
+								SdnMudConstants.TCP_PROTOCOL, tableId, metadata, metadataMask, 1, flowId, flowCookie)
+								.build();
+						this.flowTable.put(flowIdStr, fb);
+					}
+
 					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
 				}

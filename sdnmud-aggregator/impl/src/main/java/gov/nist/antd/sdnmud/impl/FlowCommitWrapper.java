@@ -52,182 +52,173 @@ import com.google.common.util.concurrent.FutureCallback;
  * Flow commit wrapper.
  */
 public class FlowCommitWrapper {
-  private static final Logger LOG = LoggerFactory.getLogger(FlowCommitWrapper.class);
+	private static final Logger LOG = LoggerFactory.getLogger(FlowCommitWrapper.class);
 
-  private DataBroker dataBrokerService;
+	private DataBroker dataBrokerService;
 
-  class MyFutureCallback implements FutureCallback<Void> {
-    public boolean success;
-    public Semaphore semaphore = new Semaphore(0);
-    private FlowBuilder flow;
+	class MyFutureCallback implements FutureCallback<Void> {
+		public boolean success;
+		public Semaphore semaphore = new Semaphore(0);
+		private FlowBuilder flow;
 
-    public MyFutureCallback(FlowBuilder flow) {
-      this.flow = flow;
-    }
+		public MyFutureCallback(FlowBuilder flow) {
+			this.flow = flow;
+		}
 
-    @Override
-    public void onSuccess(Void aVoid) {
-      LOG.info("Write of flow on device succeeded. flow = " + flow.getFlowName());
-      semaphore.release();
-      success = true;
+		@Override
+		public void onSuccess(Void aVoid) {
+			LOG.info("Write of flow on device succeeded. flow = " + flow.getFlowName());
+			semaphore.release();
+			success = true;
 
-    }
+		}
 
-    @Override
-    public void onFailure(Throwable throwable) {
-      LOG.error("Write of flow on device failed. flow = " + flow.getFlowName(), throwable);
-      semaphore.release();
-      success = false;
-    }
+		@Override
+		public void onFailure(Throwable throwable) {
+			LOG.error("Write of flow on device failed. flow = " + flow.getFlowName(), throwable);
+			semaphore.release();
+			success = false;
+		}
 
-    public Semaphore getSemaphore() {
-      return this.semaphore;
-    }
-  };
+		public Semaphore getSemaphore() {
+			return this.semaphore;
+		}
+	};
 
-  public FlowCommitWrapper(DataBroker dataBrokerService) {
-    this.dataBrokerService = dataBrokerService;
-  }
+	public FlowCommitWrapper(DataBroker dataBrokerService) {
+		this.dataBrokerService = dataBrokerService;
+	}
 
-  public CheckedFuture<Void, TransactionCommitFailedException> writeFlowToConfig(
-      InstanceIdentifier<Flow> flowPath, Flow flowBody) {
-    ReadWriteTransaction addFlowTransaction = dataBrokerService.newReadWriteTransaction();
-    // mdsalApiManager.addFlowToTx(dpnId, flowBody, addFlowTransaction);
-    addFlowTransaction.merge(LogicalDatastoreType.CONFIGURATION, flowPath, flowBody, true);
-    return addFlowTransaction.submit();
-  }
+	public CheckedFuture<Void, TransactionCommitFailedException> writeFlowToConfig(InstanceIdentifier<Flow> flowPath,
+			Flow flowBody) {
+		ReadWriteTransaction addFlowTransaction = dataBrokerService.newReadWriteTransaction();
+		// mdsalApiManager.addFlowToTx(dpnId, flowBody, addFlowTransaction);
+		addFlowTransaction.merge(LogicalDatastoreType.CONFIGURATION, flowPath, flowBody, true);
+		return addFlowTransaction.submit();
+	}
 
-  private boolean deleteFlow(FlowKey flowKey, short tableId,
-      InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
-    ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
-    LOG.info("deleteFlow : " + flowKey.getId().getValue());
-    final InstanceIdentifier<Flow> path =
-        flowNodeIdent.child(Table.class, new TableKey(tableId)).child(Flow.class, flowKey);
-    modification.delete(LogicalDatastoreType.CONFIGURATION, path);
-    CheckedFuture<Void, TransactionCommitFailedException> commitFuture = modification.submit();
-    try {
-      commitFuture.checkedGet();
-    } catch (TransactionCommitFailedException e) {
-      return false;
-    }
-    return true;
-  }
-  
-  public boolean flowExists(String flowIdPrefix, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
-    InstanceIdentifier<Table> tableInstanceId =
-        flowNodeIdent.child(Table.class, new TableKey((short) tableId));
-    CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService
-        .newReadOnlyTransaction().read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
-    try {
-      Set<Table> tableSet = commitFuture.get().asSet();
-      for (Table table : tableSet) {
-        List<Flow> flows = table.getFlow();
-        for (Flow flow: flows) {
-          if (flow.getId().getValue().startsWith(flowIdPrefix)){
-            return true;
-          }
-        }
-      }
-      return false;
-    } catch (InterruptedException e) {
-      LOG.error("Error reading flows ", e);
-      return false;
-    } catch (ExecutionException e) {
-      LOG.error("Error reading flows ", e);
-      return false;
-    }
-  }
+	private boolean deleteFlow(FlowKey flowKey, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
+		ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
+		LOG.info("deleteFlow : " + flowKey.getId().getValue());
+		final InstanceIdentifier<Flow> path = flowNodeIdent.child(Table.class, new TableKey(tableId)).child(Flow.class,
+				flowKey);
+		modification.delete(LogicalDatastoreType.CONFIGURATION, path);
+		CheckedFuture<Void, TransactionCommitFailedException> commitFuture = modification.submit();
+		try {
+			commitFuture.checkedGet();
+		} catch (TransactionCommitFailedException e) {
+			return false;
+		}
+		return true;
+	}
 
-  public List<FlowKey> readFlows(InstanceIdentifier<FlowCapableNode> flowNodeIdent, short tableId,
-      String uriPrefix, MacAddress sourceMacAddress) {
+	public boolean flowExists(String flowIdPrefix, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
+		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey((short) tableId));
+		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()
+				.read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
+		try {
+			Set<Table> tableSet = commitFuture.get().asSet();
+			for (Table table : tableSet) {
+				List<Flow> flows = table.getFlow();
+				for (Flow flow : flows) {
+					if (flow.getId().getValue().startsWith(flowIdPrefix)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		} catch (InterruptedException e) {
+			LOG.error("Error reading flows ", e);
+			return false;
+		} catch (ExecutionException e) {
+			LOG.error("Error reading flows ", e);
+			return false;
+		}
+	}
 
-    List<FlowKey> retval = new ArrayList<FlowKey>();
+	public List<FlowKey> readFlows(InstanceIdentifier<FlowCapableNode> flowNodeIdent, short tableId, String uriPrefix,
+			MacAddress sourceMacAddress) {
 
-    InstanceIdentifier<Table> tableInstanceId =
-        flowNodeIdent.child(Table.class, new TableKey((short) tableId));
-    CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService
-        .newReadOnlyTransaction().read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
-    try {
-      Set<Table> tableSet = commitFuture.get().asSet();
-      for (Table table : tableSet) {
-        List<Flow> flows = table.getFlow();
-        for (Flow flow : flows) {
-          String flowId = flow.getId().getValue();
-          if (sourceMacAddress != null) {
-            MacAddress flowSourceMacAddress = null;
+		List<FlowKey> retval = new ArrayList<FlowKey>();
 
-            if (flow.getMatch() != null && flow.getMatch().getEthernetMatch() != null
-                && flow.getMatch().getEthernetMatch().getEthernetSource() != null) {
-              flowSourceMacAddress =
-                  flow.getMatch().getEthernetMatch().getEthernetSource().getAddress();
-            }
+		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey((short) tableId));
+		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()
+				.read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
+		try {
+			Set<Table> tableSet = commitFuture.get().asSet();
+			for (Table table : tableSet) {
+				List<Flow> flows = table.getFlow();
+				for (Flow flow : flows) {
+					String flowId = flow.getId().getValue();
+					if (sourceMacAddress != null) {
+						MacAddress flowSourceMacAddress = null;
 
-            if (flowSourceMacAddress != null && flowId.startsWith(uriPrefix)
-                && flowSourceMacAddress.equals(sourceMacAddress)) {
-              retval.add(flow.getKey());
-            }
-          } else {
-            if (flowId.startsWith(uriPrefix)) {
-              retval.add(flow.getKey());
-            }
-          }
-        }
-      }
-      return retval;
-    } catch (InterruptedException e) {
-      LOG.error("Error reading flows ", e);
-      return null;
-    } catch (ExecutionException e) {
-      LOG.error("Error reading flows ", e);
-      return null;
-    }
-  }
+						if (flow.getMatch() != null && flow.getMatch().getEthernetMatch() != null
+								&& flow.getMatch().getEthernetMatch().getEthernetSource() != null) {
+							flowSourceMacAddress = flow.getMatch().getEthernetMatch().getEthernetSource().getAddress();
+						}
 
-  public synchronized void writeFlow(FlowBuilder flow,
-      InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
+						if (flowSourceMacAddress != null && flowId.startsWith(uriPrefix)
+								&& flowSourceMacAddress.equals(sourceMacAddress)) {
+							retval.add(flow.getKey());
+						}
+					} else {
+						if (flowId.startsWith(uriPrefix)) {
+							retval.add(flow.getKey());
+						}
+					}
+				}
+			}
+			return retval;
+		} catch (InterruptedException e) {
+			LOG.error("Error reading flows ", e);
+			return null;
+		} catch (ExecutionException e) {
+			LOG.error("Error reading flows ", e);
+			return null;
+		}
+	}
 
-    ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
-    LOG.info("writeFlow : " + flowNodeIdent + " Flow : " + flow.getFlowName() + " tableId "
-        + flow.getTableId() + " flowId " + flow.getId().getValue());
+	public synchronized void writeFlow(FlowBuilder flow, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
 
-    LOG.info(flow.toString());
-    for (Instruction instruction : flow.getInstructions().getInstruction()) {
-      LOG.info("writeFlow: Instruction =  " + instruction.getInstruction().toString());
-    }
+		ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
+		LOG.debug("writeFlow : " + flowNodeIdent + " Flow : " + flow.getFlowName() + " tableId " + flow.getTableId()
+				+ " flowId " + flow.getId().getValue());
+		final InstanceIdentifier<Flow> path1 = flowNodeIdent.child(Table.class, new TableKey(flow.getTableId()))
+				.child(Flow.class, flow.getKey());
+		modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow.build(), true);
+		modification.submit();
 
-    final InstanceIdentifier<Flow> path1 = flowNodeIdent
-        .child(Table.class, new TableKey(flow.getTableId())).child(Flow.class, flow.getKey());
+	}
 
-    modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow.build(), true);
-    modification.submit();
-    /* MyFutureCallback callback = new MyFutureCallback(flow);
-    Futures.addCallback(commitFuture, callback);
-    try {
-      callback.getSemaphore().acquire();
-      LOG.info("Commit success = " + callback.success);
-    } catch (InterruptedException e) {
-      LOG.error("Unexpected exception ", e);
-    }*/
+	public synchronized void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
+		LOG.debug("writeFlow : " + flowNodeIdent + " Flow : " + flow.getFlowName() + " tableId " + flow.getTableId()
+				+ " flowId " + flow.getId().getValue());
+		ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
+		final InstanceIdentifier<Flow> path1 = flowNodeIdent.child(Table.class, new TableKey(flow.getTableId()))
+				.child(Flow.class, flow.getKey());
+		modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow, true);
+		modification.submit();
+	}
 
-  }
+	/**
+	 * Delete the flows corresponding to a MUD uri and sourceMacAddress.
+	 * 
+	 * @param flowCapableNode
+	 *            -- the node from which to delete the flows.
+	 * @param uri
+	 *            -- the mud URI
+	 * @param sourceMacAddress
+	 *            -- the device source mac address.
+	 */
 
-  /**
-   * Delete the flows corresponding to a MUD uri and sourceMacAddress.
-   * 
-   * @param flowCapableNode -- the node from which to delete the flows.
-   * @param uri -- the mud URI
-   * @param sourceMacAddress -- the device source mac address.
-   */
+	public synchronized void deleteFlows(InstanceIdentifier<FlowCapableNode> flowCapableNode, String uri, short table,
+			MacAddress sourceMacAddress) {
 
-  public synchronized void deleteFlows(InstanceIdentifier<FlowCapableNode> flowCapableNode,
-      String uri, short table, MacAddress sourceMacAddress) {
-
-    List<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri, sourceMacAddress);
-    for (FlowKey flowKey : flowKeys) {
-      deleteFlow(flowKey, table, flowCapableNode);
-    }
-  }
-
-
+		List<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri, sourceMacAddress);
+		for (FlowKey flowKey : flowKeys) {
+			deleteFlow(flowKey, table, flowCapableNode);
+		}
+	}
 
 }

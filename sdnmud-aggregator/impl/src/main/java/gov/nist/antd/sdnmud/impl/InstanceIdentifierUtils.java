@@ -101,7 +101,7 @@ public class InstanceIdentifierUtils {
 		int index = uri.indexOf("//");
 		if (index == -1) {
 			LOG.error("getAuthority : Malformed URI " + uri);
-			return "";
+			return SdnMudConstants.UNCLASSIFIED;
 		}
 		String rest = uri.substring(index + 2);
 		index = rest.indexOf("/");

@@ -71,6 +71,7 @@ public interface BaseappConstants {
 	
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;
+	public static final BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF",16);
 	
 
 }

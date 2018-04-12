@@ -140,7 +140,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 		if (macAddressToMappingMap.containsKey(macAddress)) {
 			return this.macAddressToMappingMap.get(macAddress).getMudUrl();
 		} else {
-			return null;
+			return new Uri(SdnMudConstants.UNCLASSIFIED);
 		}
 	}
 
