@@ -110,45 +110,23 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return PacketUtils.rawMacToMac(reverseArray(rawMac));
 	}
 
-	
-
-	/**
-	 * Flow to send packet to Controller (unconditionally)
-	 * 
-	 * @param nodePath
-	 * @param idsRulesTable1
-	 */
-	private void installSendPacketToControllerFlow(String nodeUri, InstanceIdentifier<FlowCapableNode> node) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
-		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-		LOG.info("SEND_TO_CONTROLLER_FLOW " + flowCookie.getValue().toString(16));
-		FlowBuilder fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
-				BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
-		fb = FlowUtils.createUnconditionalSendPacketToControllerFlow(
-				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId,
-				flowCookie);
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-	}
 
 	private void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
-			InstanceIdentifier<FlowCapableNode> node) {
+			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
 		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerFlow(tableId, flowId, flowCookie);
+		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(metadata, metadataMask,
+				tableId, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
-		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
-				 flowId, flowCookie);
+		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
+				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
 	}
-	
 
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
 			Short dropPacketTable) {
@@ -162,8 +140,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private void installPermitPacketsToFromDhcp(String nodeId, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE,
-				flowCookie, flowId);
+		FlowBuilder flowBuilder = FlowUtils
+				.createToDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
@@ -179,8 +157,18 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			LOG.info("Node not seen -- not installing flow ");
 			return;
 		}
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+		BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
+		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
+		
+		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath, 
+				metadata, metadataMask);
+		metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
+		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
+
+		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
+				metadata, metadataMask);
 	}
 
 	private void installInitialFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
@@ -191,17 +179,15 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
 		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
-			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
-			installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+			installSendToControllerFlows(nodeUri);
 		}
-		
+
 		installUnconditionalGoToTable(nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
 
 		/*
-		 * Install an unconditional packet drop in the DROP_TABLE (this is 
-		 * where MUD packets that do not match go. The default action is to
-		 * drop the packet. This is a placeholder for  subsequent packet
-		 * inspection.
+		 * Install an unconditional packet drop in the DROP_TABLE (this is where
+		 * MUD packets that do not match go. The default action is to drop the
+		 * packet. This is a placeholder for subsequent packet inspection.
 		 */
 
 		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
@@ -219,10 +205,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(nodeUri, nodePath, sdnmudProvider);
-		ListenerRegistration<PacketInDispatcher> registration = sdnmudProvider.getNotificationService()
-				.registerNotificationListener(packetInDispatcher);
-		packetInDispatcher.setListenerRegistration(registration);
 		this.installInitialFlows(nodePath);
 	}
 

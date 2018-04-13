@@ -90,8 +90,8 @@ Run maven
 
 ### Manual Testing ###
 
-You should run the test environment on a separate VM. Mininet settings may interfere with
-your settings on your host otherwise. We assume that OpenDaylight is on another host 
+You should run the test environment on a separate VM. Otherwise, Mininet settings may interfere with
+your settings on your host. We assume that OpenDaylight is on another host different from your emulation VM
 (it can be co-resident if you wish).
 
 #### Configure the Mininet VM ####
@@ -106,6 +106,7 @@ Edit /etc/dnsmasq.conf.  Include the following:
 Add a fake host in /etc/dnsmasq.hosts by adding the following line.
 
       203.0.113.13    www.nist.local
+      203.0.113.14    www.antd.local
 
 Kill any existing instance of dnsmasq on the mininet VM. We will
 restart it in the test script.
@@ -125,9 +126,10 @@ Add the following line to /etc/resolv.conf on the virtual machine.
 
 ### Configure the Controller Host ###
 
-Add the following to /etc/hosts so the java library can look up our fake host.
+Add the following to /etc/hosts on your controller so the java library can look up our fake host.
 
       203.0.113.13   www.nist.local
+      203.0.113.14   www.antd.local
 
 On the host where you are running the controller, start Karaf
 

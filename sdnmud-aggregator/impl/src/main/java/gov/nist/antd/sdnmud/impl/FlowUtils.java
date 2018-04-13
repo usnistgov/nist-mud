@@ -298,6 +298,12 @@ public class FlowUtils {
 		instructions.add(maskInstruction);
 		return instructions;
 	}
+	
+	private static List<Instruction> addSendPacketToControllerInstruction(List<Instruction> instructions) {
+		Instruction instruction  = FlowUtils.createSendPacketToControllerInstruction();
+		instructions.add(instruction);
+		return instructions;
+	}
 
 	/**
 	 * Create an MPLS match.
@@ -389,12 +395,13 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 		return isb;
 	}
+	
+	
 
 	private static InstructionsBuilder createGoToNextTableAndSendToControllerInstruction(short targetTable,
 			BigInteger metadata, BigInteger metadataMask) {
 		List<Instruction> instructions = new ArrayList<Instruction>();
-		Instruction sendToControllerInstruction = FlowUtils.createSendPacketToControllerInstruction();
-		instructions.add(sendToControllerInstruction);
+		addSendPacketToControllerInstruction(instructions);
 		addGoToTableInstruction(instructions, targetTable);
 		addWriteMetadataInstruction(instructions, metadata, metadataMask);
 		InstructionsBuilder isb = new InstructionsBuilder();
@@ -1085,15 +1092,17 @@ public class FlowUtils {
 
 	}
 
-	public static FlowBuilder createIpMatchSendPacketToControllerFlow(Short tableId, FlowId flowId,
-			FlowCookie flowCookie) {
+	public static FlowBuilder createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(
+			BigInteger metadata, BigInteger metadataMask, Short tableId, 
+			FlowId flowId, FlowCookie flowCookie) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		FlowUtils.createIpV4Match(matchBuilder);
 		FlowUtils.createEthernetTypeMatch(matchBuilder, 0x0800);
-		Instruction instruction = FlowUtils.createSendPacketToControllerInstruction();
-		InstructionsBuilder insb = new InstructionsBuilder();
 		List<Instruction> instructions = new ArrayList<Instruction>();
-		instructions.add(instruction);
+		FlowUtils.addSendPacketToControllerInstruction(instructions);
+		FlowUtils.addWriteMetadataInstruction(instructions, metadata, metadataMask);
+		FlowUtils.addGoToTableInstruction(instructions, (short) (tableId + 1));
+		InstructionsBuilder insb = new InstructionsBuilder();
 		insb.setInstruction(instructions);
 		FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
 				.setFlowName("uncoditionalSendToController").setId(flowId).setKey(new FlowKey(flowId))

@@ -62,11 +62,7 @@ import net.sourceforge.jpcap.net.TCPPacket;
 public class PacketInDispatcher implements PacketProcessingListener {
 
 	private SdnmudProvider sdnmudProvider;
-
-	private String nodeId;
-
-	private InstanceIdentifier<FlowCapableNode> node;
-
+	
 	private ListenerRegistration<PacketInDispatcher> listenerRegistration;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
@@ -81,10 +77,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	 * @param flowCommitWrapper
 	 * @param sdnmudProvider
 	 */
-	public PacketInDispatcher(String nodeId, InstanceIdentifier<FlowCapableNode> node, SdnmudProvider sdnmudProvider) {
-		this.node = node;
-		this.nodeId = nodeId;
-		LOG.info("PacketInDispatcher: " + nodeId);
+	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 	}
 
@@ -100,24 +93,17 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return mac;
 	}
 
-	/**
-	 * Get the Node for a given MAC address.
-	 * 
-	 * @param macAddress
-	 * @param node
-	 * @return
-	 */
-	public InstanceIdentifier<FlowCapableNode> getNode() {
-		return node;
-	}
-
-	private void transmitPacket(byte[] payload, String outputPortUri) {
-		TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder().setPayload(payload)
+	
+	private void transmitPacket(PacketReceived notification) {
+		
+		TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder().setPayload(notification.getPayload())
 				.setBufferId(OFConstants.OFP_NO_BUFFER);
+		tpib.setEgress(notification.getIngress());
 		OutputActionBuilder output = new OutputActionBuilder();
 		output.setMaxLength(Integer.valueOf(0xffff));
+		String matchInPortUri = notification.getMatch().getInPort().getValue();
 
-		output.setOutputNodeConnector(new Uri(outputPortUri));
+		output.setOutputNodeConnector(new Uri(matchInPortUri));
 		ActionBuilder ab = new ActionBuilder();
 		ab.setAction(new OutputActionCaseBuilder().setOutputAction(output.build()).build());
 		ab.setOrder(1);
@@ -129,7 +115,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
 	}
 
-	private boolean isLocalAddress(String ipAddress) {
+	private boolean isLocalAddress(String nodeId, String ipAddress) {
 		boolean isLocalAddress = false;
 		if (sdnmudProvider.getControllerclassMappingDataStoreListener().getLocalNetworks(nodeId) != null) {
 			for (String localNetworkStr : sdnmudProvider.getControllerclassMappingDataStoreListener()
@@ -272,6 +258,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		short tableId = notification.getTableId().getValue();
 
 		String matchInPortUri = notification.getMatch().getInPort().getValue();
+		
+		String nodeId = notification.getIngress().getValue().firstKeyOf(Node.class).getId().getValue();
+		
+		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(nodeId);
+
 
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
 				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
@@ -296,19 +287,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				// We got a notification for a device that is connected to this
 				// switch.
 				Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-				boolean isLocalAddress = isLocalAddress(sourceIpAddress);
+				boolean isLocalAddress = isLocalAddress(nodeId,sourceIpAddress);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(),
 						sdnmudProvider, node);
 				// TODO -- check if a match for this already exists before
 				// installing redundant rule.
 				mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
-				isLocalAddress = isLocalAddress(destIpAddress);
+				isLocalAddress = isLocalAddress(nodeId,destIpAddress);
 
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(),
 						sdnmudProvider, node);
 
-				transmitPacket(notification.getPayload(), matchInPortUri);
 
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				LOG.debug("PacketInDispatcher: Got a TCP notification -- check and flag if this contains a TCP Syn");
@@ -359,6 +349,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
 				}
+				//transmitPacket(notification);
+
 			}
 		}
 	}

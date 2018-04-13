@@ -63,6 +63,9 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # This is our fake www.nist.local host.
     h9 = net.addHost('h9')
+
+    # This is for a second fake host that we should not be able to reach
+    h10 = net.addHost('h10')
    
     s2.linkTo(h6)
     #h7 is the router -- no direct link between S2 and S3
@@ -74,6 +77,8 @@ def setupTopology(controller_addr,dns_address, interface):
     # h9 is our fake server.
     # s2 linked to s3 via our router.
     s3.linkTo(h9)
+
+    s3.linkTo(h10)
 
     # S2 is the NPE switch.
     # Direct link between S1 and S2
@@ -115,6 +120,7 @@ def setupTopology(controller_addr,dns_address, interface):
     h7.setMAC("00:00:00:00:00:07","h7-eth0")
     h8.setMAC("00:00:00:00:00:08","h8-eth0")
     h9.setMAC("00:00:00:00:00:09","h9-eth0")
+    h10.setMAC("00:00:00:00:00:10","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -150,11 +156,18 @@ def setupTopology(controller_addr,dns_address, interface):
     # Start a web server there.
     h9.cmdPrint('python http-server.py -H 203.0.113.13&')
 
+    # h10 is our second fake host. It runs another internet web server that we cannot reach
+    h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
+    # Start a web server there.
+    h10.cmdPrint('python http-server.py -H 203.0.113.14&')
+
+
     # Start dnsmasq (our dns server).
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
 
     # Set up our router routes.
     h7.cmdPrint('ip route add 203.0.113.13/32 dev h7-eth1')
+    h7.cmdPrint('ip route add 203.0.113.14/32 dev h7-eth1')
     h7.cmdPrint('ifconfig h7-eth1 203.0.113.1 netmask 255.255.255.0')
     
 

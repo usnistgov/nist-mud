@@ -223,6 +223,13 @@ public class SdnmudProvider {
 				LogicalDatastoreType.CONFIGURATION, mappingWildCardPath);
 		this.mappingDataStoreListener = new MappingDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
+		
+		/* Listener for flow miss packets sent to the controller */
+		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(this);
+		ListenerRegistration<PacketInDispatcher> registration = this.getNotificationService()
+				.registerNotificationListener(packetInDispatcher);
+		packetInDispatcher.setListenerRegistration(registration);
+	
 
 		/*
 		 * Register a data tree change listener for Controller Class mapping. A
