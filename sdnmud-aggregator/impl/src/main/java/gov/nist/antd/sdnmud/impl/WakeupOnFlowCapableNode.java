@@ -1,7 +1,6 @@
 
 /*
- * This file includes code developed by employees of the National Institute of
- * Standards and Technology (NIST)
+ * Copyright (c) Public Domain
  *
  * This software was developed by employees of the National Institute of
  * Standards and Technology (NIST), and others. This software has been
@@ -49,217 +48,228 @@ import gov.nist.antd.baseapp.impl.BaseappConstants;
  *
  */
 
-public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapableNode> {
-	private static final Logger LOG = LoggerFactory.getLogger(WakeupOnFlowCapableNode.class);
+public class WakeupOnFlowCapableNode
+        implements
+            DataTreeChangeListener<FlowCapableNode> {
+    private static final Logger LOG = LoggerFactory
+            .getLogger(WakeupOnFlowCapableNode.class);
 
-	private SdnmudProvider sdnmudProvider;
+    private SdnmudProvider sdnmudProvider;
 
-	private FlowCommitWrapper dataStoreAccessor;
+    private FlowCommitWrapper dataStoreAccessor;
 
-	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
+    private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
 
-	public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
-		this.sdnmudProvider = sdnMudProvider;
-		dataStoreAccessor = sdnmudProvider.getFlowCommitWrapper();
-	}
+    public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
+        this.sdnmudProvider = sdnMudProvider;
+        dataStoreAccessor = sdnmudProvider.getFlowCommitWrapper();
+    }
 
-	@Override
-	public void onDataTreeChanged(Collection<DataTreeModification<FlowCapableNode>> modifications) {
-		LOG.debug("WakeupOnFlowCapableNode: onDataTreeChanged");
+    @Override
+    public void onDataTreeChanged(
+            Collection<DataTreeModification<FlowCapableNode>> modifications) {
+        LOG.debug("WakeupOnFlowCapableNode: onDataTreeChanged");
 
-		for (DataTreeModification<FlowCapableNode> modification : modifications) {
-			if (modification.getRootNode().getModificationType() == ModificationType.WRITE) {
-				LOG.info("got a WRITE modification");
-				InstanceIdentifier<FlowCapableNode> ii = modification.getRootPath().getRootIdentifier();
-				onFlowCapableSwitchAppeared(ii);
-			} else if (modification.getRootNode().getModificationType() == ModificationType.DELETE) {
-				LOG.info("Got a DELETE modification");
-				InstanceIdentifier<FlowCapableNode> ii = modification.getRootPath().getRootIdentifier();
-				onFlowCapableSwitchDisappeared(ii);
-			} else {
-				LOG.debug("WakeupOnFlowCapableNode : " + modification.getRootNode().getModificationType());
-			}
-		}
+        for (DataTreeModification<FlowCapableNode> modification : modifications) {
+            if (modification.getRootNode()
+                    .getModificationType() == ModificationType.WRITE) {
+                LOG.info("got a WRITE modification");
+                InstanceIdentifier<FlowCapableNode> ii = modification
+                        .getRootPath().getRootIdentifier();
+                onFlowCapableSwitchAppeared(ii);
+            } else if (modification.getRootNode()
+                    .getModificationType() == ModificationType.DELETE) {
+                LOG.info("Got a DELETE modification");
+                InstanceIdentifier<FlowCapableNode> ii = modification
+                        .getRootPath().getRootIdentifier();
+                onFlowCapableSwitchDisappeared(ii);
+            } else {
+                LOG.debug("WakeupOnFlowCapableNode : "
+                        + modification.getRootNode().getModificationType());
+            }
+        }
 
-	}
+    }
 
-	static byte[] reverseArray(byte inputArray[]) {
+    private void installSendIpPacketToControllerFlow(String nodeUri,
+            short tableId, InstanceIdentifier<FlowCapableNode> node,
+            BigInteger metadata, BigInteger metadataMask) {
+        FlowId flowId = InstanceIdentifierUtils
+                .createFlowId(nodeUri + ":sendToController");
+        FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
+        FlowBuilder fb = FlowUtils
+                .createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(
+                        metadata, metadataMask, tableId, flowId, flowCookie);
+        this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+    }
 
-		byte temp;
+    private void installUnconditionalGoToTable(
+            InstanceIdentifier<FlowCapableNode> node, short table) {
+        FlowId flowId = InstanceIdentifierUtils
+                .createFlowId(InstanceIdentifierUtils.getNodeUri(node));
+        FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
+        FlowBuilder unconditionalGoToNextFlow = FlowUtils
+                .createUnconditionalGoToNextTableFlow(table, flowId,
+                        flowCookie);
+        sdnmudProvider.getFlowCommitWrapper()
+                .writeFlow(unconditionalGoToNextFlow, node);
+    }
 
-		for (int i = 0; i < inputArray.length / 2; i++) {
-			temp = inputArray[i];
+    private void installUnditionalDropPacket(String nodeId,
+            InstanceIdentifier<FlowCapableNode> nodePath,
+            Short dropPacketTable) {
+        FlowCookie flowCookie = InstanceIdentifierUtils
+                .createFlowCookie(nodeId);
+        FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
 
-			inputArray[i] = inputArray[inputArray.length - 1 - i];
+        FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(
+                dropPacketTable, flowId, flowCookie);
+        this.dataStoreAccessor.writeFlow(flow, nodePath);
+    }
 
-			inputArray[inputArray.length - 1 - i] = temp;
-		}
-		return inputArray;
+    private void installPermitPacketsToFromDhcp(String nodeId,
+            InstanceIdentifier<FlowCapableNode> node) {
+        FlowCookie flowCookie = InstanceIdentifierUtils
+                .createFlowCookie(nodeId);
+        FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+        FlowBuilder flowBuilder = FlowUtils
+                .createToDhcpServerMatchGoToNextTableFlow(
+                        BaseappConstants.SDNMUD_RULES_TABLE, flowCookie,
+                        flowId);
+        sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
-	}
+        // DHCP is local so both directions are installed on the CPE node.
+        flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+        flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(
+                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
+        sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
+    }
 
-	private MacAddress getNodeMacAddr(NodeId nodeId) {
-		// NodeId.get value returns the string representatio of the
-		// NodeId. The part after the : has the mac address of the switch.
-		BigInteger macAddrBigInt = MDSALUtil.getDpnIdFromNodeName(nodeId);
-		LOG.info("dpnId : " + macAddrBigInt);
-		// toByteArray returns the 2's complement
-		byte[] contents = macAddrBigInt.toByteArray();
-		byte[] rawMac = new byte[6];
-		System.arraycopy(contents, 0, rawMac, 0, Math.min(6, contents.length));
-		return PacketUtils.rawMacToMac(reverseArray(rawMac));
-	}
+    public void installSendToControllerFlows(String nodeUri) {
+        InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider
+                .getNode(nodeUri);
+        if (nodePath == null) {
+            LOG.info("Node not seen -- not installing flow ");
+            return;
+        }
+        BigInteger metadata = BigInteger
+                .valueOf(InstanceIdentifierUtils
+                        .getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+                .shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
+        BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
 
+        installSendIpPacketToControllerFlow(nodeUri,
+                BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
+                metadata, metadataMask);
+        metadata = BigInteger
+                .valueOf(InstanceIdentifierUtils
+                        .getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+                .shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
+        metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
 
-	private void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
-			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
-		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(metadata, metadataMask,
-				tableId, flowId, flowCookie);
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-	}
+        installSendIpPacketToControllerFlow(nodeUri,
+                BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
+                metadata, metadataMask);
+    }
 
-	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
-		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
-		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
-				flowCookie);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
-	}
+    private void installInitialFlows(
+            InstanceIdentifier<FlowCapableNode> nodePath) {
+        if (nodePath == null) {
+            LOG.info("FlowCapableNode not found. Not installing inital flows");
+            return;
+        }
+        String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
-	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
-			Short dropPacketTable) {
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+        if (sdnmudProvider.getTopology() != null
+                && sdnmudProvider.isCpeNode(nodeUri)) {
+            installSendToControllerFlows(nodeUri);
+        }
 
-		FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(dropPacketTable, flowId, flowCookie);
-		this.dataStoreAccessor.writeFlow(flow, nodePath);
-	}
+        installUnconditionalGoToTable(nodePath,
+                BaseappConstants.SDNMUD_RULES_TABLE);
 
-	private void installPermitPacketsToFromDhcp(String nodeId, InstanceIdentifier<FlowCapableNode> node) {
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils
-				.createToDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
+        /*
+         * Install an unconditional packet drop in the DROP_TABLE (this is where
+         * MUD packets that do not match go. The default action is to drop the
+         * packet. This is a placeholder for subsequent packet inspection.
+         */
 
-		// DHCP is local so both directions are installed on the CPE node.
-		flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE,
-				flowCookie, flowId);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
-	}
+        installUnditionalDropPacket(nodeUri, nodePath,
+                BaseappConstants.DROP_TABLE);
 
-	public void installSendToControllerFlows(String nodeUri) {
-		InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider.getNode(nodeUri);
-		if (nodePath == null) {
-			LOG.info("Node not seen -- not installing flow ");
-			return;
-		}
-		BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
-				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
-		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
-		
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath, 
-				metadata, metadataMask);
-		metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
-				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
-		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
+        // All devices may access DHCP (default rule).
+        installPermitPacketsToFromDhcp(nodeUri, nodePath);
 
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
-				metadata, metadataMask);
-	}
+        // All devices may access DNS and NTP.
+        try {
+            MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
+                    .getMudFlowsInstaller(nodeUri);
+            mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
+        } catch (Exception ex) {
+            LOG.error("installFlows : Exception installing default flows ", ex);
+        }
+    }
 
-	private void installInitialFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
-		if (nodePath == null) {
-			LOG.info("FlowCapableNode not found. Not installing inital flows");
-			return;
-		}
-		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
+    private void installDefaultFlows(String nodeUri,
+            InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		if (sdnmudProvider.getTopology() != null && sdnmudProvider.isCpeNode(nodeUri)) {
-			installSendToControllerFlows(nodeUri);
-		}
+        this.installInitialFlows(nodePath);
+    }
 
-		installUnconditionalGoToTable(nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
+    public synchronized void installDefaultFlows() {
+        for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
+            String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+            if (sdnmudProvider.isCpeNode(nodeId)) {
+                this.installDefaultFlows(nodeId, node);
+            }
+        }
+    }
 
-		/*
-		 * Install an unconditional packet drop in the DROP_TABLE (this is where
-		 * MUD packets that do not match go. The default action is to drop the
-		 * packet. This is a placeholder for subsequent packet inspection.
-		 */
+    /**
+     * This gets invoked when a switch appears and connects.
+     * 
+     * @param nodePath
+     *            -- the node path.
+     *
+     */
+    public synchronized void onFlowCapableSwitchAppeared(
+            InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
+        String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
-		// All devices may access DHCP (default rule).
-		installPermitPacketsToFromDhcp(nodeUri, nodePath);
+        LOG.info("onFlowCapableSwitchAppeared");
+        // The URI identifies the node instance.
+        LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
+        // Stash away the URI to node path so we can reference it later.
 
-		// All devices may access DNS and NTP.
-		try {
-			MudFlowsInstaller.installAllowToDnsAndNtpFlowRules(sdnmudProvider, nodePath);
-		} catch (Exception ex) {
-			LOG.error("installFlows : Exception installing default flows ", ex);
-		}
-	}
+        this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
 
-	private void installDefaultFlows(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
+        if (this.sdnmudProvider.getTopology() == null) {
+            LOG.info("put in pending node list");
+            this.pendingNodes.add(nodePath);
+        } else if (sdnmudProvider.isCpeNode(nodeUri)) {
+            // If this is a CPE node install the default permits.
+            this.installDefaultFlows(nodeUri, nodePath);
+        }
 
-		this.installInitialFlows(nodePath);
-	}
+    }
 
-	public synchronized void installDefaultFlows() {
-		for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
-			String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-			if (sdnmudProvider.isCpeNode(nodeId)) {
-				this.installDefaultFlows(nodeId, node);
-			}
-		}
-	}
+    /**
+     * Deal with disconnection of the switch.
+     * 
+     * @param nodePath
+     *            - the instance id of the disconnecting switch.
+     */
 
-	/**
-	 * This gets invoked when a switch appears and connects.
-	 * 
-	 * @param nodePath
-	 *            -- the node path.
-	 *
-	 */
-	public synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
-
-		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
-
-		LOG.info("onFlowCapableSwitchAppeared");
-		// The URI identifies the node instance.
-		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
-		// Stash away the URI to node path so we can reference it later.
-
-		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
-
-		if (this.sdnmudProvider.getTopology() == null) {
-			LOG.info("put in pending node list");
-			this.pendingNodes.add(nodePath);
-		} else if (sdnmudProvider.isCpeNode(nodeUri)) {
-			// If this is a CPE node install the default permits.
-			this.installDefaultFlows(nodeUri, nodePath);
-		}
-
-	}
-
-	/**
-	 * Deal with disconnection of the switch.
-	 * 
-	 * @param nodePath
-	 *            - the instance id of the disconnecting switch.
-	 */
-
-	public void onFlowCapableSwitchDisappeared(InstanceIdentifier<FlowCapableNode> nodePath) {
-		String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
-		LOG.info("onFlowCapableSwitchDisappeared");
-		// The URI identifies the node instance.
-		LOG.info("node URI " + nodeUri);
-		// Remove the node URI from the uriToNodeMap.
-		this.sdnmudProvider.removeNode(nodeUri);
-		// Remove the node URI from our switches table.
-	}
+    public void onFlowCapableSwitchDisappeared(
+            InstanceIdentifier<FlowCapableNode> nodePath) {
+        String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
+        LOG.info("onFlowCapableSwitchDisappeared");
+        // The URI identifies the node instance.
+        LOG.info("node URI " + nodeUri);
+        // Remove the node URI from the uriToNodeMap.
+        this.sdnmudProvider.removeNode(nodeUri);
+        // Remove the node URI from our switches table.
+    }
 
 }

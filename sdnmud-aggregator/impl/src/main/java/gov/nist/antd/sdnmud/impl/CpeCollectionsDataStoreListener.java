@@ -37,35 +37,41 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.r
  * @author mranga
  *
  */
-public class CpeCollectionsDataStoreListener implements DataTreeChangeListener<CpeCollections> {
+public class CpeCollectionsDataStoreListener
+        implements
+            DataTreeChangeListener<CpeCollections> {
 
-	private SdnmudProvider sdnmudProvider;
+    private SdnmudProvider sdnmudProvider;
 
-	public CpeCollectionsDataStoreListener(SdnmudProvider sdnmudProvider) {
-		this.sdnmudProvider = sdnmudProvider;
-	}
+    public CpeCollectionsDataStoreListener(SdnmudProvider sdnmudProvider) {
+        this.sdnmudProvider = sdnmudProvider;
+    }
 
-	@Override
-	public void onDataTreeChanged(Collection<DataTreeModification<CpeCollections>> changes) {
+    @Override
+    public void onDataTreeChanged(
+            Collection<DataTreeModification<CpeCollections>> changes) {
 
-		for (DataTreeModification<CpeCollections> change : changes) {
-			CpeCollections topology = change.getRootNode().getDataAfter();
-			sdnmudProvider.setTopology(topology);
+        for (DataTreeModification<CpeCollections> change : changes) {
+            CpeCollections topology = change.getRootNode().getDataAfter();
+            sdnmudProvider.setTopology(topology);
 
-			sdnmudProvider.getWakeupListener().installDefaultFlows();
+            sdnmudProvider.getWakeupListener().installDefaultFlows();
 
-			for (Uri cpeSwitch : topology.getCpeSwitches()) {
-				sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
-						new MudFlowsInstaller(sdnmudProvider, cpeSwitch.getValue()));
-				sdnmudProvider.getWakeupListener().installSendToControllerFlows(cpeSwitch.getValue());
-				MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeSwitch.getValue());
-				if (mudFlowsInstaller != null) {
-					for (Mud mud : sdnmudProvider.getMudProfiles()) {
-						mudFlowsInstaller.tryInstallFlows(mud);
-					}
-				}
-			}
-		}
-	}
+            for (Uri cpeSwitch : topology.getCpeSwitches()) {
+                sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
+                        new MudFlowsInstaller(sdnmudProvider,
+                                cpeSwitch.getValue()));
+                sdnmudProvider.getWakeupListener()
+                        .installSendToControllerFlows(cpeSwitch.getValue());
+                MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
+                        .getMudFlowsInstaller(cpeSwitch.getValue());
+                if (mudFlowsInstaller != null) {
+                    for (Mud mud : sdnmudProvider.getMudProfiles()) {
+                        mudFlowsInstaller.tryInstallFlows(mud);
+                    }
+                }
+            }
+        }
+    }
 
 }

@@ -57,7 +57,7 @@
 			<version>${project.version}</version>
 		</dependency>
 
-       <dependency>
+		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>baseapp-impl</artifactId>
 			<version>0.1.0</version>
@@ -109,19 +109,19 @@
 			<scope>compile</scope>
 		</dependency>
 
-        <dependency>
-           <groupId>org.opendaylight.controller</groupId>
-           <artifactId>liblldp</artifactId>
-           <version>0.13.2</version>
-           <scope>compile</scope>
-        </dependency>
- 
-        <dependency>
-           <groupId>jpcap</groupId>
-           <artifactId>jpcap</artifactId>
-           <version>0.1.18-001</version>
-           <scope>compile</scope>
-        </dependency>
+		<dependency>
+			<groupId>org.opendaylight.controller</groupId>
+			<artifactId>liblldp</artifactId>
+			<version>0.13.2</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>jpcap</groupId>
+			<artifactId>jpcap</artifactId>
+			<version>0.1.18-001</version>
+			<scope>compile</scope>
+		</dependency>
 
 		<!-- Testing Dependencies -->
 		<dependency>
