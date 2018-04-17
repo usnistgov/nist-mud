@@ -272,7 +272,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
     @Override
     public void onPacketReceived(PacketReceived notification) {
 
-        if (this.sdnmudProvider.getTopology() == null) {
+        if (this.sdnmudProvider.getCpeCollections() == null) {
             LOG.error("Topology node not found -- ignoring packet");
             return;
         }

@@ -26,15 +26,11 @@ import java.util.Collection;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.genius.mdsalutil.MDSALUtil;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,14 +39,14 @@ import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 /**
  * Class that gets invoked when a switch connects.
- * 
+ *
  * @author mranga@nist.gov
  *
  */
 
 public class WakeupOnFlowCapableNode
-        implements
-            DataTreeChangeListener<FlowCapableNode> {
+implements
+DataTreeChangeListener<FlowCapableNode> {
     private static final Logger LOG = LoggerFactory
             .getLogger(WakeupOnFlowCapableNode.class);
 
@@ -112,7 +108,7 @@ public class WakeupOnFlowCapableNode
                 .createUnconditionalGoToNextTableFlow(table, flowId,
                         flowCookie);
         sdnmudProvider.getFlowCommitWrapper()
-                .writeFlow(unconditionalGoToNextFlow, node);
+        .writeFlow(unconditionalGoToNextFlow, node);
     }
 
     private void installUnditionalDropPacket(String nodeId,
@@ -127,23 +123,7 @@ public class WakeupOnFlowCapableNode
         this.dataStoreAccessor.writeFlow(flow, nodePath);
     }
 
-    private void installPermitPacketsToFromDhcp(String nodeId,
-            InstanceIdentifier<FlowCapableNode> node) {
-        FlowCookie flowCookie = InstanceIdentifierUtils
-                .createFlowCookie(nodeId);
-        FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-        FlowBuilder flowBuilder = FlowUtils
-                .createToDhcpServerMatchGoToNextTableFlow(
-                        BaseappConstants.SDNMUD_RULES_TABLE, flowCookie,
-                        flowId);
-        sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
-        // DHCP is local so both directions are installed on the CPE node.
-        flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-        flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(
-                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
-        sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
-    }
 
     public void installSendToControllerFlows(String nodeUri) {
         InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider
@@ -180,7 +160,7 @@ public class WakeupOnFlowCapableNode
         }
         String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
 
-        if (sdnmudProvider.getTopology() != null
+        if (sdnmudProvider.getCpeCollections() != null
                 && sdnmudProvider.isCpeNode(nodeUri)) {
             installSendToControllerFlows(nodeUri);
         }
@@ -197,13 +177,15 @@ public class WakeupOnFlowCapableNode
         installUnditionalDropPacket(nodeUri, nodePath,
                 BaseappConstants.DROP_TABLE);
 
-        // All devices may access DHCP (default rule).
-        installPermitPacketsToFromDhcp(nodeUri, nodePath);
 
         // All devices may access DNS and NTP.
         try {
             MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
                     .getMudFlowsInstaller(nodeUri);
+            // All devices may access DHCP (default rule).
+
+            mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
+
             mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
         } catch (Exception ex) {
             LOG.error("installFlows : Exception installing default flows ", ex);
@@ -227,7 +209,7 @@ public class WakeupOnFlowCapableNode
 
     /**
      * This gets invoked when a switch appears and connects.
-     * 
+     *
      * @param nodePath
      *            -- the node path.
      *
@@ -244,7 +226,7 @@ public class WakeupOnFlowCapableNode
 
         this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
 
-        if (this.sdnmudProvider.getTopology() == null) {
+        if (this.sdnmudProvider.getCpeCollections() == null) {
             LOG.info("put in pending node list");
             this.pendingNodes.add(nodePath);
         } else if (sdnmudProvider.isCpeNode(nodeUri)) {
@@ -256,7 +238,7 @@ public class WakeupOnFlowCapableNode
 
     /**
      * Deal with disconnection of the switch.
-     * 
+     *
      * @param nodePath
      *            - the instance id of the disconnecting switch.
      */

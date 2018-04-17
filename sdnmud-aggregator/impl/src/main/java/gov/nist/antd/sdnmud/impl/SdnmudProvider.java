@@ -28,13 +28,12 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.genius.mdsalutil.interfaces.IMdsalApiManager;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.AccessLists;
@@ -51,13 +50,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.common.QName;
-import org.opendaylight.yangtools.yang.parser.stmt.reactor.CrossSourceStatementReactor;
-import org.opendaylight.yangtools.yang.parser.stmt.rfc6020.YangInferencePipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.ImmutableSet;
 
 public class SdnmudProvider {
 
@@ -327,34 +321,34 @@ public class SdnmudProvider {
 
     /**
      * Put in the node to URI map.
-     * 
+     *
      * @param nodeUri
      *            -- the node Uri.
      * @param nodePath
      *            -- the flow capable node Instance Identifier.
      */
-    public synchronized void putInUriToNodeMap(String nodeUri,
+    synchronized void putInUriToNodeMap(String nodeUri,
             InstanceIdentifier<FlowCapableNode> nodePath) {
         this.uriToNodeMap.put(nodeUri, nodePath);
     }
 
     /**
      * Get the flow capable node id from the node uri.
-     * 
+     *
      * @param nodeUri
      *            -- the node URI
      * @return -- the flow capable node.
      */
-    public synchronized InstanceIdentifier<FlowCapableNode> getNode(
+    synchronized InstanceIdentifier<FlowCapableNode> getNode(
             String nodeUri) {
         return uriToNodeMap.get(nodeUri);
     }
 
-    public synchronized Collection<InstanceIdentifier<FlowCapableNode>> getNodes() {
+    synchronized Collection<InstanceIdentifier<FlowCapableNode>> getNodes() {
         return uriToNodeMap.values();
     }
 
-    public synchronized void removeNode(String nodeUri) {
+    synchronized void removeNode(String nodeUri) {
         InstanceIdentifier<FlowCapableNode> node = this.uriToNodeMap
                 .remove(nodeUri);
         if (node == null) {
@@ -388,10 +382,10 @@ public class SdnmudProvider {
 
     /**
      * Add a MUD node for this device MAC address.
-     * 
+     *
      * @param deviceMacAddress
      *            -- mac address of device.
-     * 
+     *
      * @param node
      *            -- the node to add.
      */
@@ -409,7 +403,7 @@ public class SdnmudProvider {
 
     /**
      * Get the MUD nodes where flow rules were installed.
-     * 
+     *
      * @param deviceMacAddress
      *            -- the mac address for which we want the flow capable node
      *            set.
@@ -466,7 +460,7 @@ public class SdnmudProvider {
 
     }
 
-    public CpeCollections getTopology() {
+    public CpeCollections getCpeCollections() {
         return topology;
     }
 
@@ -479,7 +473,7 @@ public class SdnmudProvider {
     }
 
     public boolean isCpeNode(String nodeId) {
-        if (this.getTopology() == null) {
+        if (this.getCpeCollections() == null) {
             return false;
         }
         for (Uri cpeNode : topology.getCpeSwitches()) {

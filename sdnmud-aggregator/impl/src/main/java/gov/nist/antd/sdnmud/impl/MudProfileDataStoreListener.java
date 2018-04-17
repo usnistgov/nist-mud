@@ -79,8 +79,8 @@ public class MudProfileDataStoreListener
             // Put this in a map. Later when the MAC appears, we can pick it up
             // from this map and install flow rules.
             this.sdnmudProvider.addMudProfile(mud);
-            if (sdnmudProvider.getTopology() != null) {
-                for (Uri cpeNodeId : sdnmudProvider.getTopology()
+            if (sdnmudProvider.getCpeCollections() != null) {
+                for (Uri cpeNodeId : sdnmudProvider.getCpeCollections()
                         .getCpeSwitches()) {
                     MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
                             .getMudFlowsInstaller(cpeNodeId.getValue());
