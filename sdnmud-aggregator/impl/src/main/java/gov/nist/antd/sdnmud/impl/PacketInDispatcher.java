@@ -1,16 +1,16 @@
 /*
  * This code is released to the public domain in accordance with the following disclaimer:
- * 
- * "This software was developed at the National Institute of Standards 
- * and Technology by employees of the Federal Government in the course of 
- * their official duties. Pursuant to title 17 Section 105 of the United 
- * States Code this software is not subject to copyright protection and is 
- * in the public domain. It is an experimental system. NIST assumes no responsibility 
- * whatsoever for its use by other parties, and makes no guarantees, expressed or 
- * implied, about its quality, reliability, or any other characteristic. We would 
- * appreciate acknowledgement if the software is used. This software can be redistributed 
- * and/or modified freely provided that any derivative works bear 
- * some notice that they are derived from it, and any modified versions bear some 
+ *
+ * "This software was developed at the National Institute of Standards
+ * and Technology by employees of the Federal Government in the course of
+ * their official duties. Pursuant to title 17 Section 105 of the United
+ * States Code this software is not subject to copyright protection and is
+ * in the public domain. It is an experimental system. NIST assumes no responsibility
+ * whatsoever for its use by other parties, and makes no guarantees, expressed or
+ * implied, about its quality, reliability, or any other characteristic. We would
+ * appreciate acknowledgement if the software is used. This software can be redistributed
+ * and/or modified freely provided that any derivative works bear
+ * some notice that they are derived from it, and any modified versions bear some
  * notice that they have been modified."
  */
 
@@ -18,7 +18,6 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -37,9 +36,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Metadata;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
@@ -49,13 +46,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
-import net.sourceforge.jpcap.net.IPPacket;
-import net.sourceforge.jpcap.net.TCPPacket;
 
 /**
  * Packet in dispatcher that gets invoked on flow table miss when a packet is
  * sent up to the controller.
- * 
+ *
  * @author mranga@nist.gov
  *
  */
@@ -70,14 +65,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
     private HashMap<String, Flow> flowTable = new HashMap<>();
 
-    /**
-     * PacketIn dispatcher. Gets called when packet is received.
-     * 
-     * @param sdnMudHandler
-     * @param mdsalApiManager
-     * @param flowCommitWrapper
-     * @param sdnmudProvider
-     */
     public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
         this.sdnmudProvider = sdnmudProvider;
     }
@@ -114,15 +101,15 @@ public class PacketInDispatcher implements PacketProcessingListener {
         actionList.add(ab.build());
         tpib.setAction(actionList);
 
-        sdnmudProvider.getPacketProcessingService()
+        this.sdnmudProvider.getPacketProcessingService()
                 .transmitPacket(tpib.build());
     }
 
     private boolean isLocalAddress(String nodeId, String ipAddress) {
         boolean isLocalAddress = false;
-        if (sdnmudProvider.getControllerclassMappingDataStoreListener()
+        if (this.sdnmudProvider.getControllerclassMappingDataStoreListener()
                 .getLocalNetworks(nodeId) != null) {
-            for (String localNetworkStr : sdnmudProvider
+            for (String localNetworkStr : this.sdnmudProvider
                     .getControllerclassMappingDataStoreListener()
                     .getLocalNetworks(nodeId)) {
                 LOG.debug("localNetworkStr = " + localNetworkStr);
@@ -156,8 +143,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
         FlowId flowId = InstanceIdentifierUtils
                 .createFlowId(InstanceIdentifierUtils.getNodeUri(node));
         int flag = 0;
-        if (isLocalAddress)
+        if (isLocalAddress) {
             flag = 1;
+        }
 
         LOG.debug("installStampSrcManufacturerModelFlowRules : dstMac = "
                 + srcMac.getValue() + " isLocalAddress " + isLocalAddress
@@ -217,8 +205,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
                 .getManfuacturerId(manufacturer);
         int modelId = InstanceIdentifierUtils.getModelId(mudUri);
         int flag = 0;
-        if (isLocalAddress)
+        if (isLocalAddress) {
             flag = 1;
+        }
 
         LOG.debug("installStampDstManufacturerModelFlowRules : dstMac = "
                 + dstMac.getValue() + " isLocalAddress " + isLocalAddress
@@ -306,7 +295,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
         String nodeId = notification.getIngress().getValue()
                 .firstKeyOf(Node.class).getId().getValue();
 
-        InstanceIdentifier<FlowCapableNode> node = sdnmudProvider
+        InstanceIdentifier<FlowCapableNode> node = this.sdnmudProvider
                 .getNode(nodeId);
 
         LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri
@@ -326,31 +315,31 @@ public class PacketInDispatcher implements PacketProcessingListener {
             LOG.info("Source IP  " + sourceIpAddress + " dest IP  "
                     + destIpAddress);
 
-            if (!sdnmudProvider.isCpeNode(nodeId)) {
+            if (!this.sdnmudProvider.isCpeNode(nodeId)) {
                 return;
             }
 
-            sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
+            this.sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
             if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
                     || tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
                 // We got a notification for a device that is connected to this
                 // switch.
-                Uri mudUri = sdnmudProvider.getMappingDataStoreListener()
+                Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener()
                         .getMudUri(srcMac);
-                boolean isLocalAddress = isLocalAddress(nodeId,
+                boolean isLocalAddress = this.isLocalAddress(nodeId,
                         sourceIpAddress);
                 installSrcMacMatchStampManufacturerModelFlowRules(srcMac,
-                        isLocalAddress, mudUri.getValue(), sdnmudProvider,
+                        isLocalAddress, mudUri.getValue(), this.sdnmudProvider,
                         node);
                 // TODO -- check if a match for this already exists before
                 // installing redundant rule.
-                mudUri = sdnmudProvider.getMappingDataStoreListener()
+                mudUri = this.sdnmudProvider.getMappingDataStoreListener()
                         .getMudUri(dstMac);
 
-                isLocalAddress = isLocalAddress(nodeId, destIpAddress);
+                isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
 
                 installDstMacMatchStampManufacturerModelFlowRules(dstMac,
-                        isLocalAddress, mudUri.getValue(), sdnmudProvider,
+                        isLocalAddress, mudUri.getValue(), this.sdnmudProvider,
                         node);
 
             } else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {

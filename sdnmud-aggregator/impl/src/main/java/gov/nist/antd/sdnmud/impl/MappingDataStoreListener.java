@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Public Domain
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -31,9 +31,6 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotification;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotificationBuilder;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.MappingInfoBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -42,7 +39,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Data Store listener for MappingData store (Mapping of MAC addresses to MUD
  * URLs).
- * 
+ *
  * @author mranga@nist.gov
  *
  */
@@ -55,24 +52,17 @@ public class MappingDataStoreListener
     private Map<MacAddress, Mapping> macAddressToMappingMap = new HashMap<MacAddress, Mapping>();
 
     private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
+
     private static final Logger LOG = LoggerFactory
             .getLogger(MappingDataStoreListener.class);
 
-    private static String getAuthority(Uri uri) {
-        int index = uri.getValue().indexOf("//") + 2;
-        String rest = uri.getValue().substring(index);
-        index = rest.indexOf("/");
-        String authority = rest.substring(0, index);
-        return authority;
-    }
-
     private void removeMacAddress(MacAddress macAddress) {
-        Mapping mapping = macAddressToMappingMap.remove(macAddress);
+        Mapping mapping = this.macAddressToMappingMap.remove(macAddress);
         if (mapping != null) {
-            HashSet<MacAddress> macs = uriToMacs.get(mapping.getMudUrl());
+            HashSet<MacAddress> macs = this.uriToMacs.get(mapping.getMudUrl());
             macs.remove(macAddress);
             if (macs.size() == 0) {
-                uriToMacs.remove(mapping.getMudUrl());
+                this.uriToMacs.remove(mapping.getMudUrl());
             }
         }
     }
@@ -90,47 +80,31 @@ public class MappingDataStoreListener
             List<MacAddress> macAddresses = mapping.getDeviceId();
             Uri uri = mapping.getMudUrl();
             LOG.info("mudUri = " + uri.getValue());
-            /*
-             * TOD vvv Delete this String manufacturer =
-             * InstanceIdentifierUtils.getAuthority(uri.getValue()); int
-             * manufacturerId =
-             * InstanceIdentifierUtils.getManfuacturerId(manufacturer); int
-             * modelId = InstanceIdentifierUtils.getModelId(uri.getValue());
-             * MappingNotificationBuilder mnb = new
-             * MappingNotificationBuilder();
-             * mnb.setManufacturerId(Long.valueOf(manufacturerId));
-             * mnb.setModelId(Long.valueOf(modelId)); MappingInfoBuilder mib =
-             * new MappingInfoBuilder(); mib.setMudUrl(uri);
-             * mib.setDeviceId(macAddresses); MappingNotification
-             * mappingNotification = mnb.setMappingInfo(mib.build()).build(); //
-             * Publish that we just saw a new device
-             * sdnmudProvider.getNotificationPublishService().offerNotification(
-             * mappingNotification); TODO ^^^ Delete this
-             */
-
             // Cache the MAC addresses of the devices under the same URL.
             for (MacAddress mac : macAddresses) {
-                removeMacAddress(mac);
+                this.removeMacAddress(mac);
                 LOG.info("Put MAC address mapping " + mac + " uri "
                         + uri.getValue());
-                macAddressToMappingMap.put(mac, mapping);
-                HashSet<MacAddress> macs = uriToMacs.get(uri);
+                this.macAddressToMappingMap.put(mac, mapping);
+                HashSet<MacAddress> macs = this.uriToMacs.get(uri);
                 if (macs == null) {
                     macs = new HashSet<MacAddress>();
-                    uriToMacs.put(uri, macs);
+                    this.uriToMacs.put(uri, macs);
                 }
                 macs.add(mac);
-                // Remove the default mapping (the next flow miss will install
-                // the right mapping). Find all the switches where this MAC
-                // address has been seen.
+                /*
+                 * Remove the default mapping (the next flow miss will install
+                 * the right mapping). Find all the switches where this MAC
+                 * address has been seen.
+                 */
                 if (this.sdnmudProvider.getNodeId(mac) != null) {
                     for (String nodeId : this.sdnmudProvider.getNodeId(mac)) {
-                        InstanceIdentifier<FlowCapableNode> node = sdnmudProvider
+                        InstanceIdentifier<FlowCapableNode> node = this.sdnmudProvider
                                 .getNode(nodeId);
                         if (node != null) {
                             MudFlowsInstaller
                                     .installStampManufacturerModelFlowRules(mac,
-                                            uri.getValue(), sdnmudProvider,
+                                            uri.getValue(), this.sdnmudProvider,
                                             node);
                         }
                     }
@@ -140,18 +114,11 @@ public class MappingDataStoreListener
     }
 
     public Collection<MacAddress> getMacs(Uri uri) {
-        return uriToMacs.get(uri);
+        return this.uriToMacs.get(uri);
     }
 
-    /**
-     * Get the MUD URI given a mac address.
-     * 
-     * @param macAddress
-     * @return URI for the given mac address.
-     */
-
     public Uri getMudUri(MacAddress macAddress) {
-        if (macAddressToMappingMap.containsKey(macAddress)) {
+        if (this.macAddressToMappingMap.containsKey(macAddress)) {
             return this.macAddressToMappingMap.get(macAddress).getMudUrl();
         } else {
             return new Uri(SdnMudConstants.UNCLASSIFIED);

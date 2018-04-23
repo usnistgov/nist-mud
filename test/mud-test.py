@@ -17,20 +17,43 @@ import time
 import requests
 import json
 from mininet.log import setLogLevel 
+import unittest
 
 
+#########################################################
+
+class TestAccess(unittest.TestCase) :
+
+    def __init__(self,hosts):
+        self.hosts = hosts 
+
+    def setUp(self):
+        print "hello world"
+
+    def runAndReturnOutput(self, host, command ):
+        host.sendCmd(command)
+        result = host.sendCmd('echo $?')
+        return result
+    
+    def doPingTest() :
+        print "pinging a peer -- this should succeed with MUD"
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client")
+        self.assertTrue(result >= 0, "expect successful ping")
+
+    def doHttpGetTest() :
+        print "wgetting from an allowed host -- this should succeed with MUD"
+        h1 = hosts[0]
+        result = runAndReturnOutput(h1,"wget http://www.nist.local --timeout 10  --tries 1")
+        self.assertTrue(result == 0, "Expecting a successful get")
+        print "Wgetting from antd.local -- this should fail with MUD"
+        result = runAndReturnOutput(h1,"wget http://www.antd.local --timeout 10  --tries 1")
+        self.assertTrue(result != 0, "Expecting a failed get")
 
 
-def doPingTest1() :
-    global h1,h2,h3,h4,h5,h6,h7,h8,h9,h10
-    print "pinging a peer -- this should succeed with MUD"
-    h1.cmdPrint("python udpping.py --port 4000 --host 10.0.0.2 --client")
-    print "wgetting from an allowed host -- this should succeed with MUD"
-    h1.cmdPrint("wget http://www.nist.local --timeout 10 --tries 1")
-    print "Wgetting from antd.local -- this should fail with MUD"
-    h1.cmdPrint("wget http://www.antd.local --timeout 10 --tries 1")
-    print "Wgetting from antd.local -- this should succeed with MUD"
-    h3.cmdPrint("wget http://www.antd.local --timeout 10 --tries 1")
+#########################################################
+
+
 
 def cli():
     global net,c1,s1,s2,s3
@@ -271,7 +294,6 @@ if __name__ == '__main__':
         print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
-    doPingTest1()
 
     for (configfile,suffix) in { ("ietfmud.json","ietf-mud:mud")} :
         data = json.load(open(configfile))

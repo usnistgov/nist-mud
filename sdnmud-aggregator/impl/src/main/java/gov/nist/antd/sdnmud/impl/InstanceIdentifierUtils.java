@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) Public Domain
+/*
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -18,6 +18,7 @@
  * including but not limited to the correctness, accuracy, reliability or
  * usefulness of this software.
  */
+
 package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
@@ -116,10 +117,10 @@ public class InstanceIdentifierUtils {
 
     /**
      * Create the MPLS label from the flow spec.
-     * 
+     *
      * @param flowSpec
      *            -- the flow spec to hash.
-     * 
+     *
      */
     public static int getFlowHash(String flowSpec) {
         // Has to be within the size of an mpls label.

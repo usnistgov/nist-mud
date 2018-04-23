@@ -1,6 +1,5 @@
 /*
- * Copyright (c) Public Domain.
- * 
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * AccessControlList data store listener. This handles callbacks from ODL when
  * the ACL data store is altered.
- * 
+ *
  * @author mranga@nist.gov
  *
  */
@@ -79,13 +78,13 @@ public class AclDataStoreListener
 
     /**
      * Add Aces for a given acl name scoped to a MUD URI.
-     * 
+     *
      * @param mudUri
      *            -- the mudUri for wich to add the aces.
-     * 
+     *
      * @param aclName
      *            -- the acl name for which we want to add aces.
-     * 
+     *
      * @param aces
      *            -- the ACE entries to add.
      */
@@ -96,7 +95,7 @@ public class AclDataStoreListener
 
     /**
      * Get the aces for a given acl name.
-     * 
+     *
      * @param aclName
      *            -- acl name
      * @return -- Aces list for the acl name

@@ -1,9 +1,21 @@
 /*
- * Copyright (c) 2014 Cisco Systems, Inc. and others. All rights reserved.
+ * This file includes code developed by employees of the National Institute of
+ * Standards and Technology (NIST)
  *
- * This program and the accompanying materials are made available under the terms of the Eclipse
- * Public License v1.0 which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
+ * This software was developed by employees of the National Institute of
+ * Standards and Technology (NIST), and others. This software has been
+ * contributed to the public domain. Pursuant to title 15 Untied States
+ * Code Section 105, works of NIST employees are not subject to copyright
+ * protection in the United States and are considered to be in the public
+ * domain. As a result, a formal license is not needed to use this software.
+ *
+ * This software is provided "AS IS." NIST MAKES NO WARRANTY OF ANY KIND,
+ * EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE
+ * IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ * NON-INFRINGEMENT AND DATA ACCURACY. NIST does not warrant or make any
+ * representations regarding the use of the software or the results thereof,
+ * including but not limited to the correctness, accuracy, reliability or
+ * usefulness of this software.
  */
 
 package gov.nist.antd.flowmon.impl;
@@ -100,7 +112,7 @@ public class FlowCommitWrapper {
 	}
 
 	public boolean flowExists(String flowIdPrefix, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
-		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey((short) tableId));
+		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey(tableId));
 		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()
 				.read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
 		try {
@@ -128,7 +140,7 @@ public class FlowCommitWrapper {
 
 		List<FlowKey> retval = new ArrayList<FlowKey>();
 
-		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey((short) tableId));
+		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey(tableId));
 		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()
 				.read(LogicalDatastoreType.CONFIGURATION, tableInstanceId);
 		try {
@@ -173,7 +185,7 @@ public class FlowCommitWrapper {
 	public synchronized void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
 		ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
 		LOG.info("writeFlow : " + flowNodeIdent + " Flow : " + flow.getFlowName() + " tableId " + flow.getTableId()
-				+ " flowId " + flow.getId().getValue());
+		+ " flowId " + flow.getId().getValue());
 
 		LOG.info(flow.toString());
 		for (Instruction instruction : flow.getInstructions().getInstruction()) {
@@ -189,7 +201,7 @@ public class FlowCommitWrapper {
 
 	/**
 	 * Delete the flows corresponding to a MUD uri and sourceMacAddress.
-	 * 
+	 *
 	 * @param flowCapableNode
 	 *            -- the node from which to delete the flows.
 	 * @param uri

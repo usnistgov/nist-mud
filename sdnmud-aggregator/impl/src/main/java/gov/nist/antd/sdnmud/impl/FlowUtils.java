@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) Public Domain
+/*
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -118,25 +118,6 @@ public class FlowUtils {
 
     }
 
-    private static MatchBuilder createEthernetSourceNoEthTypeMatch(
-            MatchBuilder matchBuilder, MacAddress macAddress) {
-        // Set up the match field.
-
-        EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder();
-        EthernetSourceBuilder ethernetSourceBuilder = new EthernetSourceBuilder();
-        ethernetSourceBuilder.setAddress(macAddress);
-        // ethernetSourceBuilder.setMask(new MacAddress("FF:FF:FF:FF:FF:FF"));
-        EthernetSource ethernetSource = ethernetSourceBuilder.build();
-
-        ethernetMatchBuilder.setEthernetSource(ethernetSource);
-
-        EthernetMatch ethernetMatch = ethernetMatchBuilder.build();
-        matchBuilder.setEthernetMatch(ethernetMatch);
-
-        return matchBuilder;
-
-    }
-
     private static MatchBuilder createEthernetDestMatch(
             MatchBuilder matchBuilder, MacAddress macAddress) {
 
@@ -153,24 +134,6 @@ public class FlowUtils {
         // IPV4
         ethernetTypeBuilder.setType(new EtherType((long) 0x0800));
         ethernetMatchBuilder.setEthernetType(ethernetTypeBuilder.build());
-        EthernetMatch ethernetMatch = ethernetMatchBuilder.build();
-        matchBuilder.setEthernetMatch(ethernetMatch);
-
-        return matchBuilder;
-    }
-
-    private static MatchBuilder createEthernetDestNoEthTypeMatch(
-            MatchBuilder matchBuilder, MacAddress macAddress) {
-
-        EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder();
-        EthernetDestinationBuilder ethernetDestinationBuilder = new EthernetDestinationBuilder();
-        ethernetDestinationBuilder.setAddress(macAddress);
-
-        EthernetDestination ethernetDestination = ethernetDestinationBuilder
-                .build();
-
-        ethernetMatchBuilder.setEthernetDestination(ethernetDestination);
-
         EthernetMatch ethernetMatch = ethernetMatchBuilder.build();
         matchBuilder.setEthernetMatch(ethernetMatch);
 
@@ -254,7 +217,7 @@ public class FlowUtils {
 
     /**
      * Create ipv4 prefix from ipv4 address, by appending /32 mask
-     * 
+     *
      * @param ipv4AddressString
      *            the ip address, in string format
      * @return Ipv4Prefix with ipv4Address and /32 mask
@@ -351,7 +314,7 @@ public class FlowUtils {
 
     /**
      * create and return a goto table instruction.
-     * 
+     *
      * @param tableId
      *            -- target of the goto instruction,
      * @return
@@ -444,24 +407,6 @@ public class FlowUtils {
         return matchBuilder;
     }
 
-    private static MatchBuilder createUdpProtocolMatch(
-            MatchBuilder matchBuilder) {
-        IpMatchBuilder ipmatch = new IpMatchBuilder();
-        ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
-        ipmatch.setIpProto(IpVersion.Ipv4);
-        matchBuilder.setIpMatch(ipmatch.build());
-        return matchBuilder;
-    }
-
-    private static MatchBuilder createTcpProtocolMatch(
-            MatchBuilder matchBuilder) {
-        IpMatchBuilder ipmatch = new IpMatchBuilder();
-        ipmatch.setIpProtocol(SdnMudConstants.TCP_PROTOCOL);
-        ipmatch.setIpProto(IpVersion.Ipv4);
-        matchBuilder.setIpMatch(ipmatch.build());
-        return matchBuilder;
-    }
-
     private static Instruction createSendPacketToControllerInstruction() {
         // Create output action -> send to controller
         OutputActionBuilder output = new OutputActionBuilder();
@@ -495,7 +440,7 @@ public class FlowUtils {
     static FlowBuilder createUnconditionalDropPacketFlow(short table,
             FlowId flowId, FlowCookie flowCookie) {
         MatchBuilder matchBuilder = new MatchBuilder();
-        Instruction dropInstruction = FlowUtils.createDropInstruction();
+        Instruction dropInstruction = createDropInstruction();
         InstructionsBuilder isb = new InstructionsBuilder();
         List<Instruction> instructions = new ArrayList<Instruction>();
         instructions.add(dropInstruction);
@@ -526,8 +471,8 @@ public class FlowUtils {
 
         MatchBuilder matchBuilder = new MatchBuilder();
         createMetadataMatch(matchBuilder, metadata, metadataMask);
-        InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(
-                dropTableId, newMetadata, newMetadataMask);
+        InstructionsBuilder insb = createGoToNextTableInstruction(dropTableId,
+                newMetadata, newMetadataMask);
 
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -555,11 +500,11 @@ public class FlowUtils {
 
         MatchBuilder matchBuilder = new MatchBuilder();
         ArrayList<Instruction> instructions = new ArrayList<>();
-        Instruction wmd = FlowUtils.createWriteMetadataInstruction(
-                flowCookie.getValue(), new BigInteger("ffffffffffffffff", 16));
+        Instruction wmd = createWriteMetadataInstruction(flowCookie.getValue(),
+                new BigInteger("ffffffffffffffff", 16));
         instructions.add(wmd);
         short nextTable = (short) (table + 1);
-        Instruction ins = FlowUtils.createGoToTableInstruction(nextTable);
+        Instruction ins = createGoToTableInstruction(nextTable);
         instructions.add(ins);
         InstructionsBuilder isb = new InstructionsBuilder()
                 .setInstruction(instructions);
@@ -578,13 +523,12 @@ public class FlowUtils {
             BigInteger metadata, BigInteger metadataMask, Short tableId,
             FlowId flowId, FlowCookie flowCookie) {
         MatchBuilder matchBuilder = new MatchBuilder();
-        FlowUtils.createIpV4Match(matchBuilder);
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x0800);
+        createIpV4Match(matchBuilder);
+        createEthernetTypeMatch(matchBuilder, 0x0800);
         List<Instruction> instructions = new ArrayList<Instruction>();
-        FlowUtils.addSendPacketToControllerInstruction(instructions);
-        FlowUtils.addWriteMetadataInstruction(instructions, metadata,
-                metadataMask);
-        FlowUtils.addGoToTableInstruction(instructions, (short) (tableId + 1));
+        addSendPacketToControllerInstruction(instructions);
+        addWriteMetadataInstruction(instructions, metadata, metadataMask);
+        addGoToTableInstruction(instructions, (short) (tableId + 1));
         InstructionsBuilder insb = new InstructionsBuilder();
         insb.setInstruction(instructions);
         FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
@@ -611,9 +555,8 @@ public class FlowUtils {
                 .setKey(new FlowKey(flowId)).setCookie(flowCookie);
         MatchBuilder matchBuilder = new MatchBuilder();
         // Set up the ports.
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-        FlowUtils.createUdpPortMatch(matchBuilder,
-                SdnMudConstants.DHCP_CLIENT_PORT,
+        createEthernetTypeMatch(matchBuilder, 0x800);
+        createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT,
                 SdnMudConstants.DHCP_SERVER_PORT);
 
         Match match = matchBuilder.build();
@@ -640,9 +583,8 @@ public class FlowUtils {
                 .setFlowName("permitPacketsFromDhcpServerFlow").setId(flowId)
                 .setKey(new FlowKey(flowId)).setCookie(flowCookie);
         MatchBuilder matchBuilder = new MatchBuilder();
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-        FlowUtils.createUdpPortMatch(matchBuilder,
-                SdnMudConstants.DHCP_SERVER_PORT,
+        createEthernetTypeMatch(matchBuilder, 0x800);
+        createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_SERVER_PORT,
                 SdnMudConstants.DHCP_CLIENT_PORT);
 
         Match match = matchBuilder.build();
@@ -669,22 +611,22 @@ public class FlowUtils {
 
         Short targetTableId = (short) (tableId + 1);
 
-        FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-        FlowUtils.createDestIpv4Match(matchBuilder, address);
+        createMetadataMatch(matchBuilder, metadata, metadataMask);
+        createEthernetTypeMatch(matchBuilder, 0x800);
+        createDestIpv4Match(matchBuilder, address);
         if (destinationPort != -1) {
             if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-                FlowUtils.createDstUdpPortMatch(matchBuilder, destinationPort);
+                createDstUdpPortMatch(matchBuilder, destinationPort);
             } else {
-                FlowUtils.createDstTcpPortMatch(matchBuilder, destinationPort);
+                createDstTcpPortMatch(matchBuilder, destinationPort);
             }
         }
 
         InstructionsBuilder insb = sendToController
-                ? FlowUtils.createGoToNextTableAndSendToControllerInstruction(
+                ? createGoToNextTableAndSendToControllerInstruction(
                         targetTableId, newMetadata, newMetadataMask)
-                : FlowUtils.createGoToNextTableInstruction(targetTableId,
-                        newMetadata, newMetadataMask);
+                : createGoToNextTableInstruction(targetTableId, newMetadata,
+                        newMetadataMask);
 
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -716,22 +658,22 @@ public class FlowUtils {
                 + flowId);
         short targetTable = (short) (tableId + 1);
         MatchBuilder matchBuilder = new MatchBuilder();
-        FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
-        FlowUtils.createSrcIpv4Match(matchBuilder, address);
+        createMetadataMatch(matchBuilder, metadata, metadataMask);
+        createEthernetTypeMatch(matchBuilder, 0x800);
+        createSrcIpv4Match(matchBuilder, address);
         if (srcPort != -1) {
             if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-                FlowUtils.createSrcUdpPortMatch(matchBuilder, srcPort);
+                createSrcUdpPortMatch(matchBuilder, srcPort);
             } else {
-                FlowUtils.createSrcTcpPortMatch(matchBuilder, srcPort);
+                createSrcTcpPortMatch(matchBuilder, srcPort);
             }
         }
 
         InstructionsBuilder insb = sendToController
-                ? FlowUtils.createGoToNextTableAndSendToControllerInstruction(
-                        targetTable, newMetadata, newMetadataMask)
-                : FlowUtils.createGoToNextTableInstruction(targetTable,
-                        newMetadata, newMetadataMask);
+                ? createGoToNextTableAndSendToControllerInstruction(targetTable,
+                        newMetadata, newMetadataMask)
+                : createGoToNextTableInstruction(targetTable, newMetadata,
+                        newMetadataMask);
 
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -769,8 +711,8 @@ public class FlowUtils {
         }
 
         short targetTableId = (short) (tableId + 1);
-        InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(
-                targetTableId, newMetadata, newMetadataMask);
+        InstructionsBuilder insb = createGoToNextTableInstruction(targetTableId,
+                newMetadata, newMetadataMask);
 
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -793,8 +735,8 @@ public class FlowUtils {
             short tableId, FlowId flowId, FlowCookie flowCookie) {
 
         MatchBuilder matchBuilder = new MatchBuilder();
-        FlowUtils.createEthernetSourceMatch(matchBuilder, srcMac);
-        InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(
+        createEthernetSourceMatch(matchBuilder, srcMac);
+        InstructionsBuilder insb = createGoToNextTableInstruction(
                 (short) (tableId + 1), metadata, metadataMask);
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -817,9 +759,9 @@ public class FlowUtils {
             short tableId, FlowId flowId, FlowCookie flowCookie) {
 
         MatchBuilder matchBuilder = new MatchBuilder();
-        // FlowUtils.createEthernetDestNoEthTypeMatch(matchBuilder, dstMac);
-        FlowUtils.createEthernetDestMatch(matchBuilder, dstMac);
-        InstructionsBuilder insb = FlowUtils.createGoToNextTableInstruction(
+        // createEthernetDestNoEthTypeMatch(matchBuilder, dstMac);
+        createEthernetDestMatch(matchBuilder, dstMac);
+        InstructionsBuilder insb = createGoToNextTableInstruction(
                 (short) (tableId + 1), metadata, metadataMask);
         FlowBuilder fb = new FlowBuilder();
         fb.setStrict(false);
@@ -846,15 +788,15 @@ public class FlowUtils {
                 .setFlowName("permitPacketsToServerFlow").setId(flowId)
                 .setKey(new FlowKey(flowId)).setCookie(flowCookie);
         MatchBuilder matchBuilder = new MatchBuilder();
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
+        createEthernetTypeMatch(matchBuilder, 0x800);
 
         if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            FlowUtils.createDstTcpPortMatch(matchBuilder, port);
+            createDstTcpPortMatch(matchBuilder, port);
         } else {
-            FlowUtils.createDstUdpPortMatch(matchBuilder, port);
+            createDstUdpPortMatch(matchBuilder, port);
         }
 
-        FlowUtils.createDestIpv4Match(matchBuilder, dnsAddress);
+        createDestIpv4Match(matchBuilder, dnsAddress);
         Match match = matchBuilder.build();
 
         short nextTable = (short) (tableId + 1);
@@ -880,13 +822,13 @@ public class FlowUtils {
                 .setCookie(flowCookie);
         MatchBuilder matchBuilder = new MatchBuilder();
 
-        FlowUtils.createEthernetTypeMatch(matchBuilder, 0x800);
+        createEthernetTypeMatch(matchBuilder, 0x800);
         if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            FlowUtils.createSrcTcpPortMatch(matchBuilder, port);
+            createSrcTcpPortMatch(matchBuilder, port);
         } else {
-            FlowUtils.createSrcUdpPortMatch(matchBuilder, port);
+            createSrcUdpPortMatch(matchBuilder, port);
         }
-        FlowUtils.createSrcIpv4Match(matchBuilder, dnsAddress);
+        createSrcIpv4Match(matchBuilder, dnsAddress);
         Match match = matchBuilder.build();
         short nextTable = (short) (tableId + 1);
 
@@ -913,12 +855,12 @@ public class FlowUtils {
 
         MatchBuilder matchBuilder = new MatchBuilder();
 
-        FlowUtils.createSrcIpv4Match(matchBuilder, srcIp);
-        FlowUtils.createEthernetDestMatch(matchBuilder, dstMac);
+        createSrcIpv4Match(matchBuilder, srcIp);
+        createEthernetDestMatch(matchBuilder, dstMac);
         if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            FlowUtils.createSrcTcpPortMatch(matchBuilder, port);
+            createSrcTcpPortMatch(matchBuilder, port);
         } else {
-            FlowUtils.createSrcUdpPortMatch(matchBuilder, port);
+            createSrcUdpPortMatch(matchBuilder, port);
         }
 
         InstructionsBuilder isb = FlowUtils
@@ -947,12 +889,12 @@ public class FlowUtils {
 
         MatchBuilder matchBuilder = new MatchBuilder();
 
-        FlowUtils.createSrcIpv4Match(matchBuilder, srcIp);
-        FlowUtils.createEthernetDestMatch(matchBuilder, dstMac);
+        createSrcIpv4Match(matchBuilder, srcIp);
+        createEthernetDestMatch(matchBuilder, dstMac);
         if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            FlowUtils.createSrcTcpPortMatch(matchBuilder, port);
+            createSrcTcpPortMatch(matchBuilder, port);
         } else {
-            FlowUtils.createSrcUdpPortMatch(matchBuilder, port);
+            createSrcUdpPortMatch(matchBuilder, port);
         }
 
         InstructionsBuilder isb = FlowUtils

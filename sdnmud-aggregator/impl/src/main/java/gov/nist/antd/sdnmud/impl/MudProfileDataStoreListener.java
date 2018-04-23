@@ -1,5 +1,6 @@
 /*
- *This file includes code developed by employees of the National Institute of
+* Copyright © 2017 None.  No rights reserved.
+* This file includes code developed by employees of the National Institute of
 * Standards and Technology (NIST)
 *
 * This software was developed by employees of the National Institute of

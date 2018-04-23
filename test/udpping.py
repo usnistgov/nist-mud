@@ -6,6 +6,7 @@ import sys
 import argparse
 from socket import *
 
+global timeoutCount = 0
 
 def udp_client(host, port) :
     # Create a UDP socket
@@ -32,6 +33,7 @@ def udp_client(host, port) :
             print
         except timeout:
             print 'ERROR : REQUEST TIMED OUT'
+            timeoutCount = timeoutCount + 1
             print
 
 
@@ -60,6 +62,8 @@ def put_request(url,payloadFile):
 if __name__ == "__main__":
 
     print("start ...")
+    global timeoutCount
+
     parser = argparse.ArgumentParser('argument parser')
 
     parser.add_argument("--port", 
@@ -107,7 +111,9 @@ if __name__ == "__main__":
            print("Missing a required argument --host")
            sys.exit()
         udp_client(host,port)
+        return 10  - timeoutCount  
     elif args.server:
         udp_server(port)
+        return 0
 
     

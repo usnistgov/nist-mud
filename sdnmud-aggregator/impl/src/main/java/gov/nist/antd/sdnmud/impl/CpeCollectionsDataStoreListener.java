@@ -1,5 +1,5 @@
-/* 
- * Copyright (c) Public Domain
+/*
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -21,9 +21,6 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
@@ -33,7 +30,7 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.r
 /**
  * Data store listener for changes in topology. The topology determines the CPE
  * nodes where MUD rules are to be installed.
- * 
+ *
  * @author mranga
  *
  */
@@ -53,20 +50,20 @@ public class CpeCollectionsDataStoreListener
 
         for (DataTreeModification<CpeCollections> change : changes) {
             CpeCollections topology = change.getRootNode().getDataAfter();
-            sdnmudProvider.setTopology(topology);
+            this.sdnmudProvider.setTopology(topology);
 
-            sdnmudProvider.getWakeupListener().installDefaultFlows();
+            this.sdnmudProvider.getWakeupListener().installDefaultFlows();
 
             for (Uri cpeSwitch : topology.getCpeSwitches()) {
-                sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
-                        new MudFlowsInstaller(sdnmudProvider,
+                this.sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
+                        new MudFlowsInstaller(this.sdnmudProvider,
                                 cpeSwitch.getValue()));
-                sdnmudProvider.getWakeupListener()
+                this.sdnmudProvider.getWakeupListener()
                         .installSendToControllerFlows(cpeSwitch.getValue());
-                MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
+                MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider
                         .getMudFlowsInstaller(cpeSwitch.getValue());
                 if (mudFlowsInstaller != null) {
-                    for (Mud mud : sdnmudProvider.getMudProfiles()) {
+                    for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
                         mudFlowsInstaller.tryInstallFlows(mud);
                     }
                 }

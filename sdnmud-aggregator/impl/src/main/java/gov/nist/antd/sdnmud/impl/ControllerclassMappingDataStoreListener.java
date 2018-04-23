@@ -1,6 +1,9 @@
 /*
- * Copyright (c) Public Domain
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
+ * Standards and Technology (NIST)
+ *
+ * This software was developed by employees of the National Institute of
  * Standards and Technology (NIST), and others. This software has been
  * contributed to the public domain. Pursuant to title 15 Untied States
  * Code Section 105, works of NIST employees are not subject to copyright
@@ -40,8 +43,8 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class ControllerclassMappingDataStoreListener
-implements
-DataTreeChangeListener<ControllerclassMapping> {
+        implements
+            DataTreeChangeListener<ControllerclassMapping> {
 
     private HashMap<String, ControllerclassMapping> controllerMap = new HashMap<String, ControllerclassMapping>();
 
@@ -62,7 +65,7 @@ DataTreeChangeListener<ControllerclassMapping> {
         for (DataTreeModification<ControllerclassMapping> change : collection) {
             ControllerclassMapping controllerMapping = change.getRootNode()
                     .getDataAfter();
-            if ( controllerMapping.getSwitchId() == null) {
+            if (controllerMapping.getSwitchId() == null) {
                 LOG.info("switch ID is null -- returning");
                 return;
             }
@@ -75,12 +78,11 @@ DataTreeChangeListener<ControllerclassMapping> {
             assert sdnmudProvider != null;
             Collection<Mud> mudProfiles = sdnmudProvider.getMudProfiles();
             // Note that the mudflow installer will be null for NodeIds that
-            MudFlowsInstaller mudFlowInstaller = sdnmudProvider.getMudFlowsInstaller(nodeId);
+            MudFlowsInstaller mudFlowInstaller = sdnmudProvider
+                    .getMudFlowsInstaller(nodeId);
             if (mudFlowInstaller != null) {
                 for (Mud mud : mudProfiles) {
-                    if (mudFlowInstaller != null) {
-                        mudFlowInstaller.tryInstallFlows(mud);
-                    }
+                    mudFlowInstaller.tryInstallFlows(mud);
                 }
                 InstanceIdentifier<FlowCapableNode> nodePath = sdnmudProvider
                         .getNode(nodeId);
@@ -88,7 +90,7 @@ DataTreeChangeListener<ControllerclassMapping> {
                 if (nodePath != null) {
                     try {
                         mudFlowInstaller
-                        .installAllowToDnsAndNtpFlowRules(nodePath);
+                                .installAllowToDnsAndNtpFlowRules(nodePath);
                     } catch (Exception ex) {
                         LOG.error(
                                 "onDataTreeChanged : Could not install Dns and Ntp flow rules ",

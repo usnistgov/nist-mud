@@ -1,7 +1,7 @@
 /*
  * Includes code that falls under the following repository
- * 
- * https://github.com/opendaylight/sfc 
+ *
+ * https://github.com/opendaylight/sfc
  *
  * Copyright (c) 2014 Cisco Systems, Inc. and others. All rights reserved.
  * Copyright (c) 2015, 2017 Ericsson, Inc. and others.  All rights reserved.
@@ -9,7 +9,7 @@
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
  * and is available at http://www.eclipse.org/legal/epl-v10.html
- *  
+ *
  *This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -33,7 +33,6 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -209,7 +208,7 @@ public abstract class PacketUtils {
     public static boolean isSYNFlagOn(final byte[] rawPacket) {
 
         byte flags = (byte) (rawPacket[PACKET_OFFSET_TCP_SRC_PORT + 13] & 63);
-        return (boolean) ((flags & 2) == 2);
+        return (flags & 2) == 2;
 
     }
 

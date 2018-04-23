@@ -1,5 +1,5 @@
 /* 
- * Copyright (c) Public Domain
+ * Copyright © 2017 None.  No rights reserved.
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
