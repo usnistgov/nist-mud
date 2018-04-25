@@ -10,9 +10,13 @@
          	"uri" :  "urn:ietf:params:mud:ntp",
          	"address-list" : [ "10.0.0.4" ]
      	},
+    	{
+         	"uri" :  "urn:ietf:params:mud:dhcp",
+         	"address-list" : [ "10.0.0.6" ]
+     	},
         {
     		"uri": "https://toaster.nist.gov/mud/super1",
-		    "address-list" : [ "10.0.0.3" ]
+		    "address-list" : [ "10.0.0.7" ]
         }
    ],
    "local-networks": [ "10.0.0.0/24" ]

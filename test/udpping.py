@@ -6,7 +6,9 @@ import sys
 import argparse
 from socket import *
 
-global timeoutCount = 0
+global timeoutCount
+
+timeoutCount = 0
 
 def udp_client(host, port) :
     # Create a UDP socket

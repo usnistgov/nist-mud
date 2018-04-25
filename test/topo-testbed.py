@@ -154,17 +154,31 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="SDN Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
-    parser.add_argument("-i",help="Host interface to route packets out", default="eth3")
-    #parser.add_argument("-i",help="Host interface to route packets out", default="enp1s0f0")
+    parser.add_argument("-i",help="Host interface to route packets out", default=os.environ.get("CLOUD_INTERFACE"))
     parser.add_argument("-p",help="prefix", default="10.1.0.")
     args = parser.parse_args()
     controller_addr = args.c
     interface = args.i
     prefix = args.p
-    print "Controller addr ", controller_addr
-    print "interface ", interface
+
+    if interface == None:
+        print("Plese specify pysical interface to connect to cloud using -i flag. For example   -i enp1s0f0 ")
+        sys.exit()
+    else:
+        print("interface " + str(interface))
+
+    if controller_addr  is None:
+        print("Please specify controller IP addr using -c flag  or set it in your CONTROLLER_ADDR enviornment variable ")
+        sys.exit()
+    else:
+        print("Controller addr " +  controller_addr)
+
+    print("prefix address for hosts " + prefix  + " --  override using the -p flag")
+
 
     checkIntf(interface)
+    
+
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()

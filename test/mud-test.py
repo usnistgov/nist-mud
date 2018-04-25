@@ -35,13 +35,13 @@ class TestAccess(unittest.TestCase) :
         result = host.sendCmd('echo $?')
         return result
     
-    def doPingTest() :
+    def testUdpPing() :
         print "pinging a peer -- this should succeed with MUD"
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client")
         self.assertTrue(result >= 0, "expect successful ping")
 
-    def doHttpGetTest() :
+    def testHttpGet() :
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
         result = runAndReturnOutput(h1,"wget http://www.nist.local --timeout 10  --tries 1")
@@ -82,46 +82,32 @@ def setupTopology(controller_addr,dns_address, interface):
     # h3 : router / NAT
     # h4 : Non IOT device.
 
-    h1,h2,h3,h4,h5= net.addHost('h1'),net.addHost('h2'),net.addHost('h3'),net.addHost('h4'),net.addHost('h5')
-
-    s1 = net.addSwitch('s1')
-    # The host for dhclient
-    s1.linkTo(h1)
-    # The IOT device
-    s1.linkTo(h2)
-    # The MUD controller
-    s1.linkTo(h3)
-    # The MUD server runs here.
-    s1.linkTo(h4)
-    # The non-iot client runs here
-    s1.linkTo(h5)
+    h1 = net.addHost('h1')
+    h2 = net.addHost('h2')
+    h3 = net.addHost('h3')
+    h4 = net.addHost('h4')
+    h5 = net.addHost('h5')
     h6 = net.addHost('h6')
-
-    # Switch s2 is the "multiplexer".
-    s2 = net.addSwitch('s2')
-
-    s3 = net.addSwitch('s3')
-
     h7 = net.addHost('h7')
-
-    # This is the IDS node.
     h8 = net.addHost('h8')
-
-    # This is our fake www.nist.local host.
     h9 = net.addHost('h9')
-
-    # This is for a second fake host that we should not be able to reach
     h10 = net.addHost('h10')
-   
-    s2.linkTo(h6)
-    #h7 is the router -- no direct link between S2 and S3
-    # h7 linked to both s2 and s3
-    s2.linkTo(h7)
-    s3.linkTo(h7)
-    # h8 is the ids.
+
+    s2 = net.addSwitch('s2')
+    s3 = net.addSwitch('s3')
+    s1 = net.addSwitch('s1')
+
+    s1.linkTo(h1)
+    s1.linkTo(h2)
+    s1.linkTo(h3)
+    s1.linkTo(h4)
+    s1.linkTo(h5)
+    s1.linkTo(h6)
+    s1.linkTo(h7)
+
     s2.linkTo(h8)
-    # h9 is our fake server.
-    # s2 linked to s3 via our router.
+    s3.linkTo(h8)
+
     s3.linkTo(h9)
 
     s3.linkTo(h10)
@@ -131,17 +117,17 @@ def setupTopology(controller_addr,dns_address, interface):
     s1.linkTo(s2)
 
 
-    h7.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
+    h8.cmdPrint('echo 0 > /proc/sys/net/ipv4/ip_forward')
     # Flush old rules.
-    h7.cmdPrint('iptables -F')
-    h7.cmdPrint('iptables -t nat -F')
-    h7.cmdPrint('iptables -t mangle -F')
-    h7.cmdPrint('iptables -X')
+    h8.cmdPrint('iptables -F')
+    h8.cmdPrint('iptables -t nat -F')
+    h8.cmdPrint('iptables -t mangle -F')
+    h8.cmdPrint('iptables -X')
 
     # Set up h3 to be our router (it has two interfaces).
-    h7.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
+    h8.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
     # Set up iptables to forward as NAT
-    h7.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
+    h8.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
 
     net.build()
     net.build()
@@ -171,31 +157,31 @@ def setupTopology(controller_addr,dns_address, interface):
     
     # Set up a routing rule on h2 to route packets via h3
     h1.cmdPrint('ip route del default')
-    h1.cmdPrint('ip route add default via 10.0.0.7 dev h1-eth0')
+    h1.cmdPrint('ip route add default via 10.0.0.8 dev h1-eth0')
 
     # Set up a routing rule on h2 to route packets via h3
     h2.cmdPrint('ip route del default')
-    h2.cmdPrint('ip route add default via 10.0.0.7 dev h2-eth0')
+    h2.cmdPrint('ip route add default via 10.0.0.8 dev h2-eth0')
 
     # Set up a routing rule on h2 to route packets via h7
     h3.cmdPrint('ip route del default')
-    h3.cmdPrint('ip route add default via 10.0.0.7 dev h3-eth0')
+    h3.cmdPrint('ip route add default via 10.0.0.8 dev h3-eth0')
 
     # Set up a routing rule on h2 to route packets via h3
     h4.cmdPrint('ip route del default')
-    h4.cmdPrint('ip route add default via 10.0.0.7 dev h4-eth0')
+    h4.cmdPrint('ip route add default via 10.0.0.8 dev h4-eth0')
 
     # Set up a routing rule on h5 to route packets via h3
     h5.cmdPrint('ip route del default')
-    h5.cmdPrint('ip route add default via 10.0.0.7 dev h5-eth0')
+    h5.cmdPrint('ip route add default via 10.0.0.8 dev h5-eth0')
 
     # h6 is a localhost.
     h6.cmdPrint('ip route del default')
-    h6.cmdPrint('ip route add default via 10.0.0.7 dev h6-eth0')
+    h6.cmdPrint('ip route add default via 10.0.0.8 dev h6-eth0')
 
     # The IDS runs on h8
-    h8.cmdPrint('ip route del default')
-    h8.cmdPrint('ip route add default via 10.0.0.7 dev h8-eth0')
+    h7.cmdPrint('ip route del default')
+    h7.cmdPrint('ip route add default via 10.0.0.8 dev h7-eth0')
 
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
@@ -212,9 +198,9 @@ def setupTopology(controller_addr,dns_address, interface):
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
 
     # Set up our router routes.
-    h7.cmdPrint('ip route add 203.0.113.13/32 dev h7-eth1')
-    h7.cmdPrint('ip route add 203.0.113.14/32 dev h7-eth1')
-    h7.cmdPrint('ifconfig h7-eth1 203.0.113.1 netmask 255.255.255.0')
+    h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
+    h8.cmdPrint('ip route add 203.0.113.14/32 dev h8-eth1')
+    h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
