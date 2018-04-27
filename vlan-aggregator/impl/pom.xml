@@ -57,11 +57,8 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>sdnmud-api</artifactId>
-			<version>${project.version}</version>
-		</dependency -->
+		<!-- dependency> <groupId>${project.groupId}</groupId> <artifactId>sdnmud-api</artifactId> 
+			<version>${project.version}</version> </dependency -->
 
 		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
@@ -109,6 +106,15 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.opendaylight.l2switch</groupId>
+			<artifactId>odl-l2switch-all</artifactId>
+		    <version>0.6.1</version>
+			<type>xml</type>
+			<classifier>features</classifier>
+            <scope>compile</scope>
+		</dependency>
+
 
 		<dependency>
 			<!-- https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/genius/mdsalutil-api/ -->
@@ -119,14 +125,23 @@
 			<scope>compile</scope>
 		</dependency>
 
-        <dependency>
-           <groupId>org.opendaylight.controller</groupId>
-           <artifactId>liblldp</artifactId>
-           <version>0.13.2</version>
-           <scope>compile</scope>
-        </dependency>
+		<dependency>
+			<!-- https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/genius/mdsalutil-api/ -->
+			<!-- odl-genius-api -->
+			<groupId>org.opendaylight.genius</groupId>
+			<artifactId>interfacemanager-api</artifactId>
+			<version>0.3.1</version>
+			<scope>compile</scope>
+		</dependency>
 
-       <dependency>
+		<dependency>
+			<groupId>org.opendaylight.controller</groupId>
+			<artifactId>liblldp</artifactId>
+			<version>0.13.2</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>baseapp-impl</artifactId>
 			<version>0.1.0</version>

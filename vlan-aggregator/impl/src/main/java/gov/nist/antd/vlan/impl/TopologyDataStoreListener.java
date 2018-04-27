@@ -8,18 +8,21 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.top
 
 class TopologyDataStoreListener implements DataTreeChangeListener<Topology> {
 
-  private VlanProvider vlanProvider;
+    private VlanProvider vlanProvider;
 
-  TopologyDataStoreListener(VlanProvider vlanProvider) {
-    this.vlanProvider = vlanProvider;
-  }
-
-  @Override
-  public void onDataTreeChanged(Collection<DataTreeModification<Topology>> changes) {
-    for (DataTreeModification<Topology> change : changes) {
-      Topology topology = change.getRootNode().getDataAfter();
-      this.vlanProvider.setTopology(topology);
+    TopologyDataStoreListener(VlanProvider vlanProvider) {
+        this.vlanProvider = vlanProvider;
     }
-  }
+
+    @Override
+    public void onDataTreeChanged(Collection<DataTreeModification<Topology>> changes) {
+        for (DataTreeModification<Topology> change : changes) {
+            Topology topology = change.getRootNode().getDataAfter();
+            this.vlanProvider.setTopology(topology);
+        }
+        if (vlanProvider.getWakeupListener() != null ) {
+            this.vlanProvider.getWakeupListener().installInitialFlows();
+        }
+    }
 
 }

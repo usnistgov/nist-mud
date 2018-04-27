@@ -85,9 +85,9 @@ def setupTopology(controller_addr,dns_address, interface):
     h6 = net.addHost('h6')
 
     # Switch s2 is the "multiplexer".
-    s2 = net1.addSwitch('s2')
+    s2 = net.addSwitch('s2')
 
-    s3 = net.addSwitch('s3')
+    s3 = net1.addSwitch('s3')
 
 
     # h7 and h9 are on a VLAN
@@ -176,8 +176,16 @@ def setupTopology(controller_addr,dns_address, interface):
     # Start dnsmasq (our dns server).
     h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
 
+    time.sleep(10)
     
-    #h1.cmdPrint("ping 10.0.0.7")
+    print "Should see at least 10 successful pings"
+    #h1.cmdPrint("ping 10.0.0.9 -c 20")
+
+    print "Should see at least 10 successful pings"
+    #h1.cmdPrint("ping 10.0.0.2 -c 10")
+  
+    print "Should see at most 1 successful ping"
+    #h1.cmdPrint("ping 10.0.0.8 -c 10")
 
 
     print "*********** System ready *********"
@@ -250,7 +258,7 @@ if __name__ == '__main__':
 
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("npenodes.json","nist-network-topology:topology")}:
+    for (configfile,suffix) in {("npenodes.json","nist-network-topology:topology"), ("vlans.json","nist-network-topology:trunk-switches")}:
         print "configfile ",configfile
         data = json.load(open(configfile))
         print "configfile", configfile

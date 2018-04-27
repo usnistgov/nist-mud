@@ -26,9 +26,34 @@ module nist-network-topology {
       "Vlan tag manager";
   }
 
+  grouping trunks {
+      description
+          "Trunk port configuration";
+      list npe-switches {
+        leaf switch-id {
+            description 
+               "the NPE switch identifier, eg: openflow2 ";
+            type string;
+        }
+     
+        leaf trunk-interface {
+            description
+             "The physical interface for the trunk port";
+            type string;
+        }
+
+        leaf-list  vlans {
+            description
+             "The vlan tags to be sent to this trunk port";
+            type int32;
+        }
+     }
+  }
+
   grouping links {
       description
-          "A list of accounts";
+          "A list of links";
+
       list link {
          key tag;
          leaf tag  {
@@ -75,6 +100,13 @@ module nist-network-topology {
           "Network topology gives an association between npe switches and 
           sets of CPE switches";
       uses links;
+  }
+
+  container trunk-switches  {
+      description
+          "Trunk switches that route packets to the CPE cloud";
+      uses trunks;
+
   }
 
 }
