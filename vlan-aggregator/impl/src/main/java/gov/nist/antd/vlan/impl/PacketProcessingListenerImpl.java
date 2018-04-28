@@ -21,6 +21,7 @@
 package gov.nist.antd.vlan.impl;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.opendaylight.controller.liblldp.BitBufferHelper;
@@ -59,7 +60,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.ethernet.rev140528.e
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
-import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,7 +77,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
     private VlanProvider vlanProvider;
 
-    private ListenerRegistration<PacketProcessingListenerImpl> listenerRegistration;
+    private HashMap<FlowId, FlowBuilder> flowRuleCache = new HashMap<>();
 
     private static final Logger LOG = LoggerFactory
             .getLogger(PacketProcessingListenerImpl.class);
@@ -230,19 +230,6 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
         this.vlanProvider = vlanProvider;
     }
 
-    /**
-     * Get the Node for a given MAC address.
-     *
-     * @param macAddress
-     * @param node
-     * @return
-     */
-
-    public void setListenerRegistration(
-            ListenerRegistration<PacketProcessingListenerImpl> registration) {
-        this.listenerRegistration = registration;
-    }
-
     private void transmitPacket(byte[] payload, String outputPortUri) {
         TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder()
                 .setPayload(payload).setBufferId(OFConstants.OFP_NO_BUFFER);
@@ -261,21 +248,27 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
         vlanProvider.getPacketProcessingService().transmitPacket(tpib.build());
     }
 
-    private void installInputPortVlanMatchSendToOutputPortFlowRule(String inputPort, int vlanId, String outputPort,
+    private void installInputPortVlanMatchSendToOutputPortFlowRule(
+            String inputPort, int vlanId, String outputPort,
             InstanceIdentifier<FlowCapableNode> node) {
-        short tableId = BaseappConstants.SET_VLAN_RULE_TABLE;
-        String flowIdStr = "/vlan/" + inputPort + ":" + vlanId + ":" + outputPort;
+        short tableId = BaseappConstants.DETECT_EXTERNAL_ARP_TABLE;
+        String flowIdStr = "/vlan/" + inputPort + ":" + vlanId + ":"
+                + outputPort;
 
         FlowId flowId = new FlowId(flowIdStr);
-        String destinationId = InstanceIdentifierUtils.getNodeUri(node);
-        FlowCookie newFlowCookie = InstanceIdentifierUtils
-                .createFlowCookie(destinationId);
-        FlowBuilder fb = FlowUtils
-                .createVlanAndPortMatchSendToPort(inputPort,
-                        outputPort, vlanId,
-                        tableId,
-                        0, flowId, newFlowCookie);
-        vlanProvider.getFlowCommitWrapper().writeFlow(fb,node);
+
+        FlowBuilder fb = this.flowRuleCache.get(flowId);
+        if (fb == null) {
+            String destinationId = InstanceIdentifierUtils.getNodeUri(node);
+            FlowCookie newFlowCookie = InstanceIdentifierUtils
+                    .createFlowCookie(destinationId);
+            fb = FlowUtils.createVlanAndPortMatchSendToPort(inputPort,
+                    outputPort, vlanId, tableId, BaseappConstants.CACHE_TIMEOUT,
+                    flowId, newFlowCookie);
+            this.flowRuleCache.put(flowId, fb);
+        }
+        vlanProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
     }
 
     @Override
@@ -470,7 +463,8 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
                                 .getInterfaceManagerRpcService()
                                 .getPortFromInterface(gpfib.build()).get()
                                 .getResult().getPortno();
-                        LOG.info("port number for eth3 " + trunkPortNo);
+                        LOG.info("port number for interface " + ifce
+                                + " trunkPortNumber = " + trunkPortNo);
                     } catch (Exception e) {
                         // TODO Auto-generated catch block
                         LOG.error("Error getting port number for eth3 ", e);
@@ -489,16 +483,15 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
                         String outputPort = notification.getMatch().getInPort()
                                 .getValue();
 
-                        installInputPortVlanMatchSendToOutputPortFlowRule(inputPort,vlanId, outputPort,
-                                destinationNode);
-
+                        installInputPortVlanMatchSendToOutputPortFlowRule(
+                                inputPort, vlanId, outputPort, destinationNode);
 
                         inputPort = notification.getMatch().getInPort()
                                 .getValue();
                         outputPort = String.valueOf((int) trunkPortNo);
 
-                        installInputPortVlanMatchSendToOutputPortFlowRule(inputPort,vlanId, outputPort,
-                                destinationNode);
+                        installInputPortVlanMatchSendToOutputPortFlowRule(
+                                inputPort, vlanId, outputPort, destinationNode);
 
                     }
                 } else {

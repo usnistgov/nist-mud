@@ -59,7 +59,7 @@ class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapableNode>
 
             FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri);
             FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeUri);
-            FlowBuilder fb = FlowUtils.createVlanArpMatchSendToControllerAndGoToTable(tableId, timeout, flowId, flowCookie);
+            FlowBuilder fb = FlowUtils.createVlanIpMatchSendToControllerAndGoToTable(tableId, timeout, flowId, flowCookie);
             vlanProvider.getFlowCommitWrapper().deleteFlows(node, nodeUri, tableId, null);
             vlanProvider.getFlowCommitWrapper().writeFlow(fb, node);
         }

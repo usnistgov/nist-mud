@@ -303,6 +303,8 @@ class FlowUtils {
         return new Ipv4Prefix(ipv4AddressString + "/32");
     }
 
+
+
     private static MatchBuilder createDestIpv4Match(MatchBuilder matchBuilder, Ipv4Address ipv4Address) {
         Ipv4MatchBuilder imb = new Ipv4MatchBuilder();
         Ipv4Prefix ip4Prefix = iPv4PrefixFromIPv4Address(ipv4Address.getValue());
@@ -1482,6 +1484,29 @@ class FlowUtils {
         return flowBuilder;
     }
 
+    public static FlowBuilder createVlanIpMatchSendToControllerAndGoToTable(short tableId, int timeout, FlowId flowId,
+            FlowCookie flowCookie) {
+        FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("vlanIpMatchSendToControllerAndGoToTable")
+                .setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+        MatchBuilder matchBuilder = new MatchBuilder();
+        FlowUtils.createIpV4Match(matchBuilder);
+        FlowUtils.createVlanPresentMatch(matchBuilder);
+        List<Instruction> instructions = new ArrayList<Instruction>();
+
+        Instruction instruction = FlowUtils.createSendPacketToControllerInstruction();
+        instructions.add(instruction);
+        Instruction gotoNextInstruction = FlowUtils.createGoToTableInstruction((short) (tableId + 1));
+        instructions.add(instruction);
+        instructions.add(gotoNextInstruction);
+        InstructionsBuilder isb = new InstructionsBuilder();
+        isb.setInstruction(instructions);
+        flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+        .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout)
+        .setIdleTimeout(2*timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+
+        return flowBuilder;
+    }
+
     public static FlowBuilder createSrcPortMatchSetVlanTagAndSendToPort(String inputPort, String outputPort,
             int vlanTag, short tableId, int timeout, FlowId flowId, FlowCookie flowCookie) {
         FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("srcPortMatchSetVlanTagAndSendToPort")
@@ -1518,7 +1543,7 @@ class FlowUtils {
         InstructionsBuilder isb = new InstructionsBuilder();
         isb.setInstruction(instructions);
         flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-        .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(cacheTimeout/2)
+        .setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(cacheTimeout/2)
         .setIdleTimeout(cacheTimeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
         return flowBuilder;

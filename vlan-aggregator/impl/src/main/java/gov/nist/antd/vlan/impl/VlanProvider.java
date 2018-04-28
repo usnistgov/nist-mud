@@ -122,8 +122,6 @@ public class VlanProvider {
                 this);
         ListenerRegistration<PacketProcessingListenerImpl> registration = notificationService
                 .registerNotificationListener(packetInDispatcher);
-        packetInDispatcher.setListenerRegistration(registration);
-
         this.wakeupListener = new WakeupOnFlowCapableNode(this);
         final DataTreeIdentifier<FlowCapableNode> dataTreeIdentifier = new DataTreeIdentifier<FlowCapableNode>(
                 LogicalDatastoreType.OPERATIONAL, getFlowCapableNodeWildcardPath());
