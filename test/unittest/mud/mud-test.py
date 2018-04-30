@@ -19,6 +19,7 @@ import json
 from mininet.log import setLogLevel 
 import unittest
 import re
+import os
 
 
 #########################################################
@@ -32,6 +33,12 @@ class TestAccess(unittest.TestCase) :
     def setUp(self):
         pass
 
+    def tearDown(self):
+	try:
+            os.remove("index.html.1")
+        except OSError:
+            pass
+
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
         retval = re.search('\[rc=(.+?)\]',output)
@@ -41,7 +48,7 @@ class TestAccess(unittest.TestCase) :
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        result = h4.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
     def testUdpSameManPingExpectPass(self) :
@@ -272,7 +279,7 @@ if __name__ == '__main__':
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
 
-    parser.set_defaults(test=True)
+    parser.set_defaults(test=False)
 
     args = parser.parse_args()
     controller_addr = args.c
@@ -316,8 +323,8 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    if test:
-    	unittest.main()
-    else:
-    	cli()
+    # Let the servers start on the test network.
+    time.sleep(5)
+    unittest.main()
+    cli()
 
