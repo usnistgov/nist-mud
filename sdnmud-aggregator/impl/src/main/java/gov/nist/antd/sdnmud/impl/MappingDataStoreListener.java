@@ -92,29 +92,8 @@ public class MappingDataStoreListener
                     this.uriToMacs.put(uri, macs);
                 }
                 macs.add(mac);
-                /*
-                 * Remove the default mapping (the next flow miss will install
-                 * the right mapping). Find all the switches where this MAC
-                 * address has been seen.
-                 */
-                if (this.sdnmudProvider.getNodeId(mac) != null) {
-                    for (String nodeId : this.sdnmudProvider.getNodeId(mac)) {
-                        InstanceIdentifier<FlowCapableNode> node = this.sdnmudProvider
-                                .getNode(nodeId);
-                        if (node != null) {
-                            MudFlowsInstaller
-                                    .installStampManufacturerModelFlowRules(mac,
-                                            uri.getValue(), this.sdnmudProvider,
-                                            node);
-                        }
-                    }
-                }
             }
         }
-    }
-
-    public Collection<MacAddress> getMacs(Uri uri) {
-        return this.uriToMacs.get(uri);
     }
 
     public Uri getMudUri(MacAddress macAddress) {

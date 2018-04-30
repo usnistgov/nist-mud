@@ -30,7 +30,6 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
-	time.sleep(10)
         pass
 
     def runAndReturnOutput(self, host, command ):
@@ -40,21 +39,44 @@ class TestAccess(unittest.TestCase) :
         rc = pieces[1].split(']')[0]
 	return rc
     
-    def testUdpPing(self) :
-        print "pinging a peer -- this should succeed with MUD"
+    def testNonIotHostHttpGetExpectPass(self):
+        h4 = hosts[3]
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
+
+    def testUdpSameManPingExpectPass(self) :
+        print "pinging a same manufacturer peer -- this should succeed with MUD"
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client")
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
-    def testHttpGet(self):
+    def testLocalNetPingExpectPass(self) :
+        print "pinging a same manufacturer peer -- this should succeed with MUD"
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+        self.assertTrue(int(result) >= 0, "expect successful ping")
+
+    def testUdpPingExpectFail(self):
+        print "pinging a peer -- this should fail with MUD"
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
+        self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
+
+
+    def testHttpGetExpectPass(self):
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
         print "result = ",result
+        # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
+
+    def testHttpGetExpectFail(self):
         print "Wgetting from antd.local -- this should fail with MUD"
+        # Check to see if the result was unsuccessful.
         result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+
 
 
 #########################################################
@@ -71,7 +93,7 @@ def cli():
     net.stop()
 
 
-def setupTopology(controller_addr,dns_address, interface):
+def setupTopology(controller_addr):
     global net,c1,s1,s2,s3
     global h1,h2,h3,h4,h5,h6,h7,h8,h9,h10
     "Create and run multiple link network"
@@ -110,9 +132,9 @@ def setupTopology(controller_addr,dns_address, interface):
     hosts.append(h9)
     hosts.append(h10)
 
-    s2 = net.addSwitch('s2',dpid="0000000000000001")
-    s3 = net.addSwitch('s3',dpid="0000000000000002")
-    s1 = net.addSwitch('s1',dpid="0000000000000003")
+    s2 = net.addSwitch('s2',dpid="2")
+    s3 = net.addSwitch('s3',dpid="3")
+    s1 = net.addSwitch('s1',dpid="1")
 
     s1.linkTo(h1)
     s1.linkTo(h2)
@@ -220,22 +242,16 @@ def setupTopology(controller_addr,dns_address, interface):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     h2.cmdPrint("python udpping.py --port 4000 --server &")
-    # h6 is a localhost peer.
-    h6.cmdPrint("python udpping.py --port 8002 --server &")
+    h4.cmdPrint("python udpping.py --port 4000 --server &")
+    # h5 is a localhost peer.
+    h5.cmdPrint("python udpping.py --port 8000 --server &")
+    # h7 is the controller peer.
+    h7.cmdPrint("python udpping.py --port 8002 --server &")
     
     # Start the IDS on node 8
 
 
     print "*********** System ready *********"
-
-    print "Install mud rules python postit.sh"
-
-    print "register IDS python register-ids.sh"
-
-    print "Exercise system python udpping.py --client --host 10.0.0.2 --port 4000"
-    print "Exercise system python udpping.py --client --host 10.0.0.6 --port 8002"
-
-
 
     #net.stop()
 
@@ -254,16 +270,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
-    parser.add_argument("-i",help="Host interface to route packets out (the second NATTed interface)",default="eth2")
-    #parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="192.168.11.1")
-    
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
-    parser.add_argument("-t",help="Host only adapter address for test server",default = "192.168.56.102")
+
+    parser.set_defaults(test=True)
+
     args = parser.parse_args()
     controller_addr = args.c
-    dns_address = args.d
-    host_addr = args.t
-    interface = args.i
+    test = args.test
 
 
     cmd = ['sudo','mn','-c']
@@ -283,6 +296,7 @@ if __name__ == '__main__':
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
 
+    setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
         ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")}:
@@ -293,7 +307,6 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    setupTopology(controller_addr,dns_address,interface)
 
     for (configfile,suffix) in { ("ietfmud.json","ietf-mud:mud")} :
         data = json.load(open(configfile))
@@ -303,6 +316,8 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    unittest.main()
-    cli()
+    if test:
+    	unittest.main()
+    else:
+    	cli()
 

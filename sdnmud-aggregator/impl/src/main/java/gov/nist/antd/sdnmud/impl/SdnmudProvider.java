@@ -294,23 +294,6 @@ public class SdnmudProvider {
         return this.flowCommitWrapper;
     }
 
-    public synchronized void putInMacToNodeIdMap(MacAddress srcMac,
-            String nodeId) {
-        HashSet<String> nodes;
-        if (!macToNodeIdMap.containsKey(srcMac)) {
-            nodes = new HashSet<String>();
-            this.macToNodeIdMap.put(srcMac, nodes);
-        } else {
-            nodes = macToNodeIdMap.get(srcMac);
-        }
-        nodes.add(nodeId);
-    }
-
-    public synchronized Collection<String> getNodeId(
-            MacAddress deviceMacAddress) {
-        return this.macToNodeIdMap.get(deviceMacAddress);
-    }
-
     public NotificationService getNotificationService() {
         return this.notificationService;
     }
@@ -339,8 +322,7 @@ public class SdnmudProvider {
      *            -- the node URI
      * @return -- the flow capable node.
      */
-    synchronized InstanceIdentifier<FlowCapableNode> getNode(
-            String nodeUri) {
+    synchronized InstanceIdentifier<FlowCapableNode> getNode(String nodeUri) {
         return uriToNodeMap.get(nodeUri);
     }
 

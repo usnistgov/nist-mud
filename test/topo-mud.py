@@ -175,6 +175,8 @@ def setupTopology(controller_addr,dns_address, interface):
     #h2 is our peer same manufacturer host.
     h2.cmdPrint("python udpping.py --port 4000 --server &")
     # h6 is a localhost peer.
+    h4.cmdPrint("python udpping.py --port 4000 --server &")
+
     h6.cmdPrint("python udpping.py --port 8002 --server &")
     
     # Start the IDS on node 8

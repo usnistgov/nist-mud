@@ -8,11 +8,14 @@ from socket import *
 
 global timeoutCount
 
+global quiet
+
 
 def udp_client(host, port) :
     # Create a UDP socket
     # Notice the use of SOCK_DGRAM for UDP packets
     global timeoutCount
+    global quiet
     timeoutCount = 0
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
@@ -25,13 +28,19 @@ def udp_client(host, port) :
     for i in range(10):
         sendTime = time.time()
         message = 'PING ' + str(i + 1) + " " + str(time.strftime("%H:%M:%S"))
+        if not quiet:
+           print(message)           
         clientSocket.sendto(message, remoteAddr)
     
         try:
             data, server = clientSocket.recvfrom(1024)
             recdTime = time.time()
             rtt = recdTime - sendTime
+            if not quiet:
+                print ( "RTT = " + str(rtt) )
         except timeout:
+            if not quiet:
+                print ( "UDPPING FAILED " )
             timeoutCount = timeoutCount + 1
 
 
@@ -61,11 +70,15 @@ if __name__ == "__main__":
 
     print("start ...")
     global timeoutCount
+    global quiet
 
     parser = argparse.ArgumentParser('argument parser')
+    parser.add_argument("--quiet", 
+            action="store_true",dest='quiet', 
+                    help='client send ping')
 
     parser.add_argument("--port", 
-			type=int, default=None,
+            type=int, default=None,
             required=True,
                     help='listening port')
 
@@ -74,15 +87,16 @@ if __name__ == "__main__":
         
 
     parser.add_argument("--client",  
-			action="store_true",dest='client', 
+            action="store_true",dest='client', 
                     help='client send ping')
 
     parser.add_argument("--server",  
-			action="store_true",dest='server', 
+            action="store_true",dest='server', 
                     help='server respond to ping')
 
     parser.set_defaults(client=False)
     parser.set_defaults(server=False)
+    parser.set_defaults(quiet=False)
 
     args  = parser.parse_args()
 
@@ -90,6 +104,7 @@ if __name__ == "__main__":
 
     port = args.port
     host = args.host
+    quiet = args.quiet
     
     
     count = 0
