@@ -190,9 +190,6 @@ def setupTopology(controller_addr,dns_address, interface):
     print "Exercise system python udpping.py --client --host 10.0.0.6 --port 8002"
 
 
-    h1.cmdPrint("python udpping.py --port 4000 --host 10.0.0.2 --client")
-
-    h1.cmdPrint("wget http://www.nist.local")
 
     cli = CLI( net )
     h1.terminate()

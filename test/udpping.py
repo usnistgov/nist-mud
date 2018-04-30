@@ -8,11 +8,12 @@ from socket import *
 
 global timeoutCount
 
-timeoutCount = 0
 
 def udp_client(host, port) :
     # Create a UDP socket
     # Notice the use of SOCK_DGRAM for UDP packets
+    global timeoutCount
+    timeoutCount = 0
     clientSocket = socket(AF_INET, SOCK_DGRAM)
 
     # To set waiting time of one second for reponse from server
@@ -30,13 +31,8 @@ def udp_client(host, port) :
             data, server = clientSocket.recvfrom(1024)
             recdTime = time.time()
             rtt = recdTime - sendTime
-            print "Message Received", data
-            print "Round Trip Time", rtt
-            print
         except timeout:
-            print 'ERROR : REQUEST TIMED OUT'
             timeoutCount = timeoutCount + 1
-            print
 
 
 def udp_server(port) :
@@ -113,9 +109,9 @@ if __name__ == "__main__":
            print("Missing a required argument --host")
            sys.exit()
         udp_client(host,port)
-        return 10  - timeoutCount  
+        print "[rc=" + str(10  - timeoutCount ) + "]"
     elif args.server:
         udp_server(port)
-        return 0
+        sys.exit( 0 )
 
     

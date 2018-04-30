@@ -18,37 +18,43 @@ import requests
 import json
 from mininet.log import setLogLevel 
 import unittest
+import re
 
 
 #########################################################
 
+global hosts
+
+hosts = []
+
 class TestAccess(unittest.TestCase) :
 
-    def __init__(self,hosts):
-        self.hosts = hosts 
-
     def setUp(self):
-        print "hello world"
+	time.sleep(10)
+        pass
 
     def runAndReturnOutput(self, host, command ):
-        host.sendCmd(command)
-        result = host.sendCmd('echo $?')
-        return result
+        output = host.cmdPrint(command)
+        retval = re.search('\[rc=(.+?)\]',output)
+	pieces = retval.group(0).split('=')
+        rc = pieces[1].split(']')[0]
+	return rc
     
-    def testUdpPing() :
+    def testUdpPing(self) :
         print "pinging a peer -- this should succeed with MUD"
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client")
-        self.assertTrue(result >= 0, "expect successful ping")
+        self.assertTrue(int(result) >= 0, "expect successful ping")
 
-    def testHttpGet() :
+    def testHttpGet(self):
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
-        result = runAndReturnOutput(h1,"wget http://www.nist.local --timeout 10  --tries 1")
-        self.assertTrue(result == 0, "Expecting a successful get")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        print "result = ",result
+        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
         print "Wgetting from antd.local -- this should fail with MUD"
-        result = runAndReturnOutput(h1,"wget http://www.antd.local --timeout 10  --tries 1")
-        self.assertTrue(result != 0, "Expecting a failed get")
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
+        self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
 
 
 #########################################################
@@ -93,9 +99,20 @@ def setupTopology(controller_addr,dns_address, interface):
     h9 = net.addHost('h9')
     h10 = net.addHost('h10')
 
-    s2 = net.addSwitch('s2')
-    s3 = net.addSwitch('s3')
-    s1 = net.addSwitch('s1')
+    hosts.append(h1)
+    hosts.append(h2)
+    hosts.append(h3)
+    hosts.append(h4)
+    hosts.append(h5)
+    hosts.append(h6)
+    hosts.append(h7)
+    hosts.append(h8)
+    hosts.append(h9)
+    hosts.append(h10)
+
+    s2 = net.addSwitch('s2',dpid="0000000000000001")
+    s3 = net.addSwitch('s3',dpid="0000000000000002")
+    s1 = net.addSwitch('s1',dpid="0000000000000003")
 
     s1.linkTo(h1)
     s1.linkTo(h2)
@@ -109,7 +126,6 @@ def setupTopology(controller_addr,dns_address, interface):
     s3.linkTo(h8)
 
     s3.linkTo(h9)
-
     s3.linkTo(h10)
 
     # S2 is the NPE switch.
@@ -123,11 +139,11 @@ def setupTopology(controller_addr,dns_address, interface):
     h8.cmdPrint('iptables -t nat -F')
     h8.cmdPrint('iptables -t mangle -F')
     h8.cmdPrint('iptables -X')
+    h8.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
 
     # Set up h3 to be our router (it has two interfaces).
-    h8.cmdPrint('echo 1 > /proc/sys/net/ipv4/ip_forward')
     # Set up iptables to forward as NAT
-    h8.cmdPrint('iptables -t nat -A POSTROUTING -o h7-eth1 -s 10.0.0.0/24 -j MASQUERADE')
+    h8.cmdPrint('iptables -t nat -A POSTROUTING -o h8-eth1 -s 10.0.0.0/24 -j MASQUERADE')
 
     net.build()
     net.build()
@@ -136,7 +152,6 @@ def setupTopology(controller_addr,dns_address, interface):
     s2.start([c1])
     s3.start([c1])
 
-    net.start()
     net.start()
      
 
@@ -204,7 +219,6 @@ def setupTopology(controller_addr,dns_address, interface):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    #h2 is our peer same manufacturer host.
     h2.cmdPrint("python udpping.py --port 4000 --server &")
     # h6 is a localhost peer.
     h6.cmdPrint("python udpping.py --port 8002 --server &")
@@ -289,6 +303,6 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    doPingTest1()
+    unittest.main()
     cli()
 
