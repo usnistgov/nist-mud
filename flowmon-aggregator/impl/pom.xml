@@ -132,6 +132,15 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<!-- https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/genius/mdsalutil-api/ -->
+			<!-- odl-genius-api -->
+			<groupId>org.opendaylight.genius</groupId>
+			<artifactId>interfacemanager-api</artifactId>
+			<version>0.3.1</version>
+			<scope>compile</scope>
+		</dependency>
+
         <dependency>
            <groupId>org.opendaylight.controller</groupId>
            <artifactId>liblldp</artifactId>

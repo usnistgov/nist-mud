@@ -45,7 +45,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 
-abstract class InstanceIdentifierUtils {
+public abstract class InstanceIdentifierUtils {
 	private static AtomicLong flowIdInc = new AtomicLong();
 
 	public static int getFlowHash(String flowSpec) {
@@ -54,19 +54,18 @@ abstract class InstanceIdentifierUtils {
 		return Math.abs(flowSpec.hashCode()) % (1 << 20);
 	}
 	
-	static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
+	public static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
 		return node.firstKeyOf(Node.class).getId().getValue();
 
-	}
-
-	public static FlowId createFlowId(String mudUrl) {
-		return new FlowId(mudUrl + "&counter=" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	public static FlowCookie createFlowCookie(String flowCookieId) {
 		return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
 	}
 
-	
+    public static FlowId createFlowId(String uri) {
+        return new FlowId(
+                uri + ":" + String.valueOf(flowIdInc.getAndIncrement()));
+    }
 
 }

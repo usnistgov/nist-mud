@@ -312,7 +312,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
                 return;
             }
 
-            this.sdnmudProvider.putInMacToNodeIdMap(srcMac, nodeId);
             if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
                     || tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
                 // We got a notification for a device that is connected to this

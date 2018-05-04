@@ -73,6 +73,12 @@ module nist-flowmon-config {
             type int32;
             default 60000;
         }
+
+        leaf flowmon-interface {
+            description
+                "The port on which the flowmonitor will read the raw socket.";
+            type inet:uri;
+        }
      }
    }
 

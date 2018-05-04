@@ -8,14 +8,13 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.Mod
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
-
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.genius.interfacemanager.rpcs.rev160406.GetPortFromInterfaceInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,12 +65,20 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		return pieces[1];
 	}
 
-	
+	private static String getManufacturer(Uri flowSpec) {
+
+		if (flowSpec.getValue().equals(FlowmonConstants.UNCLASSIFIED))
+			return FlowmonConstants.UNCLASSIFIED;
+		String[] pieces = flowSpec.getValue().split(":");
+		return pieces[0];
+
+	}
+
 
 	/**
 	 * Flow to send the IDS HELLO to the controller if it has not already been
 	 * installed.
-	 * 
+	 *
 	 * @param nodeUri
 	 * @param node
 	 */
@@ -88,7 +95,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 
 	}
-	
+
 	public void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
 			InstanceIdentifier<FlowCapableNode> node) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
@@ -97,19 +104,85 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
+	public synchronized void installDivertToIdsFlow(InstanceIdentifier<FlowCapableNode> node) {
+
+		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+		int duration = flowmonProvider.getFlowmonConfig(nodeId).getFilterDuration();
+		LOG.debug("flowmonRegistration: duration = " + duration);
+
+		/* get the cpe nodes corresponding to this VNF node */
+		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
+
+			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
+			String ifce  = flowmonConfigData.getFlowmonInterface().getValue();
+			long trunkPortNo = -1;
+
+			try {
+				GetPortFromInterfaceInputBuilder gpfib = new GetPortFromInterfaceInputBuilder();
+				gpfib.setIntfName(ifce);
+				trunkPortNo = flowmonProvider
+						.getInterfaceManagerRpcService()
+						.getPortFromInterface(gpfib.build()).get()
+						.getResult().getPortno();
+				LOG.info("port number for interface " + ifce
+						+ " trunkPortNumber = " + trunkPortNo);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				LOG.error("Error getting port number for interface " + ifce, e);
+				return;
+			}
+
+			String flowmonPorts = Integer.toString((int)trunkPortNo);
+
+			LOG.info("installDivertToIdsFlow : nodeId " + nodeId + " Switch " + vnfSwitch);
+			if (nodeId.equals(vnfSwitch)) {
+				for (Uri uri : flowmonConfigData.getFlowSpec()) {
+					String manufacturer = getManufacturer(uri);
+					LOG.info("installDivertToIdsFlow : manufacturer " + manufacturer);
+
+					String flowType = getFlowType(uri);
+					if (flowType.equals(FlowmonConstants.REMOTE) || flowType.equals(FlowmonConstants.UNCLASSIFIED)) {
+						FlowId flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+						// Strip MPLS tag and go to the L2 switch.
+						BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
+
+						FlowBuilder flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId,
+								metadata, FlowmonConstants.SRC_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE,
+								flowmonPorts, flowmonConfigData.getFilterDuration());
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+
+						flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
+
+						metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT);
+
+						flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId, metadata,
+								FlowmonConstants.DST_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE, flowmonPorts,
+								flowmonConfigData.getFilterDuration());
+
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+					}
+				}
+			}
+		}
+	}
+
 	public void installDefaultFlows() {
-		if (flowmonProvider.getTopology() == null || flowmonProvider.getFlowmonConfigs().isEmpty()) {
+		if (flowmonProvider.getFlowmonConfigs().isEmpty()) {
 			LOG.info("WakeupOnFlowCapableNode : installDefaultFlows : configuration is incomplete");
 			return;
 		}
 		for (InstanceIdentifier<FlowCapableNode> flowCapableNode : this.pendingNodes) {
 			String nodeUri = InstanceIdentifierUtils.getNodeUri(flowCapableNode);
 			LOG.info("WakeupOnFlowCapableNode : installDefaultFlows " + nodeUri + " isVnfSwitch = "
-					+ this.flowmonProvider.isVnfSwitch(nodeUri) + " iscpeSwitch = "
-					+ this.flowmonProvider.isCpeNode(nodeUri));
+					+ this.flowmonProvider.isVnfSwitch(nodeUri));
 			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
-				this.installSendFlowmonHelloToControllerFlows(flowCapableNode);
-				this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowCapableNode);
+				//this.installSendFlowmonHelloToControllerFlows(flowCapableNode);
+				this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
+						flowCapableNode);
+				this.installDivertToIdsFlow(flowCapableNode);
 			}
 		}
 		this.pendingNodes.clear();
@@ -117,7 +190,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	/**
 	 * This gets invoked when a switch appears and connects.
-	 * 
+	 *
 	 * @param nodePath
 	 *            -- the node path.
 	 *
@@ -128,26 +201,26 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		LOG.info("WakeupOnFlowCapableNode : onFlowCapableSwitchAppeared");
 		// The URI identifies the node instance.
-		LOG.info("node URI " + nodeUri + " nodePath " + nodePath);
+		LOG.info("node URI " + nodeUri );
 		// Stash away the URI to node path so we can reference it later.
 		this.flowmonProvider.putInUriToNodeMap(nodeUri, nodePath);
-		if (flowmonProvider.getTopology() == null || flowmonProvider.getFlowmonConfigs().isEmpty()) {
+		if (flowmonProvider.getFlowmonConfigs().isEmpty()) {
 			LOG.info("WakeupOnFlowCapableNode : adding node to pending nodes");
 			this.pendingNodes.add(nodePath);
 			return;
 		}
 		if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
-			if (this.flowmonProvider.isVnfSwitch(nodeUri)) {
-				this.installSendFlowmonHelloToControllerFlows(nodePath);
-			}
-			this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath);
+			//this.installSendFlowmonHelloToControllerFlows(nodePath);
+			this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
+					nodePath);
+			this.installDivertToIdsFlow(nodePath);
 		}
 
 	}
 
 	/**
 	 * Deal with disconnection of the switch.
-	 * 
+	 *
 	 * @param nodePath
 	 *            - the instance id of the disconnecting switch.
 	 */

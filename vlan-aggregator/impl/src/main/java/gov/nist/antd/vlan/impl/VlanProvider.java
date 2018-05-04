@@ -8,19 +8,18 @@ package gov.nist.antd.vlan.impl;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Links;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Topology;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.TrunkSwitches;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.Trunks;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.trunks.NpeSwitches;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.trunks.Forwarders;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.genius.interfacemanager.rpcs.rev160406.OdlInterfaceRpcService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
@@ -45,7 +44,6 @@ public class VlanProvider {
 
     private HashMap<String, InstanceIdentifier<FlowCapableNode>> uriToNodeMap = new HashMap<>();
 
-    private Topology topology;
 
     private NotificationService notificationService;
 
@@ -60,6 +58,8 @@ public class VlanProvider {
     private OdlInterfaceRpcService ifMRpcService;
 
     private Trunks trunks;
+
+    private Links links;
 
     private TrunkConfigDataStoreListener trunksDataStoreListener;
 
@@ -157,10 +157,6 @@ public class VlanProvider {
         this.uriToNodeMap.remove(nodeUri);
     }
 
-    void setTopology(Topology topology) {
-        this.topology = topology;
-    }
-
     synchronized InstanceIdentifier<FlowCapableNode> getNode(String nodeUri) {
         return uriToNodeMap.get(nodeUri);
     }
@@ -169,48 +165,10 @@ public class VlanProvider {
         return uriToNodeMap.values();
     }
 
-    Topology getTopology() {
-        return topology;
-    }
-
-    Collection<InstanceIdentifier<FlowCapableNode>> getCpeNodes() {
-        Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
-        if (this.topology != null) {
-            for (Link link : this.topology.getLink()) {
-                Uri cpeUri = link.getCpeSwitch();
-                if (this.uriToNodeMap.containsKey(cpeUri.getValue())) {
-                    retval.add(this.uriToNodeMap.get(cpeUri.getValue()));
-                }
-            }
-        }
-        return retval;
-    }
-
-    Collection<InstanceIdentifier<FlowCapableNode>> getNpeNodes() {
-        Collection<InstanceIdentifier<FlowCapableNode>> retval = new HashSet<>();
-        for (Link link : topology.getLink()) {
-            if (this.uriToNodeMap.containsKey(link.getNpeSwitch().getValue())) {
-                retval.add(
-                        this.uriToNodeMap.get(link.getNpeSwitch().getValue()));
-            }
-        }
-        return retval;
-    }
-
     boolean isNpeSwitch(String nodeUri) {
-        if (this.topology != null) {
-            for (Link link : this.topology.getLink()) {
-                if (link.getNpeSwitch().getValue().equals(nodeUri))
-                    return true;
-            }
-        }
-        return false;
-    }
-
-    boolean isVnfSwitch(String nodeUri) {
-        if (this.topology != null) {
-            for (Link link : this.topology.getLink()) {
-                if (link.getVnfSwitch().getValue().equals(nodeUri))
+        if (this.trunks != null) {
+            for (Forwarders link : trunks.getForwarders()) {
+                if (link.getSwitchId().getValue().equals(nodeUri))
                     return true;
             }
         }
@@ -218,38 +176,23 @@ public class VlanProvider {
     }
 
     boolean isCpeNode(String nodeId) {
-        if (this.topology != null) {
-            for (Link link : this.topology.getLink()) {
-                if (link.getCpeSwitch().getValue().equals(nodeId)) {
+        if ( this.links != null) {
+            for( Link link : this.links.getLink()) {
+                if ( link.getCpeSwitch().getValue().equals(nodeId)) {
                     return true;
                 }
             }
         }
+        LOG.info("isCpeNode " + nodeId + " is false");
         return false;
     }
 
-    WakeupOnFlowCapableNode  getWakeupListener() {
-        return this.wakeupListener;
-    }
-
     int getCpeTag(String nodeId) {
-        if (this.topology != null) {
-            for (Link link : this.topology.getLink()) {
-                if (link.getCpeSwitch().getValue().equals(nodeId)) {
-                    return link.getTag().intValue();
+        if (this.trunks != null) {
+            for( Link link : this.links.getLink()) {
+                if ( link.getCpeSwitch().getValue().equals(nodeId)) {
+                    return link.getVlan();
                 }
-            }
-        } else {
-            LOG.error("getCpeTag : topology is null");
-        }
-        LOG.error("getCpeTag : " + nodeId);
-        return -1;
-    }
-
-    public int getVnfTag(String nodeId) {
-        for (Link link : this.topology.getLink()) {
-            if (link.getVnfSwitch().getValue().equals(nodeId)) {
-                return link.getTag().intValue();
             }
         }
         return -1;
@@ -259,14 +202,12 @@ public class VlanProvider {
         return this.ifMRpcService;
     }
 
-    public void addTrunks(Trunks trunks) {
-        this.trunks = trunks;
-    }
+
 
     public String getTrunkInterface(String switchId, int vlanTag) {
         if (trunks != null) {
-            for (NpeSwitches npeSwitch : trunks.getNpeSwitches()) {
-                if (npeSwitch.getSwitchId().equals(switchId)) {
+            for (Forwarders npeSwitch : trunks.getForwarders()) {
+                if (npeSwitch.getSwitchId().getValue().equals(switchId)) {
                     for (int vlanId : npeSwitch.getVlans()) {
                         if (vlanId == vlanTag) {
                             return npeSwitch.getTrunkInterface();
@@ -276,6 +217,33 @@ public class VlanProvider {
             }
         }
         return null;
+    }
+
+    public String getUplinkInterface(String switchId) {
+        if (links != null) {
+            for ( Link link: this.links.getLink()) {
+                if ( link.getCpeSwitch().getValue().equals(switchId)) {
+                    return link.getUplinkInterface();
+                }
+            }
+        }
+        return null;
+    }
+
+    public void setTrunks(Trunks trunks) {
+        this.trunks = trunks;
+    }
+
+    public void setLinks(Links links) {
+        this.links = links;
+    }
+
+    WakeupOnFlowCapableNode  getWakeupListener() {
+        return this.wakeupListener;
+    }
+
+    public boolean isConfigured() {
+        return  this.links != null && this.trunks != null;
     }
 
 }

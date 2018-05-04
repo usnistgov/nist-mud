@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright (c) Public Domain
  *This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
@@ -20,13 +20,12 @@
  */
 /**
  * Collection of constants used in the implementation.
- * 
+ *
  */
 
 package gov.nist.antd.baseapp.impl;
 
 import java.math.BigInteger;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
 public interface BaseappConstants {
 
@@ -66,12 +65,12 @@ public interface BaseappConstants {
 
 	public static final String PASSTHRU = "PASSTHRU";
 
-    // Default cache timeout.
+	// Default cache timeout.
 	public static final Integer CACHE_TIMEOUT = 120;
-	
+
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;
 	public static final BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF",16);
-	
+
 
 }

@@ -1,30 +1,14 @@
 package gov.nist.antd.flowmon.impl;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-
 import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.NetUtils;
-import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -42,7 +26,7 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 	/**
 	 * PacketIn dispatcher. Gets called when packet is received.
-	 * 
+	 *
 	 * @param sdnMudHandler
 	 * @param mdsalApiManager
 	 * @param flowCommitWrapper
@@ -54,7 +38,7 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 	/**
 	 * Get the Node for a given MAC address.
-	 * 
+	 *
 	 * @param macAddress
 	 * @param node
 	 * @return
@@ -78,7 +62,7 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 
 	@Override
 	public void onPacketReceived(PacketReceived notification) {
-		if (this.flowmonProvider.getTopology() == null) {
+		if (!this.flowmonProvider.isInitialized()) {
 			LOG.error("Topology node not found -- ignoring packet");
 			return;
 		}
@@ -121,10 +105,10 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 			this.flowmonProvider.setFlowmonOutputPort(destinationId, matchInPortUri);
 			return;
 		} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-		     if ( flowmonProvider.isVnfSwitch(destinationId)) {
-		    	 Uri mudUri = flowmonProvider.getMudUri(srcMac);
-		    	 InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
-		    	 MappingDataStoreListener.installStampManufacturerFlowRule(flowmonProvider, srcMac,mudUri, flowmonNode);
+			if ( flowmonProvider.isVnfSwitch(destinationId)) {
+				Uri mudUri = flowmonProvider.getMudUri(srcMac);
+				InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
+				MappingDataStoreListener.installStampManufacturerFlowRule(flowmonProvider, srcMac,mudUri, flowmonNode);
 			}
 
 		}

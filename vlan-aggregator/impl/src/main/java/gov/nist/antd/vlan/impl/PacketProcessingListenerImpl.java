@@ -65,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
+import gov.nist.antd.baseapp.impl.InstanceIdentifierUtils;
 
 public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
@@ -77,7 +78,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
     private VlanProvider vlanProvider;
 
-    private HashMap<FlowId, FlowBuilder> flowRuleCache = new HashMap<>();
+    private HashMap<String, FlowBuilder> flowRuleCache = new HashMap<>();
 
     private static final Logger LOG = LoggerFactory
             .getLogger(PacketProcessingListenerImpl.class);
@@ -257,7 +258,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
 
         FlowId flowId = new FlowId(flowIdStr);
 
-        FlowBuilder fb = this.flowRuleCache.get(flowId);
+        FlowBuilder fb = this.flowRuleCache.get(flowIdStr);
         if (fb == null) {
             String destinationId = InstanceIdentifierUtils.getNodeUri(node);
             FlowCookie newFlowCookie = InstanceIdentifierUtils
@@ -265,15 +266,18 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
             fb = FlowUtils.createVlanAndPortMatchSendToPort(inputPort,
                     outputPort, vlanId, tableId, BaseappConstants.CACHE_TIMEOUT,
                     flowId, newFlowCookie);
-            this.flowRuleCache.put(flowId, fb);
+            this.flowRuleCache.put(flowIdStr, fb);
         }
+
+        vlanProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
+                tableId, null);
         vlanProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
     }
 
     @Override
     public void onPacketReceived(PacketReceived notification) {
-        if (this.vlanProvider.getTopology() == null) {
+        if (! this.vlanProvider.isConfigured()) {
             LOG.error("Topology node not found -- ignoring packet");
             return;
         }
@@ -313,7 +317,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
                 + " srcMac " + srcMac.getValue() + " dstMac "
                 + dstMac.getValue() + " etherType = " + etherType);
 
-        if (vlanProvider.getTopology() == null) {
+        if (! vlanProvider.isConfigured()) {
             LOG.info("Topology not yet registered -- dropping packet");
             return;
         }
@@ -331,51 +335,7 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
                     + " destinationId " + destinationId + " systemName = "
                     + systemName);
 
-            if (vlanProvider.isCpeNode(destinationId)) {
-                FlowId flowId = InstanceIdentifierUtils
-                        .createFlowId(destinationId);
-                FlowCookie flowCookie = InstanceIdentifierUtils
-                        .createFlowCookie("PORT_MATCH_VLAN_" + destinationId);
-                // Push a flow that detects and inbound ARP from the external
-                // port (from which we just saw the LLDP packet.
-                FlowBuilder fb = FlowUtils
-                        .createMatchPortArpMatchSendPacketToControllerAndGoToTableFlow(
-                                notification.getMatch().getInPort(),
-                                BaseappConstants.DETECT_EXTERNAL_ARP_TABLE,
-                                BaseappConstants.CACHE_TIMEOUT, flowId,
-                                flowCookie);
-
-                vlanProvider.getFlowCommitWrapper().writeFlow(fb,
-                        destinationNode);
-
-                int tag = vlanProvider.isCpeNode(destinationId)
-                        ? (int) vlanProvider.getCpeTag(destinationId)
-                                : vlanProvider.getVnfTag(destinationId);
-
-                        flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-                        flowCookie = InstanceIdentifierUtils.createFlowCookie(
-                                "NO_VLAN_MATCH_PUSH_ARP_" + destinationId);
-
-                        // The following sends two copies of the ARP through the
-                        // external port. One with VLAN tag and one without.
-                        fb = FlowUtils
-                                .createNoVlanArpMatchPushVlanSendToPortAndGoToTable(
-                                        notification.getMatch().getInPort().getValue(),
-                                        tag, BaseappConstants.PUSH_VLAN_ON_ARP_TABLE,
-                                        BaseappConstants.CACHE_TIMEOUT, flowId,
-                                        flowCookie);
-
-                        vlanProvider.getFlowCommitWrapper().writeFlow(fb,
-                                destinationNode);
-                        flowId = InstanceIdentifierUtils.createFlowId(destinationId);
-                        flowCookie = InstanceIdentifierUtils.createFlowCookie(
-                                "VLAN_MATCH_POP_ARP_" + destinationId);
-
-                        fb = FlowUtils.createVlanMatchPopVlanTagAndGoToTable(flowCookie,
-                                flowId, BaseappConstants.STRIP_VLAN_TABLE, tag);
-                        vlanProvider.getFlowCommitWrapper().writeFlow(fb,
-                                destinationNode);
-            } else if (!vlanProvider.isNpeSwitch(destinationId)) {
+            if (!vlanProvider.isNpeSwitch(destinationId) && !vlanProvider.isNpeSwitch(destinationId)) {
 
                 FlowId flowId = InstanceIdentifierUtils
                         .createFlowId(destinationId);

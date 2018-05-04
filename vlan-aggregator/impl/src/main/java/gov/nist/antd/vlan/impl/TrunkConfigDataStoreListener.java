@@ -20,7 +20,10 @@ public class TrunkConfigDataStoreListener implements DataTreeChangeListener<Trun
             Collection<DataTreeModification<TrunkSwitches>> changes) {
         for (DataTreeModification<TrunkSwitches> change : changes) {
             Trunks trunks = change.getRootNode().getDataAfter();
-            this.vlanProvider.addTrunks(trunks);
+            this.vlanProvider.setTrunks(trunks);
+        }
+        if (vlanProvider.getWakeupListener() != null && this.vlanProvider.isConfigured() ) {
+            this.vlanProvider.getWakeupListener().installInitialFlows();
         }
     }
 

@@ -19,34 +19,31 @@
  */
 /**
  * Collection of constants used in the implementation.
- * 
+ *
  */
 
 package gov.nist.antd.flowmon.impl;
 
 import java.math.BigInteger;
+
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 
 public interface FlowmonConstants {
-	public static final int DNS_PORT = 53;
 	public static final int DHCP_SERVER_PORT = 67;
 	public static final int DHCP_CLIENT_PORT = 68;
-	public static final int NTP_SERVER_PORT = 123;
 
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;
-	public static final short ICMP_PROTOCOL = 1;
-	public static final int ETHERTYPE_IPV4 = 0x0800;
 
-	
-	
-	
+
+
+
 	public static final String LOCAL = "local";
 	public static final String REMOTE = "remote";
-	
+
 	public static final String NONE = "NONE";
 	public static final String MUD_FLOW_MISS = "drop";
 	public static final String PASSTHRU = "UNCLASSIFIED";
@@ -62,7 +59,7 @@ public interface FlowmonConstants {
 	public static final BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFFFFFFF00000000", 16);
 	public static final int SRC_MANUFACTURER_SHIFT = "00000000".length() * 4;
 
-	
+
 	public static final BigInteger DST_MANUFACTURER_MASK = new BigInteger("00000000FFFFFFFF", 16);
 	public static final int DST_MANUFACTURER_SHIFT = 0;
 
@@ -73,21 +70,19 @@ public interface FlowmonConstants {
 	public static final FlowCookie IDS_REGISTRATION_FLOW_COOKIE = InstanceIdentifierUtils
 			.createFlowCookie("flowmon-registration-flow-cookie");
 	public static final FlowCookie PACKET_DIVERSION_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("packet-diversion-flow-cookie");
-    public static final FlowCookie MPLS_PASS_THRU_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("mpls-pass-thru-flow-cookie");
- // Well known cookies.
- 	public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
- 			.createFlowCookie("send-to-controller-flow-cookie");
- 	
+	public static final FlowCookie MPLS_PASS_THRU_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("mpls-pass-thru-flow-cookie");
+	// Well known cookies.
+	public static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
+			.createFlowCookie("send-to-controller-flow-cookie");
 
- 	public static final short DIVERT_TO_FLOWMON_TABLE =  BaseappConstants.SDNMUD_RULES_TABLE;
- 	
+
+	public static final short DIVERT_TO_FLOWMON_TABLE =  BaseappConstants.SDNMUD_RULES_TABLE;
+
 	// 0 means no caching.
 	public static final Integer CACHE_TIMEOUT = 120;
 
-	public static final int ETHERTYPE_LLDP = 0x88cc;
-	public static final int ETHERTYPE_ARP = 0x806;
-	
+
 	public static final String UNCONDITIONAL_GOTO = "UNCONDITIONAL_GOTO";
 	public static final BigInteger METADATA_MASK =  new BigInteger("FFFFFFFFFFFFFFFF",16);
-	
+
 }

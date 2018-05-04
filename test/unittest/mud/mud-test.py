@@ -305,8 +305,10 @@ if __name__ == '__main__':
 
     setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),("access-control-list.json","ietf-access-control-list:access-lists")
-        ,("device-association.json","nist-mud-device-association:mapping"),("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")}:
+    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
+	("../config/access-control-list.json","ietf-access-control-list:access-lists"),
+        ("../config/device-association.json","nist-mud-device-association:mapping"),
+	("../config/controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")}:
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -315,7 +317,7 @@ if __name__ == '__main__':
         print "response ", r
 
 
-    for (configfile,suffix) in { ("ietfmud.json","ietf-mud:mud")} :
+    for (configfile,suffix) in { ("../config/ietfmud.json","ietf-mud:mud")} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix

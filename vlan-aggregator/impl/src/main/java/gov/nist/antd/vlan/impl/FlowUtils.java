@@ -1092,8 +1092,8 @@ class FlowUtils {
     }
 
 
-    public static FlowBuilder createVlanMatchStripVlanTagAndGoToTable(FlowCookie flowCookie, FlowId flowId, short tableId,
-            short targetTableId, int label) {
+    public static FlowBuilder createVlanMatchStripVlanTagAndGoToTable(short tableId, short targetTableId, int label,
+            FlowId flowId, FlowCookie flowCookie, int timeout) {
         MatchBuilder matchBuilder = new MatchBuilder();
         createVlanMatch(matchBuilder, label);
 
@@ -1113,14 +1113,14 @@ class FlowUtils {
 
         stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
         .setKey(new FlowKey(flowId)).setPriority(BaseappConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-        .setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+        .setBufferId(OFConstants.ANY).setHardTimeout(timeout/2).setIdleTimeout(timeout)
         .setFlags(new FlowModFlags(false, false, false, false, false));
 
         return stripTagFlow;
     }
 
-    static FlowBuilder createVlanMatchPopVlanTagAndGoToTable(FlowCookie flowCookie, FlowId flowId, short tableId,
-            int label) {
+    static FlowBuilder createVlanMatchPopVlanTagAndGoToTable(short tableId, int label, int timeout,
+            FlowId flowId, FlowCookie flowCookie) {
 
         MatchBuilder matchBuilder = new MatchBuilder();
         createVlanMatch(matchBuilder, label);
@@ -1142,15 +1142,15 @@ class FlowUtils {
 
         stripTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
         .setKey(new FlowKey(flowId)).setPriority(BaseappConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-        .setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+        .setBufferId(OFConstants.ANY).setHardTimeout(timeout/2).setIdleTimeout(timeout)
         .setFlags(new FlowModFlags(false, false, false, false, false));
 
         return stripTagFlow;
 
     }
 
-    public static FlowBuilder createSetVlanTagAndGoToTable(FlowCookie flowCookie, FlowId flowId, short tableId,
-            short targetTableId, int vlanId) {
+    public static FlowBuilder createSetVlanTagAndGoToTable(short tableId, short targetTableId, int vlanId,
+            FlowId flowId, FlowCookie flowCookie, int timeout) {
         MatchBuilder matchBuilder = new MatchBuilder();
         FlowUtils.createNoVlanPresentMatch(matchBuilder);
         Instruction setVlanInstruction = FlowUtils.createSetVlanInstructions(vlanId);
@@ -1167,7 +1167,7 @@ class FlowUtils {
                 .setKey(new FlowKey(flowId)).setCookie(flowCookie);
         setTagFlow.setMatch(matchBuilder.build()).setInstructions(insb.build()).setId(flowId)
         .setKey(new FlowKey(flowId)).setPriority(BaseappConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY)
-        .setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+        .setBufferId(OFConstants.ANY).setHardTimeout(timeout/2).setIdleTimeout(timeout)
         .setFlags(new FlowModFlags(false, false, false, false, false));
 
         return setTagFlow;
@@ -1197,31 +1197,15 @@ class FlowUtils {
 
 
 
-    static FlowBuilder createUnconditionalGoToNextTableFlow(short table, short nextTable, FlowId flowId,
-            FlowCookie flowCookie) {
-        LOG.info("createGoToTableFlow ");
-
-        FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("permitPackets").setId(flowId)
-                .setKey(new FlowKey(flowId)).setCookie(flowCookie);
-
-        MatchBuilder matchBuilder = new MatchBuilder();
-        InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
-
-        flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-        .setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-        .setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-        return flowBuilder;
-
-    }
 
     public static FlowBuilder createVlanMatchDivertToPorts(int vlanLabel, String[] ports, int duration, short tableId,
-            FlowCookie flowCookie, FlowId flowId) {
+            FlowId flowId, FlowCookie flowCookie) {
         MatchBuilder matchBuilder = new MatchBuilder();
         FlowUtils.createVlanMatch(matchBuilder, vlanLabel);
 
         Instruction instruction = createSendToPortsAction(ports);
         FlowBuilder fb = new FlowBuilder();
+
         fb.setStrict(false);
         fb.setBarrier(true);
         InstructionsBuilder insb = new InstructionsBuilder();
@@ -1271,25 +1255,6 @@ class FlowUtils {
         .setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
         .setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
         .setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-        return fb;
-    }
-
-    public static FlowBuilder createMetadataMatchDropPacket(BigInteger metadata, BigInteger metadataMask, Short tableId,
-            FlowCookie flowCookie, FlowId flowId) {
-        MatchBuilder matchBuilder = new MatchBuilder();
-        createMetadataMatch(matchBuilder, metadata, metadataMask);
-        Instruction dropInstruction = FlowUtils.createDropInstruction();
-        List<Instruction> instructions = new ArrayList<Instruction>();
-        instructions.add(dropInstruction);
-        InstructionsBuilder insb = new InstructionsBuilder();
-        insb.setInstruction(instructions);
-        FlowBuilder fb = new FlowBuilder();
-        fb.setStrict(false);
-        fb.setBarrier(true);
-        fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchDropPacket").setId(flowId)
-        .setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-        .setPriority(BaseappConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH).setBufferId(OFConstants.ANY)
-        .setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
         return fb;
     }
 

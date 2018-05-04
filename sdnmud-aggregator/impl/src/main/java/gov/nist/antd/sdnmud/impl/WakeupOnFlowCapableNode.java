@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
+import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
 
 /**
  * Class that gets invoked when a switch connects.
@@ -45,8 +46,8 @@ import gov.nist.antd.baseapp.impl.BaseappConstants;
  */
 
 public class WakeupOnFlowCapableNode
-implements
-DataTreeChangeListener<FlowCapableNode> {
+        implements
+            DataTreeChangeListener<FlowCapableNode> {
     private static final Logger LOG = LoggerFactory
             .getLogger(WakeupOnFlowCapableNode.class);
 
@@ -108,7 +109,7 @@ DataTreeChangeListener<FlowCapableNode> {
                 .createUnconditionalGoToNextTableFlow(table, flowId,
                         flowCookie);
         sdnmudProvider.getFlowCommitWrapper()
-        .writeFlow(unconditionalGoToNextFlow, node);
+                .writeFlow(unconditionalGoToNextFlow, node);
     }
 
     private void installUnditionalDropPacket(String nodeId,
@@ -122,8 +123,6 @@ DataTreeChangeListener<FlowCapableNode> {
                 dropPacketTable, flowId, flowCookie);
         this.dataStoreAccessor.writeFlow(flow, nodePath);
     }
-
-
 
     public void installSendToControllerFlows(String nodeUri) {
         InstanceIdentifier<FlowCapableNode> nodePath = this.sdnmudProvider
@@ -176,7 +175,6 @@ DataTreeChangeListener<FlowCapableNode> {
 
         installUnditionalDropPacket(nodeUri, nodePath,
                 BaseappConstants.DROP_TABLE);
-
 
         // All devices may access DNS and NTP.
         try {

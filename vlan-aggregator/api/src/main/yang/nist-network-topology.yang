@@ -29,22 +29,24 @@ module nist-network-topology {
   grouping trunks {
       description
           "Trunk port configuration";
-      list npe-switches {
+      list forwarders {
         leaf switch-id {
             description 
-               "the NPE switch identifier, eg: openflow2 ";
-            type string;
+               "the NPE switch identifier, eg: openflow:2 ";
+            type inet:uri;
+            mandatory true;
         }
      
         leaf trunk-interface {
             description
-             "The physical interface for the trunk port";
+             "The physical interface for the trunk port eg. 2:s2-eth1";
             type string;
+            mandatory true;
         }
 
         leaf-list  vlans {
             description
-             "The vlan tags to be sent to this trunk port";
+             "The vlan tags to be sent to this trunk port. This is an array of integers. Empty list is treated as a wildcard.";
             type int32;
         }
      }
@@ -55,14 +57,6 @@ module nist-network-topology {
           "A list of links";
 
       list link {
-         key tag;
-         leaf tag  {
-            description 
-                "Account tag. This is the VLAN tag assigned to the packet.
-                 when it leaves the CPE switch. Uniquely identifies the CPE.";
-            type uint32;
-            mandatory true;
-        }
 
         leaf descriptive-name {
             description 
@@ -70,21 +64,20 @@ module nist-network-topology {
             type string;
         }
         
-        leaf vnf-switch {
-           description
-                "VNF switch ID";
-            type inet:uri;
+        leaf uplink-interface {
+            description
+             "The physical interface for the uplink port";
+            type string;
             mandatory true;
         }
-
-
-        leaf npe-switch {
-           description 
-                "NPE switch associated with several CPE switches. ";
-           type inet:uri;
-           mandatory true;
+        
+        key vlan;
+        leaf vlan {
+            description
+             "The vlan tags to be attached to outbound packets";
+            type int32;
+            mandatory true;
         }
-
 
         leaf cpe-switch {
           description 
@@ -104,9 +97,8 @@ module nist-network-topology {
 
   container trunk-switches  {
       description
-          "Trunk switches that route packets to the CPE cloud";
+          "Trunk switches that route packets to the CPE cloud and CPE links that connect to the cloud.";
       uses trunks;
-
   }
 
 }
