@@ -20,11 +20,61 @@ import requests
 from mininet.node import Host
 from mininet.node import Switch
 from mininet.log import setLogLevel 
+import re
+import unittest
+import os
 
 
+global hosts
+global switches
+
+class TestCapture(unittest.TestCase) :
+
+    def setUp(self):
+        pass
+
+    def tearDown(self):
+        pass
+
+    def testCapture(self):
+        h1 = hosts[0]
+    	h1.cmdPrint('ping -c 10 203.0.113.13')
+        f = open('packets.txt','r')
+        lines = f.read().splitlines()
+        found = False
+        for line in lines:
+           print line 
+           if re.search("Source Address : 10.0.0.1 Destination Address : 203.0.113.13",line) :
+                found = True
+                break
+        self.assertTrue(found)
+        found = False
+        for line in lines:
+           print line 
+	   if re.search("Source Address : 203.0.113.13 Destination Address : 10.0.0.1",line) :
+                found = True
+                break
+        self.assertTrue(found)
+    
+    def testNoCapture(self):
+        h4 = hosts[0]
+    	h4.cmdPrint('ping -c 10 203.0.113.13')
+        f = open('packets.txt','r')
+        lines = f.read().splitlines()
+        found = False
+        for line in lines:
+           print line 
+           if re.search("10.0.0.4",line) :
+                found = True
+                break
+        self.assertTrue(not found)
 
 def setupTopology(controller_addr,dns_address, interface):
     "Create and run multiple link network"
+    try:
+       os.remove("packets.txt")
+    except OSError:
+        pass
 
     net = Mininet(controller=RemoteController)
 
@@ -32,11 +82,11 @@ def setupTopology(controller_addr,dns_address, interface):
 
     c1 = net.addController('c1', ip=controller_addr,port=6653)
 
+    global hosts
+    global switches
 
-    # h1: IOT Device.
-    # h2 : StatciDHCPD
-    # h3# : router / NAT
-    # h4 : Non IOT device.
+    hosts = []
+    switches = []
 	
     h1 = net.addHost('h1')
     h2 = net.addHost('h2')
@@ -48,12 +98,29 @@ def setupTopology(controller_addr,dns_address, interface):
     h8 = net.addHost('h8')
     h9 = net.addHost('h9')
     h10 = net.addHost('h10')
+
+    hosts.append(h1)
+    hosts.append(h2)
+    hosts.append(h3)
+    hosts.append(h4)
+    hosts.append(h5)
+    hosts.append(h6)
+    hosts.append(h7)
+    hosts.append(h8)
+    hosts.append(h9)
+    hosts.append(h10)
 	
 
     s1 = net.addSwitch('s1')
     s2 = net.addSwitch('s2')
     s3 = net.addSwitch('s3')
     s4 = net.addSwitch('s4')
+
+    switches.append(s1)
+    switches.append(s2)
+    switches.append(s3)
+    switches.append(s4)
+
     s1.linkTo(s2)
     s2.linkTo(s3)
 
@@ -71,8 +138,6 @@ def setupTopology(controller_addr,dns_address, interface):
 
     s4.linkTo(h7)
     s4.linkTo(h10)
-
-
 
 
     net.build()
@@ -136,9 +201,6 @@ def setupTopology(controller_addr,dns_address, interface):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     #h2 is our peer same manufacturer host.
-    h2.cmdPrint("python udpping.py --port 4000 --server &")
-    # h6 is a localhost peer.
-    h6.cmdPrint("python udpping.py --port 8002 --server &")
     
     # Start the IDS on node 8
 
@@ -160,19 +222,9 @@ def setupTopology(controller_addr,dns_address, interface):
 
     # Set up a router to reach the 'internet'
     h10.cmdPrint('ifconfig h10-eth0 203.0.113.13 netmask 255.255.255.0')
-    # Start a web server there.
-    h10.cmdPrint('python http-server.py -H 203.0.113.13&')
 
-    # Ping the VNF host (past the lan)
   
-    h1.cmdPrint('ping -c 10 203.0.113.13')
 
-
-    cli = CLI( net )
-    h1.terminate()
-    h2.terminate()
-    h3.terminate()
-    net.stop()
 
 def startTestServer(host):
     """
@@ -220,7 +272,7 @@ if __name__ == '__main__':
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 
         ("../config/device-association.json","nist-mud-device-association:mapping"),
-	("../config/ids-config.json","nist-flowmon-config:flowmon-config") } :
+        ("../config/ids-config.json","nist-flowmon-config:flowmon-config") } :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -229,4 +281,6 @@ if __name__ == '__main__':
         print "response ", r
 
     setupTopology(controller_addr,dns_address,interface)
+    time.sleep(5)
+    unittest.main()
 

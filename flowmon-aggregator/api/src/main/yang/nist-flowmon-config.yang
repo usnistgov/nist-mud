@@ -60,24 +60,10 @@ module nist-flowmon-config {
            mandatory true;
         }
 
-        leaf filter-duration {
+        leaf flowmon-mac {
             description
-                "The duration for which to sample the flow";
-            type int32;
-            default 30000;
-        }
-
-        leaf re-registration-interval {
-            description
-                "The interval between succesive re-registrations";
-            type int32;
-            default 60000;
-        }
-
-        leaf flowmon-interface {
-            description
-                "The port on which the flowmonitor will read the raw socket.";
-            type inet:uri;
+                "Mac address of flowmon";
+            type yang:mac-address;
         }
      }
    }

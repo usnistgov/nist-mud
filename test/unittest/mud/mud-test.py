@@ -42,9 +42,9 @@ class TestAccess(unittest.TestCase) :
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
         retval = re.search('\[rc=(.+?)\]',output)
-	pieces = retval.group(0).split('=')
+        pieces = retval.group(0).split('=')
         rc = pieces[1].split(']')[0]
-	return rc
+        return rc
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]

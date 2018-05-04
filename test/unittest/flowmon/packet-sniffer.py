@@ -4,14 +4,20 @@ import sys
 import time
 from struct import *
 from socket import *
+from multiprocessing import Process
 
-time.sleep(30)
-sock = socket(AF_INET, SOCK_DGRAM)
-sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
-sock.bind(('10.0.0.8',1000))
-sock.sendto('IDS encrypted secret data', ('255.255.255.255', 1000))
-print "Sent broadcast"
+def sendHello():
+    while True:
+        sock = socket(AF_INET, SOCK_DGRAM)
+        sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
+        sock.bind(('10.0.0.8',1000))
+        sock.sendto('IDS encrypted secret data', ('255.255.255.255', 1000))
+        print "Sent broadcast"
+        time.sleep(30)
+
+p  = Process(target=sendHello)
+p.start()
 
 try:
     s = socket(PF_PACKET, SOCK_RAW, htons(0x800))
@@ -19,6 +25,8 @@ try:
 except:
     print "ERROR CREATING SOCKET"
     sys.exit()
+
+
  
 # receive a packet
 f = open('packets.txt','w')
@@ -30,7 +38,6 @@ while True:
             continue
     except timeout:
         print "timeout"
-        sock.sendto('IDS encrypted secret data', ('255.255.255.255', 1000))
         print "Sent broadcast"
         continue
 

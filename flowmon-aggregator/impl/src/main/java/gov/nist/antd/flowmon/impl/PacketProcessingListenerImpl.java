@@ -1,10 +1,16 @@
 package gov.nist.antd.flowmon.impl;
 
+import java.math.BigInteger;
+
 import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
@@ -60,6 +66,69 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 		return mac;
 	}
 
+	private static String getManufacturer(Uri flowSpec) {
+
+		if (flowSpec.getValue().equals(FlowmonConstants.UNCLASSIFIED))
+			return FlowmonConstants.UNCLASSIFIED;
+		String[] pieces = flowSpec.getValue().split(":");
+		return pieces[0];
+
+	}
+
+	private static String getFlowType(Uri flowSpec) {
+
+		if (flowSpec.getValue().equals(FlowmonConstants.PASSTHRU))
+			return FlowmonConstants.PASSTHRU;
+		String[] pieces = flowSpec.getValue().split(":");
+		return pieces[1];
+	}
+
+	public synchronized void installDivertToIdsFlow(InstanceIdentifier<FlowCapableNode> node, String flowmonPorts) {
+
+		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
+
+		/* get the cpe nodes corresponding to this VNF node */
+		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
+
+			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
+
+			LOG.info("installDivertToIdsFlow : nodeId " + nodeId + " Switch " + vnfSwitch);
+			if (nodeId.equals(vnfSwitch)) {
+				for (Uri uri : flowmonConfigData.getFlowSpec()) {
+					String manufacturer = getManufacturer(uri);
+					LOG.info("installDivertToIdsFlow : manufacturer " + manufacturer);
+
+					String flowType = getFlowType(uri);
+					if (flowType.equals(FlowmonConstants.REMOTE) || flowType.equals(FlowmonConstants.UNCLASSIFIED)) {
+						FlowId flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
+						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
+
+						BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
+
+						FlowBuilder flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId,
+								metadata, FlowmonConstants.SRC_MANUFACTURER_MASK,
+								FlowmonConstants.DIVERT_TO_FLOWMON_TABLE, flowmonPorts,
+								0);
+
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+
+						flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
+
+						metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
+								.shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT);
+
+						flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId, metadata,
+								FlowmonConstants.DST_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE,
+								flowmonPorts, 0);
+
+						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
+					}
+				}
+			}
+		}
+	}
+
 	@Override
 	public void onPacketReceived(PacketReceived notification) {
 		if (!this.flowmonProvider.isInitialized()) {
@@ -97,18 +166,18 @@ class PacketProcessingListenerImpl implements PacketProcessingListener {
 		LOG.info("onPacketReceived : matchInPortUri = " + matchInPortUri + " destinationId " + destinationId
 				+ " tableId " + tableId + " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
 
-		byte[] etherTypeRaw = PacketUtils.extractEtherType(notification.getPayload());
-
-		if (notification.getFlowCookie().getValue().equals(FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE.getValue())) {
-			LOG.debug("IDS Registration seen on : " + matchInPortUri);
-			// TODO -- authenticate the IDS by checking his MAC and token.
-			this.flowmonProvider.setFlowmonOutputPort(destinationId, matchInPortUri);
-			return;
-		} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-			if ( flowmonProvider.isVnfSwitch(destinationId)) {
-				Uri mudUri = flowmonProvider.getMudUri(srcMac);
+		if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			if (flowmonProvider.isVnfSwitch(destinationId)) {
 				InstanceIdentifier<FlowCapableNode> flowmonNode = flowmonProvider.getNode(destinationId);
-				MappingDataStoreListener.installStampManufacturerFlowRule(flowmonProvider, srcMac,mudUri, flowmonNode);
+				MacAddress macAddress = flowmonProvider.getFlowmonConfig(destinationId).getFlowmonMac();
+				if (macAddress.equals(srcMac)) {
+					LOG.info("Flowmon registration seen on " + matchInPortUri);
+					this.installDivertToIdsFlow(flowmonNode, matchInPortUri);
+				} else {
+					Uri mudUri = flowmonProvider.getMudUri(srcMac);
+					MappingDataStoreListener.installStampManufacturerFlowRule(flowmonProvider, srcMac, mudUri,
+							flowmonNode);
+				}
 			}
 
 		}

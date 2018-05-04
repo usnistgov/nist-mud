@@ -1,6 +1,5 @@
 package gov.nist.antd.flowmon.impl;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -8,12 +7,11 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.Mod
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.flowmon.config.rev170915.flowmon.config.FlowmonConfigData;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.genius.interfacemanager.rpcs.rev160406.GetPortFromInterfaceInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -82,15 +80,13 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 * @param nodeUri
 	 * @param node
 	 */
-	private synchronized void installSendFlowmonHelloToControllerFlows(InstanceIdentifier<FlowCapableNode> node) {
+	private synchronized void installSendFlowmonHelloToControllerFlows(InstanceIdentifier<FlowCapableNode> node, MacAddress macAddress) {
 		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
 		if (flowmonProvider.isVnfSwitch(nodeId)) {
 			FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId + ":flowmon");
 			FlowCookie flowCookie = FlowmonConstants.IDS_REGISTRATION_FLOW_COOKIE;
 			LOG.info("IDS_REGISTRATION_FLOW_COOKIE " + flowCookie.getValue().toString(16));
-			FlowBuilder fb = FlowUtils.createDestIpMatchSendToController(FlowmonConstants.IDS_REGISTRATION_ADDRESS,
-					FlowmonConstants.IDS_REGISTRATION_PORT, BaseappConstants.FIRST_TABLE, flowCookie, flowId,
-					FlowmonConstants.IDS_REGISTRATION_METADATA);
+			FlowBuilder fb = FlowUtils.createSrcMacMatchSendPacketToController(macAddress, BaseappConstants.FIRST_TABLE, 0, flowId,flowCookie);
 			flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		}
 
@@ -104,70 +100,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.flowmonProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	public synchronized void installDivertToIdsFlow(InstanceIdentifier<FlowCapableNode> node) {
 
-		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-		int duration = flowmonProvider.getFlowmonConfig(nodeId).getFilterDuration();
-		LOG.debug("flowmonRegistration: duration = " + duration);
-
-		/* get the cpe nodes corresponding to this VNF node */
-		for (FlowmonConfigData flowmonConfigData : flowmonProvider.getFlowmonConfigs()) {
-
-			String vnfSwitch = flowmonConfigData.getFlowmonNode().getValue();
-			String ifce  = flowmonConfigData.getFlowmonInterface().getValue();
-			long trunkPortNo = -1;
-
-			try {
-				GetPortFromInterfaceInputBuilder gpfib = new GetPortFromInterfaceInputBuilder();
-				gpfib.setIntfName(ifce);
-				trunkPortNo = flowmonProvider
-						.getInterfaceManagerRpcService()
-						.getPortFromInterface(gpfib.build()).get()
-						.getResult().getPortno();
-				LOG.info("port number for interface " + ifce
-						+ " trunkPortNumber = " + trunkPortNo);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				LOG.error("Error getting port number for interface " + ifce, e);
-				return;
-			}
-
-			String flowmonPorts = Integer.toString((int)trunkPortNo);
-
-			LOG.info("installDivertToIdsFlow : nodeId " + nodeId + " Switch " + vnfSwitch);
-			if (nodeId.equals(vnfSwitch)) {
-				for (Uri uri : flowmonConfigData.getFlowSpec()) {
-					String manufacturer = getManufacturer(uri);
-					LOG.info("installDivertToIdsFlow : manufacturer " + manufacturer);
-
-					String flowType = getFlowType(uri);
-					if (flowType.equals(FlowmonConstants.REMOTE) || flowType.equals(FlowmonConstants.UNCLASSIFIED)) {
-						FlowId flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
-						FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(uri.getValue());
-						// Strip MPLS tag and go to the L2 switch.
-						BigInteger metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
-								.shiftLeft(FlowmonConstants.SRC_MANUFACTURER_SHIFT);
-
-						FlowBuilder flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId,
-								metadata, FlowmonConstants.SRC_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE,
-								flowmonPorts, flowmonConfigData.getFilterDuration());
-						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
-
-						flowId = InstanceIdentifierUtils.createFlowId(vnfSwitch);
-
-						metadata = BigInteger.valueOf(InstanceIdentifierUtils.getFlowHash(manufacturer))
-								.shiftLeft(FlowmonConstants.DST_MANUFACTURER_SHIFT);
-
-						flow = FlowUtils.createMetadataMatchSendToPortsAndGotoTable(flowCookie, flowId, metadata,
-								FlowmonConstants.DST_MANUFACTURER_MASK, FlowmonConstants.DIVERT_TO_FLOWMON_TABLE, flowmonPorts,
-								flowmonConfigData.getFilterDuration());
-
-						this.flowmonProvider.getFlowCommitWrapper().writeFlow(flow, node);
-					}
-				}
-			}
-		}
-	}
 
 	public void installDefaultFlows() {
 		if (flowmonProvider.getFlowmonConfigs().isEmpty()) {
@@ -182,7 +115,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 				//this.installSendFlowmonHelloToControllerFlows(flowCapableNode);
 				this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
 						flowCapableNode);
-				this.installDivertToIdsFlow(flowCapableNode);
 			}
 		}
 		this.pendingNodes.clear();
@@ -213,7 +145,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			//this.installSendFlowmonHelloToControllerFlows(nodePath);
 			this.installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE,
 					nodePath);
-			this.installDivertToIdsFlow(nodePath);
 		}
 
 	}
