@@ -1,0 +1,12 @@
+{
+ 	"flowmon-config": {
+          "flowmon-config-data" : [
+	      {
+		"flowmon-node" : "openflow:3",
+		"filter-duration" : 3000,
+		"flow-spec": [ "toaster.nist.gov:remote" ],
+		"flowmon-interface": "3:s3-eth3"
+	      }
+           ]
+	 }
+}
