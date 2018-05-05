@@ -3,10 +3,36 @@
 
 # IOT MUD implementation on Open Daylight #
 
-This includes two features:
+This repository publishes a scalable implementation of the IETF MUD standard. 
+The MUD standard is defined here:
+
+    https://www.ietf.org/id/draft-ietf-opsawg-mud-20.txt
+
+The MUD standard specifies access controls for IOT devices. IOT devices
+are special purpose devices that implement a dedicated function.
+Such devices have communication patterns that are known a-priori. A
+manufacturer associates an ACL file with a device. The goal of MUD is
+to provide a means for Things to signal to the network what sort of
+access and network functionality they require to properly function.
+The network infrastructure installs Access Control Rules to restrict
+what the device can do.
+
+This project implements the following :
+
+- MUD ACLs on SDN Switches. 
+- A means for extracting outbound packets from IOT devices that do not have
+MUD rules associated with them so that these may be inspected by an IDS. Such 
+rules are implemented on CPE switches. 
+- VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
+Packets outbound from the CPE switch on the uplink interface are tagged with the 
+VLAN tag. These packets are routed to the appropriate VNF router in the service
+provider network.
+
+OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
  
-- features-sdniot is the scalable MUD implementation. 
-- features-ids is IDS support that allows flows to be sampled from the CPE switch.
+- features-sdnmud is the scalable MUD implementation. 
+- features-flowmon is the IDS support that allows flows to be sampled from the CPE switch.
+- features-vlan manages the CPE switch and assigns a VLAN tag to trafic sent and received from the uplink.
 
 ## Prerequisites ##
 
