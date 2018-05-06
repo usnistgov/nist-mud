@@ -28,11 +28,25 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the service
 provider network.
 
+### Architecture ###
+
+The following diagram shows the network architecture of the system.
+
+![alt tag](docs/arch/nw-arch.png)
+
+
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
  
 - features-sdnmud is the scalable MUD implementation. 
-- features-flowmon is the IDS support that allows flows to be sampled from the CPE switch.
-- features-vlan manages the CPE switch and assigns a VLAN tag to trafic sent and received from the uplink.
+This application manages the mud-specific flow rules on the CPE switches.
+
+- features-vlan this application installs flow rules on both the CPE switch and the NPE switch.
+ It installs flow rules in the CPE that assigns a VLAN tag to trafic sent from the CPE switch via the uplink interface and 
+ a flow rule that strips the Vlan tag from the traffic received from the uplink. It installs rules on the NPE switch to 
+ multiplex traffic based on the VLAN tag to the uplink.
+
+- features-flowmon installs flow rules on the VNF switch. It installs rules to mirror a subset of the traffic that appears 
+on the VNF switch.
 
 ## Prerequisites ##
 
@@ -73,9 +87,8 @@ a learning switch controller to set up our topology.
      cd ryu; pip install .
      pip install -r tools/optional-requires
 
-### Architecture ###
 
-### TBD ###
+### Architecture ###
 
 Our system consists of a collection of CPE switches. MUD flow rules
 are installed only at CPE switches.  Packets that leave the CPE switch and
