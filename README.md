@@ -56,24 +56,15 @@ The flow monitoring facility allows an IDS to indicate interest in specific clas
 ### Software Components ###
 
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
-This project consists of the following components
+This project consists of the following features:
 
-  This include the opendaylight l2-switch component.
-- sdnmud-aggregator : An SDN implementation of the MUD specification on opendaylight. 
-- vlan-aggregator : Stamps outbound packets from the CPE switches bound for the NPE switch. The NPE switch is an aggregator that sends vlan tagged packets to the appropriate VNF switch.
-- flowmon-aggreagor : Sets MPLS tags on the outbound flows of the CPE switch for those packets that need to be monitored at the VNF switch.
-
- 
-- features-sdnmud is the scalable MUD implementation. 
-This application manages the mud-specific flow rules on the CPE switches.
+* features-sdnmud is the scalable MUD implementation.  This application manages the mud-specific flow rules on the CPE switches.
 This component can be used independently of the others.
-
-- features-vlan this application installs flow rules on both the CPE switch and the NPE switch.
+* features-vlan this application installs flow rules on both the CPE switch and the NPE switch.
 Packets sent from the IOT devices on the CPE switch are assigned a CPE-specific VLAN tag when they are sent to the uplink interface.
 Packets sent to the CPE switch via the Uplink interface have their VLAN tags stripped for consumption by the devices attached to the switch.
 It installs rules on the NPE switch to multiplex traffic based on the VLAN tag to the uplink interface.
-
-- features-flowmon installs flow rules on the VNF switch. It installs rules to mirror a subset of the traffic that appears 
+* features-flowmon installs flow rules on the VNF switch. It installs rules to mirror a subset of the traffic that appears 
 on the VNF switch onto a port from which an IDS can read and analyze the traffic. The packets of interest can be selected
 by manufacturer. 
 
