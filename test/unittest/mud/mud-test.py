@@ -317,16 +317,17 @@ if __name__ == '__main__':
         print "response ", r
 
 
-    for (configfile,suffix) in { ("../config/ietfmud.json","ietf-mud:mud")} :
-        data = json.load(open(configfile))
-        print "configfile", configfile
-        url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
-        print "url ", url
-        r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-        print "response ", r
-
-    # Let the servers start on the test network.
-    time.sleep(5)
-    unittest.main()
-    cli()
+    if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == 1 :
+        for (configfile,suffix) in { ("../config/ietfmud.json","ietf-mud:mud")} :
+            data = json.load(open(configfile))
+            print "configfile", configfile
+            url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
+            print "url ", url
+            r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+            print "response ", r
+            # Let the servers start on the test network.
+            time.sleep(5)
+            unittest.main()
+    else:
+        cli()
 

@@ -173,27 +173,48 @@ Add the following to /etc/hosts on your controller so the java library can look 
       203.0.113.13   www.nist.local
       203.0.113.14   www.antd.local
 
-On the host where you are running the controller, start Karaf
 
-      cd sdnmud-aggregator/karaf/target/assembly/bin
-      karaf clean
-      
+#### Run the integration tests manually ####
+
+Clean the cached flows from any previous runs (if they exist):
+
+        cd $PROJECT_HOME/features-sdnmud/karaf/target/assembly
+        rm snapshots/*
+        rm journal/*
+
+Start Karaf and load the feature:
+
+        cd $PROJECT_HOME/features-sdnmud/karaf/target/assembly/bin
+        ./karaf clean
+
 You should see an OpenDaylight banner appear.
 
-Install the feature using in Karaf from the Karaf command line.
-
-      feature:install features-sdnmud
-
-Start the mininet test environment. On the mininet vm:
-
-      setenv CONTROLLER_ADDR=ip-address-of-OpenDaylight-controller.
-      cd $PROJECT_HOME/test
-      sudo -E python topo1.py
+        opendaylight-user@root>feature:install features-sdnmud
 
 Read the messages to ensure that the test network connected.
 Check if the L2Switch flows are installed. On the mininet VM :
 
       ovs-ofctl dump-flows s1 -O openflow13
+
+On the emulation VM:
+ 
+      setenv CONTROLLER_ADDR=ip-address-of-OpenDaylight-controller.
+      export UNITTEST=0
+      cd $PROJECT_HOME/test/unittest/mud
+      sudo -E python mud-test.py
+
+This script installs the following:
+
+- ../conifg/topology.json : Tells the controller what switches are of interest
+- ../config/access-control-list.json : The access control lists (from mudmaker).
+- ../config/device-association.json  : Associates MAC address with the MUD URI.
+- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes.
+
+On the emulation VM dump flows (see above). 
+You should see 9 tables created with the last one containing the Flows for the L2 switch.
+The following will work because mud rules have not been installed at yet:
+
+     h1 ping h2 
 
 Check if DNS is working for the fake host name. 
 
@@ -206,29 +227,8 @@ Check if we can route packets to our fake web server
       mininet> h1 wget http://www.nist.local/index.html  
 
 Shoud fetch a web page from www.nist.local. Thus far we have tested
-that our test network is working.  Now we can exercise the MUD 
-implementation.
-
-#### Run the integration tests manually ####
-
-Install configuration files. On the emulation VM:
- 
-        export UNITTEST=0
-        cd $PROJECT_HOME/test/unittest/mud
-        sudo -E python mud-test.py
-
-This script installs the following:
-
-- ../conifg/topology.json : Tells the controller what switches are of interest
-- ../config/access-control-list.json : The access control lists (from mudmaker).
-- ../config/device-association.json  : Associates MAC address with the MUD URI.
-- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes.
-
-On the Mininet VM dump flows (see above). 
-You should see 9 tables created with the last one containing the Flows for the L2 switch.
-The following will work because mud rules have not been installed at yet:
-
-     h1 ping h2 
+that our test network is working and is configured properly.  
+Now we can exercise the MUD implementation.
 
 Install MUD rules. On the mininet VM:
 
@@ -236,7 +236,7 @@ Install MUD rules. On the mininet VM:
 
 This installs the following configuration file:
 
-- ../config/ietfmud.json : Associates ip addresses to controller classes.
+- ../config/ietfmud.json : Sets up a MUD profile that uses the access-control-lists
 
 Dump flows again. You should see table 3 and table 4 is populated to set metadata.
 
@@ -259,10 +259,12 @@ Next try pinging from h1 to h2. This should be blocked:
 
 Note: The flow rules are cached. The first interaction will take a while until the flow rules are installed.
 
-To run these tests in an automated fashion, just set the following
+To run these tests and more in an automated fashion, just set the following
 
     export UNITTEST=1
     sudo -e python mud-test.py
+   
+This will exercise the mud implementation and check if it is working as expected
   
 
 ### Copyrights and Disclaimers ###
