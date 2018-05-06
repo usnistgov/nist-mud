@@ -1,5 +1,4 @@
 
-### THIS PAGE IS UNDER CONSTRUCTION ###
 
 # IOT MUD implementation on Open Daylight #
 
@@ -19,34 +18,65 @@ what the device can do.
 
 This project implements the following :
 
-- MUD ACLs on SDN Switches. 
-- A means for extracting outbound packets from IOT devices that do not have
-MUD rules associated with them so that these may be inspected by an IDS. Such 
-rules are implemented on CPE switches. 
-- VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
+- SDN MUD : MUD ACLs on SDN Switches. 
+
+- Flow Monitor : A means for extracting outbound packets from IOT devices based on manufacturer 
+(or unclassified packets) to be provided to an IDS such as Snort.
+
+- VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
 Packets outbound from the CPE switch on the uplink interface are tagged with the 
 VLAN tag. These packets are routed to the appropriate VNF router in the service
 provider network.
 
 ### Architecture ###
 
+Our  network model consists of a collection of CPE switches connected
+to an NPE switch. The NPE switch routes packets to a cloud-resident
+virtual network function VNF switch. MUD flow rules are installed only
+at CPE switches.  Packets that leave the CPE switch and are sent to the
+NPE switch are tagged with a VLAN tag that identifies the CPE switch
+from which they originated.  At the NPE switch the VLAN tag is used to
+direct packets to a corresponding VNF switch. This arrangement extends
+the CPE VLAN to the service provider cloud.
+
 The following diagram shows the network architecture of the system.
 
 ![alt tag](docs/arch/nw-arch.png)
 
 
+MUD-specifc flow rules are installed on the CPE switches.
+
+The NPE switch acts as a Multiplexer to forward packets from several CPE switches to its uplink interface towards the Cloud where 
+Virtual network functions for the CPE reside.  
+
+The flow monitoring facility allows an IDS to indicate interest in specific classes of packets i.e:
+- Packets that have hit a MUD flow rule and successfully been fowarded to the Network provider.
+- Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
+
+### Software Components ###
+
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
+This project consists of the following components
+
+  This include the opendaylight l2-switch component.
+- sdnmud-aggregator : An SDN implementation of the MUD specification on opendaylight. 
+- vlan-aggregator : Stamps outbound packets from the CPE switches bound for the NPE switch. The NPE switch is an aggregator that sends vlan tagged packets to the appropriate VNF switch.
+- flowmon-aggreagor : Sets MPLS tags on the outbound flows of the CPE switch for those packets that need to be monitored at the VNF switch.
+
  
 - features-sdnmud is the scalable MUD implementation. 
 This application manages the mud-specific flow rules on the CPE switches.
+This component can be used independently of the others.
 
 - features-vlan this application installs flow rules on both the CPE switch and the NPE switch.
- It installs flow rules in the CPE that assigns a VLAN tag to trafic sent from the CPE switch via the uplink interface and 
- a flow rule that strips the Vlan tag from the traffic received from the uplink. It installs rules on the NPE switch to 
- multiplex traffic based on the VLAN tag to the uplink.
+Packets sent from the IOT devices on the CPE switch are assigned a CPE-specific VLAN tag when they are sent to the uplink interface.
+Packets sent to the CPE switch via the Uplink interface have their VLAN tags stripped for consumption by the devices attached to the switch.
+It installs rules on the NPE switch to multiplex traffic based on the VLAN tag to the uplink interface.
 
 - features-flowmon installs flow rules on the VNF switch. It installs rules to mirror a subset of the traffic that appears 
-on the VNF switch.
+on the VNF switch onto a port from which an IDS can read and analyze the traffic. The packets of interest can be selected
+by manufacturer. 
+
 
 ## Prerequisites ##
 
@@ -88,37 +118,6 @@ a learning switch controller to set up our topology.
      pip install -r tools/optional-requires
 
 
-### Architecture ###
-
-Our system consists of a collection of CPE switches. MUD flow rules
-are installed only at CPE switches.  Packets that leave the CPE switch and
-are sent to the NPE switch are tagged with a VLAN tag that identifies
-the CPE switch from which they originated.  At the NPE switch the VLAN
-tag is used to direct packets to a corresponding VNF switch.
-
-The flow monitoring facility allows an IDS to indicate interest in specific classes of packets i.e:
-- Packets that have hit a MUD flow rule and successfully been fowarded.
-- Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
-
-
-The flow monitoring facility consists of two parts i.e.
-- A CPE flow monitor that places flow rules attaching MPLS labels to packets of interest.
-- An VNF switch packet diverter that diverts marked packets from the VNF switch to a registered daemon. These packets 
-  can be provided to an Intrusion Detection System to analyze system behavior.
-
-
-
-
-### Software Components ###
-
-This project consists of the following components
-
-- baseapp-aggregator : The base application that lays out the table structure and defines constants and configurations used by the other subprojects.
-  This include the opendaylight l2-switch component.
-- sdnmud-aggregator : An SDN implementation of the MUD specification on opendaylight. This component can be used independently of the others.
-- vlan-aggregator : Stamps outbound packets from the CPE switches bound for the NPE switch. The NPE switch is an aggregator that sends vlan tagged packets to the appropriate VNF switch.
-- flowmon-aggreagor : Sets MPLS tags on the outbound flows of the CPE switch for those packets that need to be monitored at the VNF switch.
-
 
 ### Building ###
 
@@ -126,6 +125,10 @@ Copy maven/settings.xml to ~/.m2
 
 Run maven
       mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
+
+This will download the necessary dependencies and build the subprojects. Note that we have disabled 
+unit tests and javadoc creation. This will change after the project is in a final state.
+
 
 ### Manual Testing ###
 
@@ -206,22 +209,23 @@ Shoud fetch a web page from www.nist.local. Thus far we have tested
 that our test network is working.  Now we can exercise the MUD 
 implementation.
 
-#### Test Device to Device Flows and Local network flows  ####
+#### Run the integration tests manually ####
 
-Install configuration files. On the Mininet VM:
+Install configuration files. On the emulation VM:
  
-        cd $PROJECT_HOME/test
-        sh postit.sh
+        export UNITTEST=0
+        cd $PROJECT_HOME/test/unittest/mud
+        sudo -E python mud-test.py
 
 This script installs the following:
 
-- topology.json : Tells the controller what switches are of interest
-- access-control-list.json : The access control lists (from mudmaker).
-- device-association.json  : Associates MAC address with the MUD URI.
-- controllerclass-mapping.json : Associates ip addresses to controller classes.
+- ../conifg/topology.json : Tells the controller what switches are of interest
+- ../config/access-control-list.json : The access control lists (from mudmaker).
+- ../config/device-association.json  : Associates MAC address with the MUD URI.
+- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes.
 
 On the Mininet VM dump flows (see above). 
-You should see 6 tables created with the last one containing the Flows for the L2 switch.
+You should see 9 tables created with the last one containing the Flows for the L2 switch.
 The following will work because mud rules have not been installed at yet:
 
      h1 ping h2 
@@ -230,8 +234,11 @@ Install MUD rules. On the mininet VM:
 
       sh postit1.sh
 
-Dump flows again. You should see table 0 and table 1 is populated to set metadata.
+This installs the following configuration file:
 
+- ../config/ietfmud.json : Associates ip addresses to controller classes.
+
+Dump flows again. You should see table 3 and table 4 is populated to set metadata.
 
 Next try the following:
 
@@ -251,6 +258,12 @@ Next try pinging from h1 to h2. This should be blocked:
     mininet> h1 ping h2
 
 Note: The flow rules are cached. The first interaction will take a while until the flow rules are installed.
+
+To run these tests in an automated fashion, just set the following
+
+    export UNITTEST=1
+    sudo -e python mud-test.py
+  
 
 ### Copyrights and Disclaimers ###
 
