@@ -1,11 +1,7 @@
 
-
-# IOT MUD implementation on Open Daylight #
+#IOT MUD implementation on Open Daylight with Scalable IDS support
 
 This repository publishes a scalable implementation of the IETF MUD standard. 
-The MUD standard is defined here:
-
-    https://www.ietf.org/id/draft-ietf-opsawg-mud-20.txt
 
 The MUD standard specifies access controls for IOT devices. IOT devices
 are special purpose devices that implement a dedicated function.
@@ -15,6 +11,8 @@ to provide a means for Things to signal to the network what sort of
 access and network functionality they require to properly function.
 The network infrastructure installs Access Control Rules to restrict
 what the device can do.
+
+The MUD standard is defined here https://www.ietf.org/id/draft-ietf-opsawg-mud-20.txt
 
 This project implements the following :
 
@@ -28,7 +26,7 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the service
 provider network.
 
-### Architecture ###
+## Architecture ##
 
 Our  network model consists of a collection of CPE switches connected
 to an NPE switch. The NPE switch routes packets to a cloud-resident
@@ -53,7 +51,7 @@ The flow monitoring facility allows an IDS to indicate interest in specific clas
 - Packets that have hit a MUD flow rule and successfully been fowarded to the Network provider.
 - Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
 
-### Software Components ###
+## Software Components ##
 
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
 This project consists of the following features:
@@ -69,19 +67,31 @@ on the VNF switch onto a port from which an IDS can read and analyze the traffic
 by manufacturer. 
 
 
-## Prerequisites ##
+## Building ##
 
 On the Controller host:
 
 * Install JDK 1.8x and maven 3.5 or above.
+* Install maven 3.5 or higher.
 * Eclipse -- highly recommended if you want to look at code.
 
-## How to build and test it it using mininet ##
+Copy maven/settings.xml to ~/.m2
 
-Create a virtual machine running Ubuntu 16. 
+Run maven
+      mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
+This will download the necessary dependencies and build the subprojects. Note that we have disabled 
+unit tests and javadoc creation. This will change after the project is in a final state.
 
-### Pre-requisites for the Test VM ###
+## Try it out  ##
+
+Create a virtual machine running Ubuntu 16. Install mininet on it.
+We will call this the emulation machine.
+You should run the test environment on a separate VM. Otherwise, Mininet settings may interfere with
+your settings on your host. We assume that OpenDaylight is on another host different from your emulation VM
+(it can be co-resident if you wish).
+
+### Pre-requisites for the emulation VM ###
 
 Allow root privileges for user to save yourself some typing:
 
@@ -99,7 +109,7 @@ Install python prerequisites.
 	 sudo pip install requests
 	 sudo apt install curl
 
-On the mininet vm. RYU is used control portions of the test network. It is not
+On the emulation vm, RYU is used control portions of the test network. It is not
 part of the MUD implementation under test. We are using it strictly as
 a learning switch controller to set up our topology.
 
@@ -109,25 +119,7 @@ a learning switch controller to set up our topology.
      pip install -r tools/optional-requires
 
 
-
-### Building ###
-
-Copy maven/settings.xml to ~/.m2
-
-Run maven
-      mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
-
-This will download the necessary dependencies and build the subprojects. Note that we have disabled 
-unit tests and javadoc creation. This will change after the project is in a final state.
-
-
-### Manual Testing ###
-
-You should run the test environment on a separate VM. Otherwise, Mininet settings may interfere with
-your settings on your host. We assume that OpenDaylight is on another host different from your emulation VM
-(it can be co-resident if you wish).
-
-#### Configure the Mininet VM ####
+#### Configure the emulation VM ####
 
 Edit /etc/dnsmasq.conf.  Include the following:
 
@@ -165,7 +157,7 @@ Add the following to /etc/hosts on your controller so the java library can look 
       203.0.113.14   www.antd.local
 
 
-#### Run the integration tests manually ####
+### Run the integration tests manually ###
 
 Clean the cached flows from any previous runs (if they exist):
 
@@ -258,7 +250,7 @@ To run these tests and more in an automated fashion, just set the following
 This will exercise the mud implementation and check if it is working as expected
   
 
-### Copyrights and Disclaimers ###
+## Copyrights and Disclaimers ##
 
 The following disclaimer applies to all code that was written by employees
 of the National Institute of Standards and Technology.
