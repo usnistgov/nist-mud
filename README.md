@@ -1,6 +1,4 @@
 
-#IOT MUD implementation on Open Daylight with Scalable IDS support
-
 This repository publishes a scalable implementation of the IETF MUD standard. 
 
 The MUD standard specifies access controls for IOT devices. IOT devices
