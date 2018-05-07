@@ -1,0 +1,451 @@
+{
+  "ietf-mud:mud" : {
+    "mud-version" : 1,
+    "mud-url" : "https://pixstarphotoframe.com/pixstarphotoframe",
+    "last-update" : "2018-04-08T00:06:47.908+10:00",
+    "cache-validity" : 100,
+    "is-supported" : true,
+    "systeminfo" : "pixstarphotoframe",
+    "from-device-policy" : {
+      "access-lists" : {
+        "access-list" : [ {
+          "name" : "from-ipv4-pixstarphotoframe"
+        }, {
+          "name" : "from-ipv6-pixstarphotoframe"
+        }, {
+          "name" : "from-ethernet-pixstarphotoframe"
+        } ]
+      }
+    },
+    "to-device-policy" : {
+      "access-lists" : {
+        "access-list" : [ {
+          "name" : "to-ipv4-pixstarphotoframe"
+        } ]
+      }
+    }
+  },
+  "ietf-access-control-list:access-lists" : {
+    "acl" : [ {
+      "name" : "from-ipv4-pixstarphotoframe",
+      "type" : "ipv4-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "from-ipv4-pixstarphotoframe-0",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:gateway"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 67
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-1",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 137
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-2",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 6
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 445
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-3",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "destination-ipv4-network" : "127.0.0.1/32"
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 137
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-4",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "iptime.pix-star.com"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 80
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-5",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "api.pix-star.com"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 443
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-6",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 137
+              }
+            },
+            "eth" : {
+              "destination-mac-address" : "ff:ff:ff:ff:ff:ff",
+              "ethertype" : "0x0800"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-7",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 6
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 139
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-8",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 138
+              }
+            },
+            "eth" : {
+              "destination-mac-address" : "ff:ff:ff:ff:ff:ff",
+              "ethertype" : "0x0800"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-9",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 2,
+              "destination-ipv4-network" : "239.255.255.250/32"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-pixstarphotoframe-10",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:dns"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    }, {
+      "name" : "to-ipv4-pixstarphotoframe",
+      "type" : "ipv4-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "to-ipv4-pixstarphotoframe-0",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 137
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-1",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "iptime.pix-star.com"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 80
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-2",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "source-ipv4-network" : "127.0.0.1/32"
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 137
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-3",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 6
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 139
+              },
+              "ietf-mud:direction-initiated" : "to-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-4",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:dns"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-5",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 6
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 445
+              },
+              "ietf-mud:direction-initiated" : "to-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-6",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:gateway"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 67
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-pixstarphotoframe-7",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "api.pix-star.com"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 443
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    }, {
+      "name" : "from-ipv6-pixstarphotoframe",
+      "type" : "ipv6-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "from-ipv6-pixstarphotoframe-0",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv6" : {
+              "protocol" : 0,
+              "destination-ipv6-network" : "ff00::/8"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    }, {
+      "name" : "from-ethernet-pixstarphotoframe",
+      "type" : "ethernet-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "from-ethernet-pixstarphotoframe-0",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "eth" : {
+              "ethertype" : "0x888e"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ethernet-pixstarphotoframe-1",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "eth" : {
+              "ethertype" : "0x0006"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    } ]
+  }
+}

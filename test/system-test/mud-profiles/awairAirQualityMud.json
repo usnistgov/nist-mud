@@ -1,0 +1,381 @@
+{
+  "ietf-mud:mud" : {
+    "mud-version" : 1,
+    "mud-url" : "https://awairairquality.com/awairairquality",
+    "last-update" : "2018-04-08T00:06:47.744+10:00",
+    "cache-validity" : 100,
+    "is-supported" : true,
+    "systeminfo" : "awairAirQuality",
+    "from-device-policy" : {
+      "access-lists" : {
+        "access-list" : [ {
+          "name" : "from-ipv4-awairairquality"
+        }, {
+          "name" : "from-ethernet-awairairquality"
+        } ]
+      }
+    },
+    "to-device-policy" : {
+      "access-lists" : {
+        "access-list" : [ {
+          "name" : "to-ipv4-awairairquality"
+        } ]
+      }
+    }
+  },
+  "ietf-access-control-list:access-lists" : {
+    "acl" : [ {
+      "name" : "from-ipv4-awairairquality",
+      "type" : "ipv4-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "from-ipv4-awairairquality-0",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "ietf-acldns:dst-dnsname" : "pool.ntp.org"
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 123
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-1",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:gateway"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 67
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-2",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:dns"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-3",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "ota.awair.is"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 443
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-4",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "timeserver.awair.is"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 443
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-5",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "ipv4" : {
+              "protocol" : 17,
+              "destination-ipv4-network" : "255.255.255.255/32"
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 67
+              }
+            },
+            "eth" : {
+              "destination-mac-address" : "ff:ff:ff:ff:ff:ff",
+              "ethertype" : "0x0800"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-6",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "messaging.awair.is"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 8883
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-7",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:dst-dnsname" : "api.awair.is"
+            },
+            "tcp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 443
+              },
+              "ietf-mud:direction-initiated" : "from-device"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ipv4-awairairquality-8",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "destination-ipv4-network" : "8.8.8.8/32"
+            },
+            "udp" : {
+              "destination-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    }, {
+      "name" : "to-ipv4-awairairquality",
+      "type" : "ipv4-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "to-ipv4-awairairquality-0",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "messaging.awair.is"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 8883
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-1",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:dns"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-2",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "timeserver.awair.is"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 443
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-3",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "controller" : "urn:ietf:params:mud:gateway"
+            },
+            "ipv4" : {
+              "protocol" : 17
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 67
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-4",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "api.awair.is"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 443
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-5",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "source-ipv4-network" : "8.8.8.8/32"
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 53
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-6",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 17,
+              "ietf-acldns:src-dnsname" : "pool.ntp.org"
+            },
+            "udp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 123
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "to-ipv4-awairairquality-7",
+          "matches" : {
+            "ipv4" : {
+              "protocol" : 6,
+              "ietf-acldns:src-dnsname" : "ota.awair.is"
+            },
+            "tcp" : {
+              "source-port" : {
+                "operator" : "eq",
+                "port" : 443
+              }
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    }, {
+      "name" : "from-ethernet-awairairquality",
+      "type" : "ethernet-acl-type",
+      "aces" : {
+        "ace" : [ {
+          "name" : "from-ethernet-awairairquality-0",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "eth" : {
+              "ethertype" : "0x888e"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        }, {
+          "name" : "from-ethernet-awairairquality-1",
+          "matches" : {
+            "ietf-mud:mud" : {
+              "local-networks" : [ null ]
+            },
+            "eth" : {
+              "ethertype" : "0x0006"
+            }
+          },
+          "actions" : {
+            "forwarding" : "accept"
+          }
+        } ]
+      }
+    } ]
+  }
+}
