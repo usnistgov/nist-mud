@@ -280,8 +280,8 @@ Please acknowledge our work if you re-use this code or design.
 * Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
 * Design Contributors : Charif Mohammed, Doug Montgomery
 * Project Manager Doug Montgomery <dougm@nist.gov>
-* This is a product of the Advanced Networking Technologies Division.
-![alt tag](docs/logos/nist-logo.png,docs/logos/antd-logo.png)
+* This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
+![alt tag](docs/logos/nist-logo.png)
 
 ## LIMITATIONS ##
 
