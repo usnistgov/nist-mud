@@ -317,7 +317,7 @@ if __name__ == '__main__':
         print "response ", r
 
 
-    if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == 1 :
+    if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         for (configfile,suffix) in { ("../config/ietfmud.json","ietf-mud:mud")} :
             data = json.load(open(configfile))
             print "configfile", configfile

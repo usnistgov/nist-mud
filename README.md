@@ -271,7 +271,6 @@ usefulness of this software.
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
 
-Please acknowledge our work if you re-use this code or design.
 
 
 ## Credits ##
@@ -281,6 +280,8 @@ Please acknowledge our work if you re-use this code or design.
 * Design Contributors : Charif Mohammed, Doug Montgomery
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
+Please acknowledge our work if you re-use this code or design.
+
 ![alt tag](docs/logos/nist-logo.png)
 
 ## LIMITATIONS ##
