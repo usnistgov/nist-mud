@@ -463,10 +463,14 @@ public class MudFlowsInstaller {
         BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK
                 .or(SdnMudConstants.SRC_MODEL_MASK);
 
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
         this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
                 protocol.shortValue(), sourcePort, destinationPort,
-                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId,
-                this.getCpeNode());
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
 
     }
 
@@ -491,10 +495,14 @@ public class MudFlowsInstaller {
 
         BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK
                 .or(SdnMudConstants.SRC_NETWORK_MASK);
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
         this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
                 protocol.shortValue(), sourcePort, destinationPort,
-                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId,
-                this.getCpeNode());
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
     }
 
     private void installPermitToLocalNetworksFlowRule(String mudUri,
@@ -518,10 +526,14 @@ public class MudFlowsInstaller {
         BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK
                 .or(SdnMudConstants.DST_NETWORK_MASK);
 
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
         this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
                 protocol.shortValue(), sourcePort, destinationPort,
-                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId,
-                this.getCpeNode());
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
     }
 
     private void installPermitToSameManufacturerFlowRule(String mudUri,
@@ -552,20 +564,23 @@ public class MudFlowsInstaller {
         BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK
                 .or(SdnMudConstants.DST_MODEL_MASK);
 
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
         this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
                 protocol.shortValue(), sourcePort, destinationPort,
-                BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId,
-                this.getCpeNode());
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
     }
 
     private void installPermitFromSrcManSrcPortToDestManDestPortFlow(
             BigInteger metadata, BigInteger metadataMask, short protocol,
             int srcPort, int destinationPort, short tableId,
+            BigInteger newMetadata, BigInteger newMetadataMask,
             FlowCookie flowCookie, FlowId flowId,
             InstanceIdentifier<FlowCapableNode> node) {
 
-        BigInteger newMetadata = flowCookie.getValue();
-        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
         FlowBuilder fb = FlowUtils
                 .createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata,
                         metadataMask, protocol, srcPort, destinationPort,

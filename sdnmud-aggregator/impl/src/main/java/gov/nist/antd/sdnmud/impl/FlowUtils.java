@@ -68,6 +68,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Layer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.MetadataBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.Ipv4MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.TcpMatchBuilder;
@@ -332,56 +333,50 @@ public class FlowUtils {
 
     }
 
-    private static MatchBuilder createDstTcpPortMatch(MatchBuilder matchBuilder,
-            int tcpport) {
+    private static MatchBuilder createDstProtocolPortMatch(
+            MatchBuilder matchBuilder, short protocol, int port) {
         IpMatchBuilder ipmatch = new IpMatchBuilder();
         ipmatch.setIpProto(IpVersion.Ipv4);
-        ipmatch.setIpProtocol(SdnMudConstants.TCP_PROTOCOL);
+        ipmatch.setIpProtocol(protocol);
         matchBuilder.setIpMatch(ipmatch.build());
-        PortNumber tcpDstPort = new PortNumber(tcpport);
-        TcpMatchBuilder tcpmatch = new TcpMatchBuilder();
-        tcpmatch.setTcpDestinationPort(tcpDstPort);
-        matchBuilder.setLayer4Match(tcpmatch.build());
-        return matchBuilder;
-    }
 
-    private static MatchBuilder createDstUdpPortMatch(MatchBuilder matchBuilder,
-            int udpPort) {
-        IpMatchBuilder ipmatch = new IpMatchBuilder();
-        ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
-        ipmatch.setIpProto(IpVersion.Ipv4);
-        matchBuilder.setIpMatch(ipmatch.build());
-        PortNumber udpDstPort = new PortNumber(udpPort);
-        UdpMatchBuilder udpmatch = new UdpMatchBuilder();
-        udpmatch.setUdpDestinationPort(udpDstPort);
-        matchBuilder.setLayer4Match(udpmatch.build());
-        return matchBuilder;
-    }
+        if (port != -1) {
+            PortNumber portNumber = new PortNumber(port);
+            Layer4Match l4match = null;
+            if (protocol == SdnMudConstants.TCP_PROTOCOL) {
+                l4match = new TcpMatchBuilder()
+                        .setTcpDestinationPort(portNumber).build();
+            } else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
+                l4match = new UdpMatchBuilder()
+                        .setUdpDestinationPort(portNumber).build();
+            }
+            matchBuilder.setLayer4Match(l4match);
+        }
 
-    private static MatchBuilder createSrcTcpPortMatch(MatchBuilder matchBuilder,
-            int tcpport) {
-        IpMatchBuilder ipmatch = new IpMatchBuilder();
-        ipmatch.setIpProto(IpVersion.Ipv4);
-        ipmatch.setIpProtocol(SdnMudConstants.TCP_PROTOCOL);
-        matchBuilder.setIpMatch(ipmatch.build());
-        PortNumber portNumber = new PortNumber(tcpport);
-        TcpMatchBuilder tcpmatch = new TcpMatchBuilder();
-        tcpmatch.setTcpSourcePort(portNumber);
-        matchBuilder.setLayer4Match(tcpmatch.build());
         return matchBuilder;
 
     }
 
-    private static MatchBuilder createSrcUdpPortMatch(MatchBuilder matchBuilder,
-            int udpPort) {
+    private static MatchBuilder createSrcProtocolPortMatch(
+            MatchBuilder matchBuilder, short protocol, int port) {
         IpMatchBuilder ipmatch = new IpMatchBuilder();
-        ipmatch.setIpProtocol(SdnMudConstants.UDP_PROTOCOL);
+        ipmatch.setIpProtocol(protocol);
         ipmatch.setIpProto(IpVersion.Ipv4);
         matchBuilder.setIpMatch(ipmatch.build());
-        PortNumber portNumber = new PortNumber(udpPort);
-        UdpMatchBuilder udpmatch = new UdpMatchBuilder();
-        udpmatch.setUdpSourcePort(portNumber);
-        matchBuilder.setLayer4Match(udpmatch.build());
+
+        if (port != -1) {
+            PortNumber portNumber = new PortNumber(port);
+            Layer4Match l4match = null;
+            if (protocol == SdnMudConstants.TCP_PROTOCOL) {
+                l4match = new TcpMatchBuilder().setTcpSourcePort(portNumber)
+                        .build();
+            } else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
+                l4match = new UdpMatchBuilder().setUdpSourcePort(portNumber)
+                        .build();
+            }
+            matchBuilder.setLayer4Match(l4match);
+        }
+
         return matchBuilder;
     }
 
@@ -545,6 +540,31 @@ public class FlowUtils {
         return sendToControllerFlow;
     }
 
+    static FlowBuilder createIpMatchSendPacketToControllerFlow(
+            BigInteger metadata, BigInteger metadataMask, Short tableId,
+            FlowId flowId, FlowCookie flowCookie) {
+        MatchBuilder matchBuilder = new MatchBuilder();
+        createIpV4Match(matchBuilder);
+        createEthernetTypeMatch(matchBuilder, 0x0800);
+        List<Instruction> instructions = new ArrayList<Instruction>();
+        addSendPacketToControllerInstruction(instructions);
+        addWriteMetadataInstruction(instructions, metadata, metadataMask);
+        InstructionsBuilder insb = new InstructionsBuilder();
+        insb.setInstruction(instructions);
+        FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
+                .setFlowName("uncoditionalSendToController").setId(flowId)
+                .setKey(new FlowKey(flowId)).setCookie(flowCookie);
+
+        sendToControllerFlow.setMatch(matchBuilder.build())
+                .setInstructions(insb.build())
+                .setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY + 1)
+                .setBufferId(OFConstants.ANY).setHardTimeout(0)
+                .setIdleTimeout(0)
+                .setFlags(new FlowModFlags(false, false, false, false, false));
+
+        return sendToControllerFlow;
+    }
+
     static FlowBuilder createToDhcpServerMatchGoToNextTableFlow(short tableId,
             FlowCookie flowCookie, FlowId flowId) {
 
@@ -614,13 +634,7 @@ public class FlowUtils {
         createMetadataMatch(matchBuilder, metadata, metadataMask);
         createEthernetTypeMatch(matchBuilder, 0x800);
         createDestIpv4Match(matchBuilder, address);
-        if (destinationPort != -1) {
-            if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-                createDstUdpPortMatch(matchBuilder, destinationPort);
-            } else {
-                createDstTcpPortMatch(matchBuilder, destinationPort);
-            }
-        }
+        createDstProtocolPortMatch(matchBuilder, protocol, destinationPort);
 
         InstructionsBuilder insb = sendToController
                 ? createGoToNextTableAndSendToControllerInstruction(
@@ -661,13 +675,7 @@ public class FlowUtils {
         createMetadataMatch(matchBuilder, metadata, metadataMask);
         createEthernetTypeMatch(matchBuilder, 0x800);
         createSrcIpv4Match(matchBuilder, address);
-        if (srcPort != -1) {
-            if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-                createSrcUdpPortMatch(matchBuilder, srcPort);
-            } else {
-                createSrcTcpPortMatch(matchBuilder, srcPort);
-            }
-        }
+        createSrcProtocolPortMatch(matchBuilder, protocol, srcPort);
 
         InstructionsBuilder insb = sendToController
                 ? createGoToNextTableAndSendToControllerInstruction(targetTable,
@@ -698,17 +706,8 @@ public class FlowUtils {
         MatchBuilder matchBuilder = new MatchBuilder();
         createMetadataMatch(matchBuilder, metadata, metadataMask);
         createEthernetTypeMatch(matchBuilder, 0x800);
-        if (protocol == SdnMudConstants.UDP_PROTOCOL) {
-            if (srcPort != -1)
-                createSrcUdpPortMatch(matchBuilder, srcPort);
-            if (destPort != -1)
-                createDstUdpPortMatch(matchBuilder, destPort);
-        } else {
-            if (srcPort != -1)
-                createSrcTcpPortMatch(matchBuilder, srcPort);
-            if (destPort != -1)
-                createDstTcpPortMatch(matchBuilder, destPort);
-        }
+        createSrcProtocolPortMatch(matchBuilder, protocol, srcPort);
+        createDstProtocolPortMatch(matchBuilder, protocol, destPort);
 
         short targetTableId = (short) (tableId + 1);
         InstructionsBuilder insb = createGoToNextTableInstruction(targetTableId,
@@ -790,11 +789,7 @@ public class FlowUtils {
         MatchBuilder matchBuilder = new MatchBuilder();
         createEthernetTypeMatch(matchBuilder, 0x800);
 
-        if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            createDstTcpPortMatch(matchBuilder, port);
-        } else {
-            createDstUdpPortMatch(matchBuilder, port);
-        }
+        FlowUtils.createDstProtocolPortMatch(matchBuilder, protocol, port);
 
         createDestIpv4Match(matchBuilder, dnsAddress);
         Match match = matchBuilder.build();
@@ -813,7 +808,7 @@ public class FlowUtils {
     }
 
     static FlowBuilder createSrcAddressPortProtocolMatchGoToNextFlow(
-            Ipv4Address dnsAddress, int port, short protocol, short tableId,
+            Ipv4Address address, int port, short protocol, short tableId,
             FlowId flowId, FlowCookie flowCookie) {
 
         FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
@@ -823,12 +818,9 @@ public class FlowUtils {
         MatchBuilder matchBuilder = new MatchBuilder();
 
         createEthernetTypeMatch(matchBuilder, 0x800);
-        if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            createSrcTcpPortMatch(matchBuilder, port);
-        } else {
-            createSrcUdpPortMatch(matchBuilder, port);
-        }
-        createSrcIpv4Match(matchBuilder, dnsAddress);
+        createSrcProtocolPortMatch(matchBuilder, protocol, port);
+        createSrcIpv4Match(matchBuilder, address);
+
         Match match = matchBuilder.build();
         short nextTable = (short) (tableId + 1);
 
@@ -857,11 +849,7 @@ public class FlowUtils {
 
         createSrcIpv4Match(matchBuilder, srcIp);
         createEthernetDestMatch(matchBuilder, dstMac);
-        if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            createSrcTcpPortMatch(matchBuilder, port);
-        } else {
-            createSrcUdpPortMatch(matchBuilder, port);
-        }
+        FlowUtils.createSrcProtocolPortMatch(matchBuilder, protocol, port);
 
         InstructionsBuilder isb = FlowUtils
                 .createGoToNextTableAndSendToControllerInstruction(
@@ -891,11 +879,7 @@ public class FlowUtils {
 
         createSrcIpv4Match(matchBuilder, srcIp);
         createEthernetDestMatch(matchBuilder, dstMac);
-        if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-            createSrcTcpPortMatch(matchBuilder, port);
-        } else {
-            createSrcUdpPortMatch(matchBuilder, port);
-        }
+        FlowUtils.createSrcProtocolPortMatch(matchBuilder, protocol, port);
 
         InstructionsBuilder isb = FlowUtils
                 .createGoToNextTableAndSendToControllerInstruction(

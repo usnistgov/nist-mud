@@ -401,7 +401,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
                             node);
 
                 }
-                // transmitPacket(notification);
+                transmitPacket(notification);
 
             }
         }

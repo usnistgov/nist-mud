@@ -94,9 +94,8 @@ public class WakeupOnFlowCapableNode
         FlowId flowId = InstanceIdentifierUtils
                 .createFlowId(nodeUri + ":sendToController");
         FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-        FlowBuilder fb = FlowUtils
-                .createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(
-                        metadata, metadataMask, tableId, flowId, flowCookie);
+        FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerFlow(
+                metadata, metadataMask, tableId, flowId, flowCookie);
         this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
     }
 
