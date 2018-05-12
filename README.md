@@ -186,21 +186,20 @@ Check if the L2Switch flows are installed. On the mininet VM :
 On the emulation VM:
  
       setenv CONTROLLER_ADDR=ip-address-of-OpenDaylight-controller.
-      export UNITTEST=0
-      cd $PROJECT_HOME/test/unittest/mud
-      sudo -E python mud-test.py
+      cd $PROJECT_HOME/test/unittest/mud-controllerclass-test
+      sudo -E UNITTEST=0 python mud-test.py
 
 This script installs the following:
 
 - ../conifg/cpenodes.json : Tells the controller what switches are of interest
-- ../config/access-control-list.json : The access control lists (from mudmaker).
-- ../config/device-association.json  : Associates MAC address with the MUD URI. This information
+- access-control-list.json : The access control lists (from mudmaker).
+- device-association.json  : Associates MAC address with the MUD URI. This information
    would be transmitted to the MUD ACL server using one of the three mechanisms described in the MUD draft.
-- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes. 
+- controllerclass-mapping.json : Associates ip addresses to controller classes. 
    This would be typically specified by the adminstrator.
 
 On the emulation VM dump flows (see above). 
-You should see 9 tables created with the last one containing the Flows for the L2 switch.
+You should see 10 tables created. Now ping some hosts.
 The following will work because mud rules have not been installed at yet:
 
      h1 ping h2 
