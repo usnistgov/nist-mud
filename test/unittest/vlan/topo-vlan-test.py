@@ -277,7 +277,7 @@ if __name__ == '__main__':
 
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpe-vlans.json","nist-network-topology:topology"), ("../config/trunk-switches.json","nist-network-topology:trunk-switches")}:
+    for (configfile,suffix) in {("cpe-vlans.json","nist-network-topology:topology"), ("trunk-switches.json","nist-network-topology:trunk-switches")}:
         print "configfile ",configfile
         data = json.load(open(configfile))
         print "configfile", configfile

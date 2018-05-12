@@ -146,6 +146,11 @@ public class MudFlowsInstaller {
         }
     }
 
+    private static String getManufacturer(Matches matches) {
+        Matches1 matches1 = matches.getAugmentation(Matches1.class);
+        return matches1.getMud().getManufacturer().getDomainName().getValue();
+    }
+
     private static boolean isValidIpV4Address(String ip) {
         try {
             if (ip == null || ip.isEmpty()) {
@@ -435,8 +440,8 @@ public class MudFlowsInstaller {
 
     }
 
-    private void installPermitFromSameManufacturerFlowRule(String mudUri,
-            String flowSpec, Matches matches) {
+    private void installPermitFromDeviceToSameManufacturerFlowRule(
+            String mudUri, String flowSpec, Matches matches) {
         LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri
                 + " flowSpec " + flowSpec);
         Short protocol = getProtocol(matches);
@@ -474,7 +479,48 @@ public class MudFlowsInstaller {
 
     }
 
-    private void installPermitFromLocalNetworksFlowRule(String mudUri,
+    private void installPermitFromDeviceToManufacturerFlowRule(String mudUri,
+            String flowSpec, Matches matches) {
+        LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri
+                + " flowSpec " + flowSpec);
+        Short protocol = getProtocol(matches);
+        if (protocol == -1) {
+            LOG.error("Cannot install ");
+            return;
+        }
+        // Range of ports that this device is allowed to talk to.
+
+        int sourcePort = getSourcePort(matches);
+        int destinationPort = getDestinationPort(matches);
+        FlowCookie flowCookie = InstanceIdentifierUtils
+                .createFlowCookie(flowSpec);
+
+        String manufacturer = MudFlowsInstaller.getManufacturer(matches);
+
+        int manufacturerId = InstanceIdentifierUtils
+                .getManfuacturerId(manufacturer);
+        int modelId = InstanceIdentifierUtils.getModelId(mudUri);
+        FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
+
+        BigInteger metadata = BigInteger.valueOf(manufacturerId)
+                .shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
+                .or(BigInteger.valueOf(modelId)
+                        .shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+        BigInteger mask = SdnMudConstants.DST_MANUFACTURER_MASK
+                .or(SdnMudConstants.SRC_MODEL_MASK);
+
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
+        this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
+                protocol.shortValue(), sourcePort, destinationPort,
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
+
+    }
+
+    private void installPermitFromLocalNetworksToDeviceFlowRule(String mudUri,
             String flowSpec, Matches matches) {
         int sourcePort = getSourcePort(matches);
         int destinationPort = getDestinationPort(matches);
@@ -505,7 +551,7 @@ public class MudFlowsInstaller {
                 newMetadataMask, flowCookie, flowId, this.getCpeNode());
     }
 
-    private void installPermitToLocalNetworksFlowRule(String mudUri,
+    private void installPermitFromDeviceToLocalNetworksFlowRule(String mudUri,
             String flowSpec, Matches matches) {
         int sourcePort = getSourcePort(matches);
         int destinationPort = getDestinationPort(matches);
@@ -536,8 +582,8 @@ public class MudFlowsInstaller {
                 newMetadataMask, flowCookie, flowId, this.getCpeNode());
     }
 
-    private void installPermitToSameManufacturerFlowRule(String mudUri,
-            String flowSpec, Matches matches) {
+    private void installPermitToDeviceFromSameManufacturerFlowRule(
+            String mudUri, String flowSpec, Matches matches) {
         LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri
                 + " flowSpec " + flowSpec);
         Short protocol = getProtocol(matches);
@@ -552,6 +598,44 @@ public class MudFlowsInstaller {
         FlowCookie flowCookie = InstanceIdentifierUtils
                 .createFlowCookie(flowSpec);
         String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
+        int manufacturerId = InstanceIdentifierUtils
+                .getManfuacturerId(manufacturer);
+        int modelId = InstanceIdentifierUtils.getModelId(mudUri);
+        FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
+
+        BigInteger metadata = BigInteger.valueOf(manufacturerId)
+                .shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT)
+                .or(BigInteger.valueOf(modelId)
+                        .shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+        BigInteger mask = SdnMudConstants.SRC_MANUFACTURER_MASK
+                .or(SdnMudConstants.DST_MODEL_MASK);
+
+        BigInteger newMetadata = BigInteger
+                .valueOf(InstanceIdentifierUtils.getFlowHash(flowSpec));
+        BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
+        this.installPermitFromSrcManSrcPortToDestManDestPortFlow(metadata, mask,
+                protocol.shortValue(), sourcePort, destinationPort,
+                BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
+                newMetadataMask, flowCookie, flowId, this.getCpeNode());
+    }
+
+    private void installPermitToDeviceFromManufacturerFlowRule(String mudUri,
+            String flowSpec, Matches matches) {
+        LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri
+                + " flowSpec " + flowSpec);
+        Short protocol = getProtocol(matches);
+        if (protocol == -1) {
+            LOG.error("invlid protocol -- cannot install ");
+            return;
+        }
+        // Range of ports that this device is allowed to talk to.
+
+        int sourcePort = getSourcePort(matches);
+        int destinationPort = getDestinationPort(matches);
+        FlowCookie flowCookie = InstanceIdentifierUtils
+                .createFlowCookie(flowSpec);
+        String manufacturer = getManufacturer(matches);
         int manufacturerId = InstanceIdentifierUtils
                 .getManfuacturerId(manufacturer);
         int modelId = InstanceIdentifierUtils.getModelId(mudUri);
@@ -945,13 +1029,19 @@ public class MudFlowsInstaller {
                                 } else if (matchesType == MatchesType.LOCAL_NETWORKS) {
                                     String flowSpec = createLocalFlowSpec(
                                             authority);
-                                    this.installPermitToLocalNetworksFlowRule(
+                                    this.installPermitFromDeviceToLocalNetworksFlowRule(
+                                            mudUri.getValue(), flowSpec,
+                                            matches);
+                                } else if (matchesType == MatchesType.MANUFACTURER) {
+                                    String flowSpec = createLocalFlowSpec(
+                                            authority);
+                                    this.installPermitFromDeviceToManufacturerFlowRule(
                                             mudUri.getValue(), flowSpec,
                                             matches);
                                 } else if (matchesType == MatchesType.SAME_MANUFACTURER) {
                                     String flowSpec = createLocalFlowSpec(
                                             authority);
-                                    this.installPermitFromSameManufacturerFlowRule(
+                                    this.installPermitFromDeviceToSameManufacturerFlowRule(
                                             mudUri.getValue(), flowSpec,
                                             matches);
                                 }
@@ -1010,13 +1100,19 @@ public class MudFlowsInstaller {
                                 } else if (matchesType == MatchesType.LOCAL_NETWORKS) {
                                     String flowSpec = createLocalFlowSpec(
                                             authority);
-                                    this.installPermitFromLocalNetworksFlowRule(
+                                    this.installPermitFromLocalNetworksToDeviceFlowRule(
+                                            mudUri.getValue(), flowSpec,
+                                            matches);
+                                } else if (matchesType == MatchesType.MANUFACTURER) {
+                                    String flowSpec = createLocalFlowSpec(
+                                            authority);
+                                    this.installPermitToDeviceFromManufacturerFlowRule(
                                             mudUri.getValue(), flowSpec,
                                             matches);
                                 } else if (matchesType == MatchesType.SAME_MANUFACTURER) {
                                     String flowSpec = createLocalFlowSpec(
                                             authority);
-                                    this.installPermitToSameManufacturerFlowRule(
+                                    this.installPermitToDeviceFromSameManufacturerFlowRule(
                                             mudUri.getValue(), flowSpec,
                                             matches);
                                 }

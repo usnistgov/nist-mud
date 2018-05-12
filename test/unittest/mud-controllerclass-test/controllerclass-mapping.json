@@ -16,7 +16,7 @@
      	},
         {
     		"uri": "https://toaster.nist.gov/super1",
-		 "address-list" : [ "10.0.0.7" ]
+		    "address-list" : [ "10.0.0.7" ]
         }
    ],
    "local-networks": [ "10.0.0.0/24" ]

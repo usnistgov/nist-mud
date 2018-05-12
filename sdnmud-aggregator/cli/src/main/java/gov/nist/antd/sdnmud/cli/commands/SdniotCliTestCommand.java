@@ -1,5 +1,6 @@
 /*
- * Copyright © 2017 MIST and others.  All rights reserved.
+ * Copyright © None.
+ *
  *
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License v1.0 which accompanies this distribution,
@@ -7,46 +8,39 @@
  */
 package gov.nist.antd.sdnmud.cli.commands;
 
-import org.apache.karaf.shell.commands.Command;
-import org.apache.karaf.shell.commands.Option;
-import org.apache.karaf.shell.console.AbstractAction;
-import gov.nist.antd.sdnmud.cli.api.SdniotCliCommands;
+import org.apache.karaf.shell.api.action.Action;
+import org.apache.karaf.shell.api.action.Argument;
+import org.apache.karaf.shell.api.action.Command;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import gov.nist.antd.sdnmud.cli.api.SdniotCliCommands;
 
 /**
  * This is an example class. The class name can be renamed to match the command implementation that it will invoke.
  * Specify command details by updating the fields in the Command annotation below.
  */
 @Command(name = "test-command", scope = "add the scope of the command, usually project name", description = "add a description for the command")
-public class SdniotCliTestCommand extends AbstractAction {
+public class SdniotCliTestCommand implements Action {
+
+
 
     private static final Logger LOG = LoggerFactory.getLogger(SdniotCliTestCommand.class);
+    @Argument(index = 0, name = "testArgument", description = "The command argument", required = false, multiValued = false)
+
+    private String testArgument;
+
     protected final SdniotCliCommands service;
 
     public SdniotCliTestCommand(final SdniotCliCommands service) {
         this.service = service;
     }
 
-    /**
-     * Add the arguments required by the command.
-     * Any number of arguments can be added using the Option annotation
-     * The below argument is just an example and should be changed as per your requirements
-     */
-    @Option(name = "-tA",
-            aliases = { "--testArgument" },
-            description = "test command argument",
-            required = true,
-            multiValued = false)
-    private Object testArgument;
+
+
 
     @Override
-    protected Object doExecute() throws Exception {
-        /**
-         * Invoke commannd implementation here using the service instance.
-         * Implement how you want the output of the command to be displayed.
-         * Below is just an example.
-         */
+    public Object execute() throws Exception {
         final String testMessage = (String) service.testCommand(testArgument);
         return testMessage;
     }

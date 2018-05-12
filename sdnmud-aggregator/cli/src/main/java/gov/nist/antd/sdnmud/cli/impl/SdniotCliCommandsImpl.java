@@ -10,6 +10,7 @@ package gov.nist.antd.sdnmud.cli.impl;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import gov.nist.antd.sdnmud.cli.api.SdniotCliCommands;
 
 public class SdniotCliCommandsImpl implements SdniotCliCommands {
@@ -24,6 +25,8 @@ public class SdniotCliCommandsImpl implements SdniotCliCommands {
 
     @Override
     public Object testCommand(Object testArgument) {
+
         return "This is a test implementation of test-command";
+
     }
 }

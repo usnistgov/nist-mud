@@ -271,8 +271,8 @@ if __name__ == '__main__':
     # setup our topology
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 
-        ("../config/device-association.json","nist-mud-device-association:mapping"),
-        ("../config/ids-config.json","nist-flowmon-config:flowmon-config") } :
+        ("device-association.json","nist-mud-device-association:mapping"),
+        ("ids-config.json","nist-flowmon-config:flowmon-config") } :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix

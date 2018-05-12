@@ -20,6 +20,8 @@ from mininet.log import setLogLevel
 import unittest
 import re
 import os
+import signal
+
 
 
 #########################################################
@@ -34,9 +36,22 @@ class TestAccess(unittest.TestCase) :
         pass
 
     def tearDown(self):
-	try:
-            os.remove("index.html.1")
-        except OSError:
+         print "TEAR DOWN"
+         try:
+
+             for fname in { "/tmp/udpserver.pid", 
+                            "/tmp/udpclient.pid",
+                            "/tmp/tcpserver.pid",
+                            "/tmp/tcpclient.pid" } :
+                if os.path.exists(fname):
+                    with  open(fname) as f:
+                        for h in hosts:
+                            os.kill(int(f.read()),signal.SIGTERM)
+                    os.remove(fname)
+
+		time.sleep(5)
+
+         except OSError:
             pass
 
     def runAndReturnOutput(self, host, command ):
@@ -45,44 +60,46 @@ class TestAccess(unittest.TestCase) :
         pieces = retval.group(0).split('=')
         rc = pieces[1].split(']')[0]
         return rc
-    
-    def testNonIotHostHttpGetExpectPass(self):
-        h4 = hosts[3]
-        result = h4.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
-        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-    def testUdpSameManPingExpectPass(self) :
-        print "pinging a same manufacturer peer -- this should succeed with MUD"
+    def testTcpGetExpectPass(self):
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
+        h3 = hosts[2]
+        h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 8010 &")
+	time.sleep(2)
+        result = h1.cmdPrint("python tcp-client.py -H 10.0.0.3 -P 8010")
+        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+
+    def testTcpGetExpectFail(self):
+        h1 = hosts[0]
+        h2 = hosts[1]
+        h1.cmdPrint("python tcp-server.py -H 10.0.0.1 -P 8010 &")
+	time.sleep(2)
+        result = h2.cmdPrint("python tcp-client.py -H 10.0.0.1 -P 8010")
+        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+
+    def testUdpManufacturerPingExpectPass(self) :
+        print "pinging a same manufacturer peer -- this should succeed with MUD"
+        h2 = hosts[1]
+    	h2.cmdPrint("python udpping.py --port 8008 --server --timeout &")
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
-    def testLocalNetPingExpectPass(self) :
+    def testUdpManufacturerPingExpectPass1(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
+        h2 = hosts[1]
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+    	h1.cmdPrint("python udpping.py --port 8008 --server --timeout &")
+        result = self.runAndReturnOutput(h2, "python udpping.py --port 8008 --host 10.0.0.1 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
-    def testUdpPingExpectFail(self):
-        print "pinging a peer -- this should fail with MUD"
+    def testUdpManufacturerPingExpectFail(self) :
+        print "pinging a same manufacturer peer -- this should succeed with MUD"
+        h3 = hosts[2]
+    	h3.cmdPrint("python udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
-        self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
-
-
-    def testHttpGetExpectPass(self):
-        print "wgetting from an allowed host -- this should succeed with MUD"
-        h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
-        print "result = ",result
-        # Check to see if the result was successful.
-        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
-
-    def testHttpGetExpectFail(self):
-        print "Wgetting from antd.local -- this should fail with MUD"
-        # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
-        self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
+        self.assertTrue(int(result) == 0, "expect unsuccessful ping")
 
 
 
@@ -92,11 +109,10 @@ class TestAccess(unittest.TestCase) :
 
 def cli():
     global net,c1,s1,s2,s3
-    global h1,h2,h3,h4,h5,h6,h7,h8,h9,h10
+    global hosts
     cli = CLI( net )
-    h1.terminate()
-    h2.terminate()
-    h3.terminate()
+    for h in hosts:
+        h.terminate()
     net.stop()
 
 
@@ -230,12 +246,9 @@ def setupTopology(controller_addr):
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
-    h9.cmdPrint('python http-server.py -H 203.0.113.13&')
 
     # h10 is our second fake host. It runs another internet web server that we cannot reach
     h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
-    # Start a web server there.
-    h10.cmdPrint('python http-server.py -H 203.0.113.14&')
 
 
     # Start dnsmasq (our dns server).
@@ -248,12 +261,10 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    h2.cmdPrint("python udpping.py --port 4000 --server &")
-    h4.cmdPrint("python udpping.py --port 4000 --server &")
-    # h5 is a localhost peer.
-    h5.cmdPrint("python udpping.py --port 8000 --server &")
-    # h7 is the controller peer.
-    h7.cmdPrint("python udpping.py --port 8002 --server &")
+    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
+    	h3.cmdPrint("python udpping.py --port 8008 --server &")
+    	h2.cmdPrint("python udpping.py --port 8008 --server &")
+    	h3.cmdPrint("python tcp-server.py -P 8010 -H 10.0.0.3 &")
     
     # Start the IDS on node 8
 
@@ -306,9 +317,12 @@ if __name__ == '__main__':
     setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("../config/access-control-list.json","ietf-access-control-list:access-lists"),
-        ("../config/device-association.json","nist-mud-device-association:mapping"),
-        ("../config/controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")}:
+        ("access-control-list.json","ietf-access-control-list:access-lists"),
+        ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
+        ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
+        ("device-association-toaster.json","nist-mud-device-association:mapping"),
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        ("ietfmud.json","ietf-mud:mud")} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -318,16 +332,8 @@ if __name__ == '__main__':
 
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        for (configfile,suffix) in { ("../config/ietfmud.json","ietf-mud:mud")} :
-            data = json.load(open(configfile))
-            print "configfile", configfile
-            url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
-            print "url ", url
-            r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
-            print "response ", r
-            # Let the servers start on the test network.
-            time.sleep(5)
-            unittest.main()
+        time.sleep(5)
+        unittest.main()
     else:
         cli()
 

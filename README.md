@@ -10,11 +10,12 @@ access and network functionality they require to properly function.
 The network infrastructure installs Access Control Rules to restrict
 what the device can do.
 
-The MUD standard is defined here https://www.ietf.org/id/draft-ietf-opsawg-mud-20.txt
+The MUD standard is defined here https://www.ietf.org/id/draft-ietf-opsawg-mud-18.txt
 
 This project implements the following :
 
-- SDN MUD : MUD ACLs on SDN Switches. 
+- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation. 
+  We only implement the necessary ACLs to implement the profiles generated from mudmaker.org.
 
 - Flow Monitor : A means for extracting outbound packets from IOT devices based on manufacturer 
 (or unclassified packets) to be provided to an IDS such as Snort.
@@ -24,7 +25,7 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the service
 provider network.
 
-## Architecture ##
+## Network Architecture ##
 
 Our  network model consists of a collection of CPE switches connected
 to an NPE switch. The NPE switch routes packets to a cloud-resident
@@ -84,21 +85,26 @@ unit tests and javadoc creation. This will change after the project is in a fina
 ## Try it out  ##
 
 Create a virtual machine running Ubuntu 16. Install mininet on it.
-We will call this the emulation machine.
-You should run the test environment on a separate VM. Otherwise, Mininet settings may interfere with
-your settings on your host. We assume that OpenDaylight is on another host different from your emulation VM
-(it can be co-resident if you wish).
+We will call this the emulation machine.  You should run the test
+environment on a separate VM. Otherwise, Mininet settings may interfere
+with your settings on your host. We assume that OpenDaylight is on
+another host different from your emulation VM (it can be co-resident on
+the emulation host if you wish).
 
 ### Pre-requisites for the emulation VM ###
 
-Allow root privileges for user to save yourself some typing:
+Allow yourself root privileges for user to save yourself some typing:
 
      sudo visudo
      <username> ALL=(ALL) NOPASSWD: ALL
 
-Install mininet on the virtual machine.  Install openvswitch on the mininet vm.
+Install mininet on the virtual machine.  
+
 
     sudo apt-get install openvswitch-switch
+
+Install openvswitch on the mininet vm.
+
     sudo apt-get install mininet
 
 Install python 2.7x if you don't have it (it should already be there).
@@ -186,10 +192,12 @@ On the emulation VM:
 
 This script installs the following:
 
-- ../conifg/topology.json : Tells the controller what switches are of interest
+- ../conifg/cpenodes.json : Tells the controller what switches are of interest
 - ../config/access-control-list.json : The access control lists (from mudmaker).
-- ../config/device-association.json  : Associates MAC address with the MUD URI.
-- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes.
+- ../config/device-association.json  : Associates MAC address with the MUD URI. This information
+   would be transmitted to the MUD ACL server using one of the three mechanisms described in the MUD draft.
+- ../config/controllerclass-mapping.json : Associates ip addresses to controller classes. 
+   This would be typically specified by the adminstrator.
 
 On the emulation VM dump flows (see above). 
 You should see 9 tables created with the last one containing the Flows for the L2 switch.
@@ -242,10 +250,15 @@ Note: The flow rules are cached. The first interaction will take a while until t
 
 To run these tests and more in an automated fashion, just set the following
 
-    export UNITTEST=1
-    sudo -e python mud-test.py
+    sudo -E UNITTEST=1 python mud-test.py
    
-This will exercise the mud implementation and check if it is working as expected
+This will exercise the mud implementation and check if it is working as expected. If you would like to exercise the 
+implementation from the command line, try the following
+
+  
+    sudo -E UNITTEST=0 python mud-test.py
+
+This will take you to the mininet command line.
   
 
 ## Copyrights and Disclaimers ##
@@ -275,7 +288,7 @@ source projects are noted in the source files as appropriate.
 
 ## Credits ##
 
-* The MUD Standard was primarily authored by Eliot Lear (Cisco) in the OPSAWG interest group.
+* The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
 * Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
 * Design Contributors : Charif Mohammed, Doug Montgomery
 * Project Manager Doug Montgomery <dougm@nist.gov>
@@ -294,5 +307,11 @@ This will happen after:
 
 1. The IETF draft has achieved an RFC status.
 2. All issues are satisfactorily resolved.
+
+This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
+This limitation will be removed in subsequent releases as the MUD standard matures and gets deployed.
+
+The vlan management code is for testing purposes. The OpenDaylight network virtualization NetVirt project
+should be used for network virtualization.
 
 
