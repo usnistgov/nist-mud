@@ -1,0 +1,192 @@
+{
+  "ietf-access-control-list:access-lists": {
+    "acl": [
+      {
+        "name": "mud-38382-v4to",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "cl0-todev",
+              "matches": {
+                "ipv4": {
+                  "ietf-acldns:src-dnsname": "www.nist.local",
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 80
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myctl0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "my-controller": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 8000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 4000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "mud-38382-v4fr",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "cl0-frdev",
+              "matches": {
+                "ipv4": {
+                  "ietf-acldns:dst-dnsname": "www.nist.local",
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 80
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myctl0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "my-controller": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 8002
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 8000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "myman0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "same-manufacturer": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 4000
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
