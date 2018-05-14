@@ -84,22 +84,13 @@ unit tests and javadoc creation. This will change after the project is in a fina
 
 ## Try it out  ##
 
-See [test/demo/README.md]
+[See the instructions in the test/demo directory](test/demo/README.md)
 
 
-## Running the integration Tests ##
+## Tests ##
 
-The automated integration tests are in the directory tests/unittests/
+[See the instructions in the test/unittest directory](test/unittest/README.md)
 
-    sudo -E UNITTEST=1 python mud-test.py
-   
-This will exercise the mud implementation and check if it is working as expected. If you would like to exercise the 
-implementation from the command line, try the following
-
-  
-    sudo -E UNITTEST=0 python mud-test.py
-
-This will take you to the mininet command line.
   
 
 ## Copyrights and Disclaimers ##

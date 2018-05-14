@@ -4,6 +4,15 @@ shows the topology of the demo:
 
 ![alt tag](../../docs/arch/DEMO-ARCH.PNG)
 
+The access control list allows the following :
+
+- between devices of the same manufacturer on port 4000, UDP.
+- between devices and the device controller on port 8002, UDP
+- between device and www.nist.local on port 80, TCP
+- between device and local network hosts on port 8000.
+
+The mud-test.py script starts servers on various hosts to test these interactions.
+
 Run the demo as follows:
 
 Create a virtual machine running Ubuntu 16. Install mininet on it.
@@ -35,14 +44,6 @@ Install python prerequisites.
 	 sudo pip install requests
 	 sudo apt install curl
 
-On the emulation vm, RYU is used control portions of the test network. It is not
-part of the MUD implementation under test. We are using it strictly as
-a learning switch controller to set up our topology.
-
-     apt install gcc python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
-     git clone git://github.com/osrg/ryu.git
-     cd ryu; pip install .
-     pip install -r tools/optional-requires
 
 
 #### Configure the emulation VM ####
