@@ -49,7 +49,7 @@ class TestAccess(unittest.TestCase) :
                             os.kill(int(f.read()),signal.SIGTERM)
                     os.remove(fname)
 
-		time.sleep(5)
+		time.sleep(3)
 
          except OSError:
             pass
