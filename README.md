@@ -131,6 +131,8 @@ Please acknowledge our work if you re-use this code or design.
 
 ## LIMITATIONS ##
 
+This is an IPV4 implementation of MUD.  
+
 This code is shared for early review. It is an implementation of an IETF
 draft in progress. Much more testing and validation is required.
 
