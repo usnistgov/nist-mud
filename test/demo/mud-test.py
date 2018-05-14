@@ -193,7 +193,7 @@ def setupTopology(controller_addr):
     h2.cmdPrint("python udpping.py --port 4000 --server &")
     h4.cmdPrint("python udpping.py --port 4000 --server &")
     # h5 is a localhost peer.
-    h5.cmdPrint("python udpping.py --port 8000 --server &")
+    h6.cmdPrint("python udpping.py --port 8000 --server &")
     # h7 is the controller peer.
     h7.cmdPrint("python udpping.py --port 8002 --server &")
     
