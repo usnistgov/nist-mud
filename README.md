@@ -3,14 +3,19 @@ This repository publishes a scalable implementation of the IETF MUD standard.
 
 The MUD standard specifies access controls for IOT devices. IOT devices
 are special purpose devices that implement a dedicated function.
-Such devices have communication patterns that are known a-priori. A
-manufacturer associates an ACL file with a device. The goal of MUD is
-to provide a means for Things to signal to the network what sort of
-access and network functionality they require to properly function.
-The network infrastructure installs Access Control Rules to restrict
-what the device can do.
+Such devices have communication patterns that are known a-priori.
+The goal of MUD is to provide a means for manufacturers of Things to
+indicate what sort of access and network functionality they require
+for the Thing to properly function.  A manufacturer associates an MUD
+file with a device - which is a specialized ACL file where the ACLs
+are specified to within deployment specific parameters. The MUD file is
+converted to ACLs which are deployed on the access point when the IOT
+device connects to the network.  The network infrastructure installs
+Access Control Rules at access points to restrict what the device can
+do on the network. In this project, MUD is implemented on SDN capable
+switches using OpenDaylight as the SDN controller.
 
-The MUD standard is defined here https://www.ietf.org/id/draft-ietf-opsawg-mud-18.txt
+[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-18.txt)
 
 This project implements the following :
 
@@ -91,7 +96,28 @@ unit tests and javadoc creation. This will change after the project is in a fina
 
 [See the instructions in the test/unittest directory](test/unittest/README.md)
 
-  
+
+
+## LIMITATIONS ##
+
+This is an IPV4 only implementation of MUD.  
+
+This code is shared for early review. It is an implementation of an IETF
+draft in progress. Much more testing and validation is required. Your help is 
+solicited and will be acknowledged on this page.
+
+Please do not re-distribute until this repository is granted public access.
+This will happen after:
+
+1. The IETF draft has achieved an RFC status.
+2. All issues are satisfactorily resolved.
+
+This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
+This limitation will be removed in subsequent releases as the MUD standard matures and gets deployed.
+
+The vlan management code is for testing purposes. The OpenDaylight network virtualization NetVirt project
+should be used for network virtualization.
+
 
 ## Copyrights and Disclaimers ##
 
@@ -128,24 +154,3 @@ source projects are noted in the source files as appropriate.
 Please acknowledge our work if you re-use this code or design.
 
 ![alt tag](docs/logos/nist-logo.png)
-
-## LIMITATIONS ##
-
-This is an IPV4 implementation of MUD.  
-
-This code is shared for early review. It is an implementation of an IETF
-draft in progress. Much more testing and validation is required.
-
-Please do not re-distribute until this repository is granted public access.
-This will happen after:
-
-1. The IETF draft has achieved an RFC status.
-2. All issues are satisfactorily resolved.
-
-This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
-This limitation will be removed in subsequent releases as the MUD standard matures and gets deployed.
-
-The vlan management code is for testing purposes. The OpenDaylight network virtualization NetVirt project
-should be used for network virtualization.
-
-
