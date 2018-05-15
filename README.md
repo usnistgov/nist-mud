@@ -1,6 +1,4 @@
 
-This repository publishes a scalable implementation of the IETF MUD standard. 
-
 The MUD standard specifies access controls for IOT devices. IOT devices
 are special purpose devices that implement a dedicated function.
 Such devices have communication patterns that are known a-priori.
@@ -14,6 +12,12 @@ device connects to the network.  The network infrastructure installs
 Access Control Rules at access points to restrict what the device can
 do on the network. In this project, MUD is implemented on SDN capable
 switches using OpenDaylight as the SDN controller.
+
+This repository publishes a scalable implementation of the ACL part
+of the  IETF MUD standard.  Only the ACL part of the MUD standard is
+implemented. We do not implement the MUD server that is responsible for
+fetching MUD files and installing them in OpenDaylight. 
+
 
 [The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-18.txt)
 
@@ -101,6 +105,7 @@ unit tests and javadoc creation. This will change after the project is in a fina
 ## LIMITATIONS ##
 
 This is an IPV4 only implementation of MUD.  
+
 
 This code is shared for early review. It is an implementation of an IETF
 draft in progress. Much more testing and validation is required. Your help is 
