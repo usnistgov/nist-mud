@@ -578,14 +578,24 @@ public class FlowUtils {
         createEthernetTypeMatch(matchBuilder, 0x800);
         createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT,
                 SdnMudConstants.DHCP_SERVER_PORT);
+        /*
+         * Ipv4Address destinationAddress = new Ipv4Address("255.255.255.255");
+         * createDestIpv4Match(matchBuilder, destinationAddress); Ipv4Address
+         * srcAddress = new Ipv4Address("0.0.0.0");
+         * createSrcIpv4Match(matchBuilder, srcAddress);
+         */
 
         Match match = matchBuilder.build();
         short destinationTableId = (short) (tableId + 1);
 
-        InstructionsBuilder isb = createGoToNextTableInstruction(
-                destinationTableId);
+        InstructionsBuilder isb = new InstructionsBuilder();
+        ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+        addSendPacketToControllerInstruction(instructions);
+        addGoToTableInstruction(instructions, destinationTableId);
+        isb.setInstruction(instructions);
+
         flowBuilder.setMatch(match).setInstructions(isb.build())
-                .setPriority(BaseappConstants.MAX_PRIORITY)
+                .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY)
                 .setBufferId(OFConstants.ANY).setHardTimeout(0)
                 .setIdleTimeout(0)
                 .setFlags(new FlowModFlags(false, false, false, false, false));
@@ -612,7 +622,7 @@ public class FlowUtils {
         InstructionsBuilder isb = createGoToNextTableInstruction(
                 destinationTableId);
         flowBuilder.setMatch(match).setInstructions(isb.build())
-                .setPriority(BaseappConstants.MAX_PRIORITY)
+                .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY)
                 .setBufferId(OFConstants.ANY).setHardTimeout(0)
                 .setIdleTimeout(0)
                 .setFlags(new FlowModFlags(false, false, false, false, false));
@@ -789,7 +799,7 @@ public class FlowUtils {
         MatchBuilder matchBuilder = new MatchBuilder();
         createEthernetTypeMatch(matchBuilder, 0x800);
 
-        FlowUtils.createDstProtocolPortMatch(matchBuilder, protocol, port);
+        createDstProtocolPortMatch(matchBuilder, protocol, port);
 
         createDestIpv4Match(matchBuilder, dnsAddress);
         Match match = matchBuilder.build();
@@ -799,7 +809,7 @@ public class FlowUtils {
         InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
         flowBuilder.setMatch(match).setInstructions(isb.build())
-                .setPriority(BaseappConstants.MAX_PRIORITY)
+                .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY)
                 .setBufferId(OFConstants.ANY).setHardTimeout(0)
                 .setIdleTimeout(0)
                 .setFlags(new FlowModFlags(false, false, false, false, false));
@@ -827,7 +837,7 @@ public class FlowUtils {
         InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
         flowBuilder.setMatch(match).setInstructions(isb.build())
-                .setPriority(BaseappConstants.MAX_PRIORITY)
+                .setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY)
                 .setBufferId(OFConstants.ANY).setHardTimeout(0)
                 .setIdleTimeout(0)
                 .setFlags(new FlowModFlags(false, false, false, false, false));

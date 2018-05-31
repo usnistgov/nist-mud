@@ -12,12 +12,21 @@
 		interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
 		odl:type="default" />
 
+    <reference id="domDataBroker"
+        interface="org.opendaylight.controller.md.sal.dom.api.DOMDataBroker"
+		odl:type="default" />
+
 	<reference id="packetNotificationService"
 		interface="org.opendaylight.controller.md.sal.binding.api.NotificationService"
 		odl:type="default" />
 
-	<reference id="notificationPublishService"
-		interface="org.opendaylight.controller.md.sal.binding.api.NotificationPublishService" />
+    <reference id="schemaService"
+        interface = "org.opendaylight.controller.sal.core.api.model.SchemaService" 
+	 	odl:type="default" />
+
+    <reference id="bindingNormalizedNodeSerializer"
+        interface = "org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer"
+	 	odl:type="default" />
 
 	<odl:rpc-service id="salFlowService"
 		interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
@@ -25,14 +34,12 @@
 	<odl:rpc-service id="packetProcessingService"
 		interface="org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService" />
 
-	<reference id="rpcRegistry"
-		interface="org.opendaylight.controller.sal.binding.api.RpcProviderRegistry" />
 
 
-
-	<!-- mranga: added -->
+	<!-- mranga: 
 	<reference id="mdsalUtils"
 		interface="org.opendaylight.genius.mdsalutil.interfaces.IMdsalApiManager" />
+    added -->
 
 	<bean id="provider" class="gov.nist.antd.sdnmud.impl.SdnmudProvider"
 		init-method="init" destroy-method="close">
@@ -40,9 +47,10 @@
 		<argument ref="salFlowService" />
 		<argument ref="packetProcessingService" />
 		<argument ref="packetNotificationService" />
-		<argument ref="mdsalUtils" />
-		<argument ref="rpcRegistry" />
-		<argument ref="notificationPublishService" />
+		<argument ref="domDataBroker" />
+		<argument ref="schemaService" />
+		<argument ref="bindingNormalizedNodeSerializer" 
+        />
 	</bean>
 
 </blueprint>

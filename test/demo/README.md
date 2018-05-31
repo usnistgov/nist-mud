@@ -40,57 +40,21 @@ Install openvswitch on the mininet vm.
 
 Install python 2.7x if you don't have it (it should already be there).
 Install python prerequisites.
-	 
-	 sudo pip install requests
-	 sudo apt install curl
+         
+         sudo pip install requests
+         sudo apt install curl
 
 
 
-#### Configure the emulation VM ####
-
-Edit /etc/dnsmasq.conf.  Include the following:
-
-      no-dhcp-interface=
-      server=8.8.8.8
-      no-hosts
-      addn-hosts=/etc/dnsmasq.hosts
-
-Add a fake host in /etc/dnsmasq.hosts by adding the following line.
-
-      203.0.113.13    www.nist.local
-      203.0.113.14    www.antd.local
-
-Kill any existing instance of dnsmasq on the mininet VM. We will
-restart it in the test script.
-
-      sudo pkill dnsmasq
-
-If dnsmasq is running as a service, perform the following.
-      
-      sudo sed -i 's/^dns=dnsmasq/#&/' /etc/NetworkManager/NetworkManager.conf
-      sudo service network-manager restart
-      sudo service networking restart
-      sudo killall dnsmasq
-
-Add the following line to /etc/resolv.conf on the virtual machine.
- 
-      nameserver 10.0.0.5
-
-### Configure the Controller Host ###
-
-Add the following to /etc/hosts on your controller so the java library can look up our fake host.
-
-      203.0.113.13   www.nist.local
-      203.0.113.14   www.antd.local
 
 
 ### Run the demo ###
 
 Clean the cached flows from any previous runs (if they exist):
 
-        cd $PROJECT_HOME/features-sdnmud/karaf/target/assembly
-        rm snapshots/*
-        rm journal/*
+       cd $PROJECT_HOME/features-sdnmud/karaf/target/assembly
+       rm snapshots/*
+       rm journal/*
 
 Start Karaf and load the feature:
 

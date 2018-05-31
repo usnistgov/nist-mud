@@ -181,25 +181,21 @@ public class WakeupOnFlowCapableNode
                     .getMudFlowsInstaller(nodeUri);
             // All devices may access DHCP (default rule).
 
-            mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
+            if (mudFlowsInstaller != null) {
+                mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
+                mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
+            }
 
-            mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
         } catch (Exception ex) {
             LOG.error("installFlows : Exception installing default flows ", ex);
         }
-    }
-
-    private void installDefaultFlows(String nodeUri,
-            InstanceIdentifier<FlowCapableNode> nodePath) {
-
-        this.installInitialFlows(nodePath);
     }
 
     public synchronized void installDefaultFlows() {
         for (InstanceIdentifier<FlowCapableNode> node : this.pendingNodes) {
             String nodeId = InstanceIdentifierUtils.getNodeUri(node);
             if (sdnmudProvider.isCpeNode(nodeId)) {
-                this.installDefaultFlows(nodeId, node);
+                this.installInitialFlows(node);
             }
         }
     }
@@ -228,7 +224,7 @@ public class WakeupOnFlowCapableNode
             this.pendingNodes.add(nodePath);
         } else if (sdnmudProvider.isCpeNode(nodeUri)) {
             // If this is a CPE node install the default permits.
-            this.installDefaultFlows(nodeUri, nodePath);
+            this.installInitialFlows(nodePath);
         }
 
     }

@@ -82,6 +82,7 @@ public abstract class PacketUtils {
     private static final int ETHER_TYPE_END_POSITION = 14;
 
     private static final int PACKET_OFFSET_IP = 14;
+    private static final int PACKET_OFFSET_IP_PROTO = PACKET_OFFSET_IP + 9;
     private static final int PACKET_OFFSET_IP_SRC = PACKET_OFFSET_IP + 12;
     private static final int PACKET_OFFSET_IP_DST = PACKET_OFFSET_IP + 16;
     private static final int PACKET_OFFSET_TCP_SRC_PORT = PACKET_OFFSET_IP + 20;
@@ -221,6 +222,16 @@ public abstract class PacketUtils {
         return (((baseHeader[PACKET_OFFSET_TCP_DST_PORT] << 8) & 65280)
                 | (baseHeader[PACKET_OFFSET_TCP_DST_PORT + 1] & 255));
 
+    }
+
+    /**
+     * @param rawPacket
+     * @return
+     */
+    public static byte extractIpProtocol(byte[] rawPacket) {
+        final byte[] ipProto = Arrays.copyOfRange(rawPacket,
+                PACKET_OFFSET_IP_PROTO, PACKET_OFFSET_IP_PROTO + 1);
+        return ipProto[0];
     }
 
 }

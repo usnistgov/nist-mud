@@ -1,24 +1,28 @@
 /*
-* Copyright © 2017 None.  No rights reserved.
-* This file includes code developed by employees of the National Institute of
-* Standards and Technology (NIST)
-*
-* This software was developed by employees of the National Institute of
-* Standards and Technology (NIST), and others. This software has been
-* contributed to the public domain. Pursuant to title 15 Untied States
-* Code Section 105, works of NIST employees are not subject to copyright
-* protection in the United States and are considered to be in the public
-* domain. As a result, a formal license is not needed to use this software.
-*
-* This software is provided "AS IS." NIST MAKES NO WARRANTY OF ANY KIND,
-* EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE
-* IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
-* NON-INFRINGEMENT AND DATA ACCURACY. NIST does not warrant or make any
-* representations regarding the use of the software or the results thereof,
-* including but not limited to the correctness, accuracy, reliability or
-* usefulness of this software.
-*/
-
+ *
+ * This program and accompanying materials area available under the
+ * Public Domain.
+ *
+ * Copyright (C) 2017 Public Domain.  No rights reserved.
+ *
+ * This file includes code developed by employees of the National Institute of
+ * Standards and Technology (NIST)
+ *
+ * This software was developed by employees of the National Institute of
+ * Standards and Technology (NIST), and others. This software has been
+ * contributed to the public domain. Pursuant to title 15 Untied States
+ * Code Section 105, works of NIST employees are not subject to copyright
+ * protection in the United States and are considered to be in the public
+ * domain. As a result, a formal license is not needed to use this software.
+ *
+ * This software is provided "AS IS." NIST MAKES NO WARRANTY OF ANY KIND,
+ * EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE
+ * IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE,
+ * NON-INFRINGEMENT AND DATA ACCURACY. NIST does not warrant or make any
+ * representations regarding the use of the software or the results thereof,
+ * including but not limited to the correctness, accuracy, reliability or
+ * usefulness of this software.
+ */
 package gov.nist.antd.sdnmud.impl;
 
 import java.util.Collection;
@@ -29,68 +33,63 @@ import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeLis
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.AccessLists;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.access.lists.AccessList;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.FromDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.access.lists.AccessLists;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.access.lists.access.lists.AccessList;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.mud.grouping.FromDevicePolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This gets notified when a MUD profile is installed.
- * 
+ *
  * @author mranga
  *
  */
-public class MudProfileDataStoreListener
-        implements
-            ClusteredDataTreeChangeListener<Mud> {
-    private DataBroker dataBroker;
-    private static final Logger LOG = LoggerFactory
-            .getLogger(MudProfileDataStoreListener.class);
-    private SdnmudProvider sdnmudProvider;
+public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListener<Mud> {
+	private DataBroker dataBroker;
+	private static final Logger LOG = LoggerFactory.getLogger(MudProfileDataStoreListener.class);
+	private SdnmudProvider sdnmudProvider;
 
-    public MudProfileDataStoreListener(DataBroker broker,
-            SdnmudProvider sdnMudProvider) {
-        this.dataBroker = broker;
-        this.sdnmudProvider = sdnMudProvider;
-    }
+	public MudProfileDataStoreListener(DataBroker broker, SdnmudProvider sdnMudProvider) {
+		this.dataBroker = broker;
+		this.sdnmudProvider = sdnMudProvider;
+	}
 
-    private static void printMudProfile(Mud mud) {
-        short cacheValiditySeconds = mud.getCacheValidity();
-        LOG.info("cacheValiditySeconds {} ", cacheValiditySeconds);
-        FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
-        AccessLists accessLists = fromDevicePolicy.getAccessLists();
-        for (AccessList accessList : accessLists.getAccessList()) {
-            LOG.info("AccessList ACL-Name " + accessList.getName());
-        }
-        Uri uri = mud.getMudUrl();
-        LOG.info("mudURI {}", uri.getValue());
-    }
+	private static void printMudProfile(Mud mud) {
+		short cacheValiditySeconds = mud.getCacheValidity();
+		LOG.info("cacheValiditySeconds {} ", cacheValiditySeconds);
+		FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
+		AccessLists accessLists = fromDevicePolicy.getAccessLists();
+		for (AccessList accessList : accessLists.getAccessList()) {
+			LOG.info("AccessList ACL-Name " + accessList.getName());
+		}
+		Uri uri = mud.getMudUrl();
+		LOG.info("mudURI {}", uri.getValue());
+	}
 
-    @Override
-    public void onDataTreeChanged(
-            @Nonnull Collection<DataTreeModification<Mud>> changes) {
-        LOG.info("onDataTreeChanged ");
-        for (DataTreeModification<Mud> change : changes) {
-            Mud mud = change.getRootNode().getDataAfter();
+	@Override
+	public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<Mud>> changes) {
+		LOG.info("onDataTreeChanged ");
+		for (DataTreeModification<Mud> change : changes) {
+			Mud mud = change.getRootNode().getDataAfter();
 
-            // printMudProfile(mud);
+			printMudProfile(mud);
 
-            // Put this in a map. Later when the MAC appears, we can pick it up
-            // from this map and install flow rules.
-            this.sdnmudProvider.addMudProfile(mud);
-            if (sdnmudProvider.getCpeCollections() != null) {
-                for (Uri cpeNodeId : sdnmudProvider.getCpeCollections()
-                        .getCpeSwitches()) {
-                    MudFlowsInstaller mudFlowsInstaller = sdnmudProvider
-                            .getMudFlowsInstaller(cpeNodeId.getValue());
-                    if (mudFlowsInstaller != null) {
-                        mudFlowsInstaller.tryInstallFlows(mud);
-                    }
-                }
-            }
-        }
-    }
+			// Put this in a map. Later when the MAC appears, we can pick it up
+			// from this map and install flow rules.
+			this.sdnmudProvider.addMudProfile(mud);
+			if (sdnmudProvider.getCpeCollections() != null) {
+				for (Uri cpeNodeId : sdnmudProvider.getCpeCollections().getCpeSwitches()) {
+					MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId.getValue());
+					if (mudFlowsInstaller != null) {
+						mudFlowsInstaller.tryInstallFlows(mud);
+					} else {
+						LOG.error("MudFlows installer not found");
+					}
+				}
+			}
+		}
+	}
 
 }

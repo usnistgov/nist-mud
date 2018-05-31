@@ -317,7 +317,7 @@ if __name__ == '__main__':
     setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:access-lists"),
+        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),

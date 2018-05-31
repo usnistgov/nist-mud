@@ -23,28 +23,28 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.Accept;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.Aces;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.Ace;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.Matches;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l3.Ipv4;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.Tcp;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.Udp;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180301.Ipv41;
-//import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180301.Matches1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Accept;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.Ace;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.Matches;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l3.Ipv4;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.Tcp;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.Udp;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180412.Ipv41;
+//import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.acldns.rev180412.Matches1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Host;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Direction;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Matches1;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Tcp1;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.AccessLists;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.access.lists.access.lists.AccessList;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.FromDevicePolicy;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.mud.grouping.ToDevicePolicy;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev180303.port.range.or.operator.port.range.or.operator.Operator;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Direction;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Matches1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Tcp1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.access.lists.AccessLists;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.access.lists.access.lists.AccessList;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.mud.grouping.FromDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.mud.grouping.ToDevicePolicy;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev180427.port.range.or.operator.port.range.or.operator.Operator;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
@@ -122,26 +122,33 @@ public class MudFlowsInstaller {
 
         if (matches1.getMud() != null
                 && matches1.getMud().getController() != null) {
+            LOG.info("MudFlowsInstaller: controllerMapping");
             return MatchesType.CONTROLLER_MAPPING;
         } else if (matches1.getMud() != null
                 && matches1.getMud().getManufacturer() != null) {
+            LOG.info("MudFlowsInstaller: manufacturer");
             return MatchesType.MANUFACTURER;
         } else if (matches1.getMud() != null
                 && matches1.getMud().getModel() != null) {
+            LOG.info("MudFlowsInstaller: model");
             return MatchesType.MODEL;
         } else if (matches1.getMud() != null
                 && matches1.getMud().isLocalNetworks() != null
                 && matches1.getMud().isLocalNetworks()) {
+            LOG.info("MudFlowsInstaller: localNetworks");
             return MatchesType.LOCAL_NETWORKS;
         } else if (matches1.getMud() != null
                 && matches1.getMud().isSameManufacturer() != null
                 && matches1.getMud().isSameManufacturer()) {
+            LOG.info("MudFlowsInstaller: sameManufacturer");
             return MatchesType.SAME_MANUFACTURER;
         } else if (matches1.getMud() != null
                 && matches1.getMud().isMyController() != null
                 && matches1.getMud().isMyController()) {
+            LOG.info("MudFlowsInstaller: myController");
             return MatchesType.MY_CONTROLLER;
         } else {
+            LOG.info("MudFlowsInstaller: unknownMatch");
             return MatchesType.UNKNOWN_MATCH;
         }
     }
@@ -282,7 +289,7 @@ public class MudFlowsInstaller {
                 && ((Tcp) matches.getL4()).getTcp()
                         .getDestinationPort() != null) {
 
-            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.tcp.tcp.destination.port.destination.port.RangeOrOperator) (((Tcp) matches
+            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.tcp.tcp.destination.port.destination.port.RangeOrOperator) (((Tcp) matches
                     .getL4()).getTcp().getDestinationPort()
                             .getDestinationPort())).getPortRangeOrOperator())
                                     .getPort().getValue();
@@ -291,7 +298,7 @@ public class MudFlowsInstaller {
                 && ((Udp) matches.getL4()).getUdp()
                         .getDestinationPort() != null) {
 
-            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.udp.udp.destination.port.destination.port.RangeOrOperator) (((Udp) matches
+            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.udp.udp.destination.port.destination.port.RangeOrOperator) (((Udp) matches
                     .getL4()).getUdp().getDestinationPort()
                             .getDestinationPort())).getPortRangeOrOperator())
                                     .getPort().getValue();
@@ -305,14 +312,14 @@ public class MudFlowsInstaller {
         if ((matches.getL4()) != null && (matches.getL4() instanceof Tcp)
                 && ((Tcp) matches.getL4()).getTcp().getSourcePort() != null) {
 
-            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.tcp.tcp.source.port.source.port.RangeOrOperator) (((Tcp) matches
+            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.tcp.tcp.source.port.source.port.RangeOrOperator) (((Tcp) matches
                     .getL4()).getTcp().getSourcePort().getSourcePort()))
                             .getPortRangeOrOperator()).getPort().getValue();
 
         } else if (matches.getL4() != null && (matches.getL4() instanceof Udp)
                 && ((Udp) matches.getL4()).getUdp().getSourcePort() != null) {
 
-            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180303.access.lists.acl.aces.ace.matches.l4.udp.udp.source.port.source.port.RangeOrOperator) (((Udp) matches
+            return ((Operator) ((org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.aces.ace.matches.l4.udp.udp.source.port.source.port.RangeOrOperator) (((Udp) matches
                     .getL4()).getUdp().getSourcePort().getSourcePort()))
                             .getPortRangeOrOperator()).getPort().getValue();
         } else {
@@ -737,7 +744,6 @@ public class MudFlowsInstaller {
                         protocol, BaseappConstants.SDNMUD_RULES_TABLE, flowId,
                         flowCookie);
         sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
-        flowSpec = MudFlowsInstaller.createFlowSpec(address);
         flowId = InstanceIdentifierUtils.createFlowId(nodeId);
         flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(
                 address, port, protocol, BaseappConstants.SDNMUD_RULES_TABLE,
@@ -798,8 +804,7 @@ public class MudFlowsInstaller {
             InstanceIdentifier<FlowCapableNode> node) {
 
         String nodeId = InstanceIdentifierUtils.getNodeUri(node);
-        FlowCookie flowCookie = InstanceIdentifierUtils
-                .createFlowCookie(nodeId);
+        FlowCookie flowCookie = SdnMudConstants.DH_REQUEST_FLOW_COOKIE;
         FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
         FlowBuilder flowBuilder = FlowUtils
                 .createToDhcpServerMatchGoToNextTableFlow(
@@ -861,6 +866,7 @@ public class MudFlowsInstaller {
                         SdnMudConstants.NTP_SERVER_PORT);
             }
         }
+
     }
 
     public static void installStampManufacturerModelFlowRules(MacAddress srcMac,
@@ -922,6 +928,13 @@ public class MudFlowsInstaller {
     public synchronized void tryInstallFlows(Mud mud) {
         try {
             Uri mudUri = mud.getMudUrl();
+
+            Uri signature = mud.getMudSignature();
+
+            LOG.info("tryInstallFlows : mudSignatureUrl = "
+                    + signature.getValue());
+
+            // TODO -- verify the MUD file signature.
 
             ControllerclassMappingDataStoreListener controllerClassMapDsListener = this.sdnmudProvider
                     .getControllerclassMappingDataStoreListener();

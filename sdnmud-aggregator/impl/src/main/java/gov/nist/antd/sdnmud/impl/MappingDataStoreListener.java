@@ -1,5 +1,8 @@
 /*
- * Copyright © 2017 None.  No rights reserved.
+ *
+ *
+ * Copyright (C) 2017 Public Domain.  No rights reserved.
+ *
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -18,7 +21,6 @@
  * including but not limited to the correctness, accuracy, reliability or
  * usefulness of this software.
  */
-
 package gov.nist.antd.sdnmud.impl;
 
 import java.util.Collection;

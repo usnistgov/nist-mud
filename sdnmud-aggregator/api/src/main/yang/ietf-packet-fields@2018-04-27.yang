@@ -14,6 +14,7 @@ module ietf-packet-fields {
     reference
       "RFC 6991 - Common YANG Data Types.";
   }
+
   import ietf-ethertypes {
     prefix eth;
     reference
@@ -21,7 +22,7 @@ module ietf-packet-fields {
   }
 
   organization
-    "IETF NETMOD (NETCONF Data Modeling Language) Working
+    "IETF NETMOD (Network Modeling Language) Working
      Group";
 
   contact
@@ -55,7 +56,7 @@ module ietf-packet-fields {
     This version of this YANG module is part of RFC XXXX; see
     the RFC itself for full legal notices.";
 
-  revision 2018-03-03 {
+  revision 2018-04-27 {
     description
       "Initial version.";
     reference
@@ -144,7 +145,7 @@ module ietf-packet-fields {
     description
       "IP header fields common to ipv4 and ipv6";
     reference
-      "RFC 791.";
+      "RFC 791: Internet Protocol.";
 
     leaf dscp {
       type inet:dscp;
@@ -154,7 +155,6 @@ module ietf-packet-fields {
         "RFC 2474: Definition of Differentiated services field
          (DS field) in the IPv4 and IPv6 headers.";
     }
-
     leaf ecn {
       type uint8 {
         range 0..3;
@@ -162,7 +162,7 @@ module ietf-packet-fields {
       description
         "Explicit Congestion Notification.";
       reference
-        "RFC 3168.";
+        "RFC 3168: Explicit Congestion Notification.";
     }
 
     leaf length {
@@ -176,7 +176,8 @@ module ietf-packet-fields {
          Length, the length of the IPv6 payload, i.e. the rest of
          the packet following the IPv6 header, in octets.";
       reference
-        "RFC 791, RFC 2460";
+        "RFC 791: Internet Protocol,
+         RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
 
     leaf ttl {
@@ -184,18 +185,24 @@ module ietf-packet-fields {
       description
         "This field indicates the maximum time the datagram is allowed
          to remain in the internet system.  If this field contains the
-         value zero, then the datagram must be destroyed.
+         value zero, then the datagram must be dropped.
 
          In IPv6, this field is known as the Hop Limit.";
-      reference "RFC 791, RFC 2460";
+      reference
+        "RFC 791: Internet Protocol,
+         RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
 
     leaf protocol {
       type uint8;
       description
         "Internet Protocol number. Refers to the protocol of the
-         payload. In IPv6, this field is known as 'next-header.";
-      reference "RFC 791, RFC 2460.";
+         payload. In IPv6, this field is known as 'next-header,
+         and if extension headers are present, the protocol is
+         present in the 'upper-layer' header.";
+      reference
+        "RFC 791: Internet Protocol,
+         RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
   }
 
@@ -254,6 +261,7 @@ module ietf-packet-fields {
         "An identifying value assigned by the sender to aid in
          assembling the fragments of a datagram.";
     }
+
     choice destination-network {
       case destination-ipv4-network {
         leaf destination-ipv4-network {
@@ -398,6 +406,7 @@ module ietf-packet-fields {
       description
         "Reserved for future use.";
     }
+
     leaf flags {
       type bits {
         bit cwr {
@@ -407,7 +416,9 @@ module ietf-packet-fields {
              the sending host to indicate that it received
              a TCP segment with the ECE flag set and had
              responded in congestion control mechanism.";
-          reference "RFC 3168";
+          reference
+            "RFC 3168: The Addition of Explicit Congestion
+                       Notification (ECN) to IP.";
         }
         bit ece {
           position 2;
@@ -421,6 +432,9 @@ module ietf-packet-fields {
              (added to header by RFC 3168). This serves as an
              indication of network congestion (or impending
              congestion) to the TCP sender.";
+          reference
+            "RFC 3168: The Addition of Explicit Congestion
+                       Notification (ECN) to IP.";
         }
         bit urg {
           position 3;
@@ -462,16 +476,18 @@ module ietf-packet-fields {
       }
       description
         "Also known as Control Bits. Contains 9 1-bit flags.";
+      reference
+        "RFC 793: Transmission Control Protocol (TCP).";
     }
 
     leaf window-size {
       type uint16;
+      units "bytes";
       description
         "The size of the receive window, which specifies
-         the number of window size units (by default,
-         bytes) (beyond the segment identified by the
-         sequence number in the acknowledgment field)
-         that the sender of this segment is currently
+         the number of window size units beyond the segment
+         identified by the sequence number in the acknowledgment
+         field that the sender of this segment is currently
          willing to receive.";
     }
 
@@ -535,7 +551,8 @@ module ietf-packet-fields {
       type uint8;
       description
         "Also known as Control messages.";
-      reference "RFC 792";
+      reference
+        "RFC 792: Internet Control Message Protocol (ICMP).";
     }
 
     leaf code {

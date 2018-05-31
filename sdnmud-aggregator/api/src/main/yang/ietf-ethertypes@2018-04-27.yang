@@ -21,7 +21,7 @@ module ietf-ethertypes {
 
      At that time this module can be deprecated.";
 
-  revision 2018-03-03 {
+  revision 2018-04-27 {
     description
       "Initial revision.";
     reference
@@ -38,7 +38,7 @@ module ietf-ethertypes {
             "Internet Protocol version 4 (IPv4) with a
              hex value of 0x0800.";
           reference
-            "RFC 791, Internet Protocol.";
+            "RFC 791: Internet Protocol.";
         }
         enum arp {
           value 2054;
@@ -46,7 +46,7 @@ module ietf-ethertypes {
             "Address Resolution Protocol (ARP) with a
              hex value of 0x0806.";
           reference
-            "RFC 826 An Ethernet Address Resolution Protocol.";
+            "RFC 826: An Ethernet Address Resolution Protocol.";
         }
         enum wlan {
           value 2114;
@@ -59,7 +59,7 @@ module ietf-ethertypes {
             "Transparent Interconnection of Lots of Links.
              Hex value of 0x22F3.";
           reference
-            "RFC 6325 Routing Bridges (RBridges): Base Protocol
+            "RFC 6325: Routing Bridges (RBridges): Base Protocol
              Specification.";
         }
         enum srp {
@@ -81,7 +81,7 @@ module ietf-ethertypes {
             "Reverse Address Resolution Protocol.
              Hex value 0x8035.";
           reference
-                "RFC 903. A Reverse Address Resolution Protocol.";
+            "RFC 903. A Reverse Address Resolution Protocol.";
         }
         enum appletalk {
           value 32923;
@@ -101,8 +101,7 @@ module ietf-ethertypes {
              Bridging IEEE 802.1aq with NNI compatibility.
              Hex value 0x8100.";
           reference
-                "802.1Q.";
-
+            "802.1Q.";
         }
         enum ipx {
           value 33079;
@@ -121,7 +120,9 @@ module ietf-ethertypes {
             "Internet Protocol Version 6 (IPv6). Hex value
              of 0x86DD.";
           reference
-            "RFC 8200, 8201.";
+            "RFC 8200: Internet Protocol, Version 6 (IPv6)
+                       Specification
+             RFC 8201: Path MTU Discovery for IPv6.";
         }
         enum efc {
           value 34824;
@@ -149,7 +150,7 @@ module ietf-ethertypes {
             "MultiProtocol Label Switch (MPLS) unicast traffic.
              Hex value of 0x8847.";
           reference
-            "RFC 3031.";
+            "RFC 3031: Multiprotocol Label Switching Architecture.";
         }
         enum mpls-multicast {
           value 34888;
@@ -157,7 +158,7 @@ module ietf-ethertypes {
             "MultiProtocol Label Switch (MPLS) multicast traffic.
              Hex value of 0x8848.";
           reference
-            "RFC 3031.";
+            "RFC 3031: Multiprotocol Label Switching Architecture.";
         }
         enum pppoe-discovery {
           value 34915;
@@ -165,7 +166,8 @@ module ietf-ethertypes {
             "Point-to-Point Protocol over Ethernet. Used during
              the discovery process. Hex value of 0x8863.";
           reference
-            "RFC 2516.";
+            "RFC 2516: A method for Transmitting PPP over Ethernet
+                       PPPoE.";
         }
         enum pppoe-session {
           value 34916;
@@ -173,7 +175,8 @@ module ietf-ethertypes {
             "Point-to-Point Protocol over Ethernet. Used during
              session stage. Hex value of 0x8864.";
           reference
-            "RFC 2516.";
+            "RFC 2516: A method for Transmitting PPP over Ethernet
+                       PPPoE.";
         }
         enum intel-ans {
           value 34925;
@@ -351,7 +354,7 @@ module ietf-ethertypes {
       }
     }
     description
-      "The uint16 type placeholder type is defined to enable
+      "The uint16 type placeholder is defined to enable
        users to manage their own ethertypes not
        covered by the module. Otherwise the module contains
        enum definitions for the more commonly used ethertypes.";

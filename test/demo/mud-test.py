@@ -181,7 +181,7 @@ def setupTopology(controller_addr):
 
 
     # Start dnsmasq (our dns server).
-    h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
+    h5.cmdPrint('/usr/sbin/dnsmasq  --pid-file=/tmp/dnsmasq.pid &'  )
 
     # Set up our router routes.
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
@@ -223,12 +223,17 @@ if __name__ == '__main__':
 
     controller_addr = os.environ.get("CONTROLLER_ADDR")
 
+    cmd = ['pkill','dnsmasq']
+    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+
 
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
     
     # Pkill dnsmasq. We will start one up later on h3
+    """
     if os.path.exists("/tmp/dnsmasq.pid"):
     	f = open('/tmp/dnsmasq.pid')
     	pid = int(f.readline())
@@ -237,6 +242,7 @@ if __name__ == '__main__':
 	except:
 	   print "Failed to kill dnsmasq check if process is running"
 
+    """
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 

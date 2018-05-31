@@ -13,13 +13,11 @@ Access Control Rules at access points to restrict what the device can
 do on the network. In this project, MUD is implemented on SDN capable
 switches using OpenDaylight as the SDN controller.
 
-This repository publishes a scalable implementation of the ACL part
-of the  IETF MUD standard.  Only the ACL part of the MUD standard is
-implemented. We do not implement the MUD server that is responsible for
-fetching MUD files and installing them in OpenDaylight. 
+This repository aims to publish a public domain scalable implementation 
+of the  IETF MUD standard.  
 
 
-[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-18.txt)
+[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-21.txt)
 
 This project implements the following :
 
@@ -93,19 +91,75 @@ unit tests and javadoc creation. This will change after the project is in a fina
 
 ## Try it out  ##
 
+The following is common configuration for Demo and Test.
+
+#### Configure the emulation VM ####
+
+In order for DNS to work on mininet hosts you should not be using local caching. 
+Edit /etc/NetworkManager/NetworkManager.conf and comment out. 
+We will start our own dnsmasq for testing.
+
+        #dns=dnsmasq
+
+Edit /etc/dnsmasq.conf. 
+
+        no-hosts
+        addn-hosts=/etc/dnsmasq.hosts
+        dhcp-range=10.0.0.1,10.0.0.10,72h
+        dhcp-host=00:00:00:00:00:01,10.0.0.1
+        dhcp-host=00:00:00:00:00:02,10.0.0.2
+        dhcp-host=00:00:00:00:00:03,10.0.0.3
+
+
+
+Add a fake host in /etc/dnsmasq.hosts by adding the following line.
+
+      203.0.113.13    www.nist.local
+      203.0.113.14    www.antd.local
+
+Kill any existing instance of dnsmasq on the emulation VM. We will
+restart it in the test script.
+
+      sudo pkill dnsmasq
+
+If dnsmasq is running as a service, perform the following.
+      
+      sudo sed -i 's/^dns=dnsmasq/#&/' /etc/NetworkManager/NetworkManager.conf
+      sudo service network-manager restart
+      sudo service networking restart
+      sudo killall dnsmasq
+
+Add the following line to /etc/resolv.conf on the emulation VM.
+ 
+      nameserver 10.0.0.5
+
+
+### Configure the SDN Controller (OpenDaylight)  Host ###
+
+Add the following to /etc/hosts on your controller so the java library can look up our fake hosts.
+
+      203.0.113.13   www.nist.local
+      203.0.113.14   www.antd.local
+      127.0.0.1      toaster.nist.local
+
+### DEMO ###
+
 [See the instructions in the test/demo directory](test/demo/README.md)
 
 
-## Tests ##
+### Tests ###
 
 [See the instructions in the test/unittest directory](test/unittest/README.md)
 
 
 
-## LIMITATIONS ##
+## LIMITATIONS and CAVEATS ##
 
 This is an IPV4 only implementation of MUD.  
 
+X.509 extensions for MUD are not implemented.
+
+LLDP extensions for MUD support are not implemented.
 
 This code is shared for early review. It is an implementation of an IETF
 draft in progress. Much more testing and validation is required. Your help is 
@@ -114,7 +168,7 @@ solicited and will be acknowledged on this page.
 Please do not re-distribute until this repository is granted public access.
 This will happen after:
 
-1. The IETF draft has achieved an RFC status.
+1. The IETF MUD draft has achieved an RFC status.
 2. All issues are satisfactorily resolved.
 
 This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
@@ -153,7 +207,8 @@ source projects are noted in the source files as appropriate.
 
 * The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
 * Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
-* Design Contributors : Charif Mohammed, Doug Montgomery
+* Implementation Design Contributors : Charif Mohammed, Doug Montgomery
+* Testing and Demonstrations : Omar Ilias Elmimouni
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
 Please acknowledge our work if you re-use this code or design.

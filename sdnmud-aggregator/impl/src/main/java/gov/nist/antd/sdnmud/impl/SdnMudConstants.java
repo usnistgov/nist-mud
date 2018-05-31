@@ -26,7 +26,7 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Direction;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Direction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
 interface SdnMudConstants {
@@ -97,6 +97,9 @@ interface SdnMudConstants {
             .createFlowCookie(Direction.FromDevice.getName());
     FlowCookie TO_DEVICE_FLOW_COOKIE = InstanceIdentifierUtils
             .createFlowCookie(Direction.ToDevice.getName());
+
+    FlowCookie DH_REQUEST_FLOW_COOKIE = InstanceIdentifierUtils
+            .createFlowCookie("dhcp-request-flow-cookie");
 
     // Cache timeout for network and model stamping flow rules.
     int ETHERTYPE_LLDP = 0x88cc;

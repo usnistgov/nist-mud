@@ -1,5 +1,10 @@
 /*
- * Copyright © 2017 None.  No rights reserved.
+ *
+ *This program and the accompanying materials are made available under the
+ *Public Domain.
+ *
+ * Copyright (c) 2017 None.  No rights reserved.
+ *
  * This file includes code developed by employees of the National Institute of
  * Standards and Technology (NIST)
  *
@@ -28,17 +33,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnector;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.node.NodeConnectorKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.opendaylight.yangtools.yang.binding.KeyedInstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +113,7 @@ public class InstanceIdentifierUtils {
     }
 
     /**
-     * Create the MPLS label from the flow spec.
+     * Create a flow hash given a flow specification.
      *
      * @param flowSpec
      *            -- the flow spec to hash.
@@ -133,7 +130,7 @@ public class InstanceIdentifierUtils {
         return getFlowHash(flowSpec);
     }
 
-    public synchronized static int getManfuacturerId(String manufacturer) {
+    public static synchronized int getManfuacturerId(String manufacturer) {
         int index = -1;
         for (int i = 0; i < manufacturers.size(); i++) {
             if (manufacturers.get(i).compareTo(manufacturer) == 0) {
@@ -149,7 +146,7 @@ public class InstanceIdentifierUtils {
         return index;
     }
 
-    public synchronized static int getModelId(String model) {
+    public static synchronized int getModelId(String model) {
         int index = -1;
         for (int i = 0; i < models.size(); i++) {
             if (models.get(i).compareTo(model) == 0) {

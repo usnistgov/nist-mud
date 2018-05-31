@@ -40,7 +40,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.Instruction;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,11 +68,6 @@ public class FlowCommitWrapper {
 		ReadWriteTransaction modification = dataBrokerService.newReadWriteTransaction();
 		LOG.info("writeFlow : " + flowNodeIdent + " Flow : " + flow.getFlowName() + " tableId " + flow.getTableId()
 		+ " flowId " + flow.getId().getValue());
-
-		LOG.info(flow.toString());
-		for (Instruction instruction : flow.getInstructions().getInstruction()) {
-			LOG.info("writeFlow: Instruction =  " + instruction.getInstruction().toString());
-		}
 
 		final InstanceIdentifier<Flow> path1 = flowNodeIdent.child(Table.class, new TableKey(flow.getTableId()))
 				.child(Flow.class, flow.getKey());

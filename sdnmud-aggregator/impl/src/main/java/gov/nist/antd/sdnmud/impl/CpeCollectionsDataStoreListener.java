@@ -24,7 +24,7 @@ import java.util.Collection;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180301.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
 
 /**
@@ -51,15 +51,13 @@ public class CpeCollectionsDataStoreListener
         for (DataTreeModification<CpeCollections> change : changes) {
             CpeCollections topology = change.getRootNode().getDataAfter();
             this.sdnmudProvider.setTopology(topology);
-
-            this.sdnmudProvider.getWakeupListener().installDefaultFlows();
-
             for (Uri cpeSwitch : topology.getCpeSwitches()) {
                 this.sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
                         new MudFlowsInstaller(this.sdnmudProvider,
                                 cpeSwitch.getValue()));
                 this.sdnmudProvider.getWakeupListener()
                         .installSendToControllerFlows(cpeSwitch.getValue());
+
                 MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider
                         .getMudFlowsInstaller(cpeSwitch.getValue());
                 if (mudFlowsInstaller != null) {
@@ -68,6 +66,7 @@ public class CpeCollectionsDataStoreListener
                     }
                 }
             }
+            this.sdnmudProvider.getWakeupListener().installDefaultFlows();
         }
     }
 
