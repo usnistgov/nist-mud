@@ -16,6 +16,8 @@ from functools import partial
 import time
 import json
 import requests
+import unittest
+import re
 from mininet.node import Host
 from mininet.log import setLogLevel 
 
@@ -25,7 +27,25 @@ stripping of VLAN tags.
 """
 global hosts
 global switches
+global net
 
+class TestAccess(unittest.TestCase) :
+
+    def setUp(self):
+        pass
+  
+    def testPing(self):
+        global hosts
+        h1 = hosts[0]
+        h1.cmdPrint("ping 10.0.0.9 -c 5")
+        result = h1.cmdPrint("ping 10.0.0.9 -c 10")
+        self.assertTrue(re.search(" 0%",result) != None, "Expecting a successful ping")
+        result = h1.cmdPrint("ping 10.0.0.8 -c 10")
+        self.assertTrue(re.search(" 100%",result) != None, "Expecting failed pings ")
+	
+def cli():
+    global net
+    cli = CLI( net )
 
 class VLANHost( Host ):
     "Host connected to VLAN interface"
@@ -56,6 +76,8 @@ class VLANHost( Host ):
 def setupTopology(controller_addr,interface):
     "Create and run multiple link network"
 
+    global hosts
+    global net
     hosts = []
     switches = []
 
@@ -211,11 +233,6 @@ def setupTopology(controller_addr,interface):
 
     print "*********** System ready *********"
 
-    cli = CLI( net )
-    h1.terminate()
-    h2.terminate()
-    h3.terminate()
-    net.stop()
 
 def startTestServer(host):
     """
@@ -287,3 +304,8 @@ if __name__ == '__main__':
         print "response ", r
 
     setupTopology(controller_addr,interface)
+
+    if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
+        unittest.main()
+    else:
+        cli()
