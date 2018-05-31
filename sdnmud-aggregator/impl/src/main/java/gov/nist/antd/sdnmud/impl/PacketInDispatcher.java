@@ -87,6 +87,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.MudBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
@@ -278,11 +279,21 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
 	}
 
+	private Collection<String> getLocalNetworks(String nodeConnectorUri) {
+
+		ControllerclassMapping controllerMap = sdnmudProvider.getControllerClassMap(nodeConnectorUri);
+
+		if (controllerMap == null) {
+			return null;
+		}
+
+		return controllerMap.getLocalNetworks();
+	}
+
 	private boolean isLocalAddress(String nodeId, String ipAddress) {
 		boolean isLocalAddress = false;
-		if (this.sdnmudProvider.getControllerclassMappingDataStoreListener().getLocalNetworks(nodeId) != null) {
-			for (String localNetworkStr : this.sdnmudProvider.getControllerclassMappingDataStoreListener()
-					.getLocalNetworks(nodeId)) {
+		if (this.getLocalNetworks(nodeId) != null) {
+			for (String localNetworkStr : this.getLocalNetworks(nodeId)) {
 				LOG.debug("localNetworkStr = " + localNetworkStr);
 				String[] pieces = localNetworkStr.split("/");
 				int prefixLength = new Integer(pieces[1]) / 8;
@@ -622,11 +633,16 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 									String mudFileStr = new String(mudFileChars, 0, nread);
 
+									/* Set up gson to not convert to double */
 									Gson gson = new GsonBuilder().setLenient()
 											.registerTypeAdapter(new TypeToken<Map<String, LinkedHashMap>>() {
 											}.getType(), new MapDeserializerDoubleAsIntFix()).setPrettyPrinting()
 											.create();
 
+									/*
+									 * Set up gson to preserve the order of
+									 * fields
+									 */
 									Map<?, ?> mudFile = gson.fromJson(mudFileStr,
 											new TypeToken<Map<String, LinkedHashMap>>() {
 											}.getType());

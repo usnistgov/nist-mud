@@ -63,68 +63,34 @@ import org.slf4j.LoggerFactory;
  * @author mranga@nist.gov
  *
  */
-public class AclDataStoreListener
-        implements
-            ClusteredDataTreeChangeListener<Acls> {
+public class AclDataStoreListener implements ClusteredDataTreeChangeListener<Acls> {
 
-    private DataBroker dataBroker;
-    private SdnmudProvider sdnmudProvider;
-    private static final Logger LOG = LoggerFactory
-            .getLogger(AclDataStoreListener.class);
-    private Map<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
+	private DataBroker dataBroker;
+	private SdnmudProvider sdnmudProvider;
+	private static final Logger LOG = LoggerFactory.getLogger(AclDataStoreListener.class);
 
-    public AclDataStoreListener(DataBroker broker,
-            SdnmudProvider sdnmudProvider) {
-        this.dataBroker = broker;
-        this.sdnmudProvider = sdnmudProvider;
-    }
+	public AclDataStoreListener(DataBroker broker, SdnmudProvider sdnmudProvider) {
+		this.dataBroker = broker;
+		this.sdnmudProvider = sdnmudProvider;
+	}
 
-    @Override
-    public void onDataTreeChanged(
-            Collection<DataTreeModification<Acls>> changes) {
-        LOG.info("AclDataStoreListener: onDataTreeChanged");
-        for (DataTreeModification<Acls> change : changes) {
-            Acls accessLists = change.getRootNode().getDataAfter();
+	@Override
+	public void onDataTreeChanged(Collection<DataTreeModification<Acls>> changes) {
+		LOG.info("AclDataStoreListener: onDataTreeChanged");
+		for (DataTreeModification<Acls> change : changes) {
+			Acls accessLists = change.getRootNode().getDataAfter();
 
-            List<Acl> acls = accessLists.getAcl();
+			List<Acl> acls = accessLists.getAcl();
 
-            // Stash away the ACL. This is indexed by name later in the MUD
-            // profile.
-            for (Acl acl : acls) {
-                String aclName = acl.getName();
-                Aces aces = acl.getAces();
-                this.addAces(aclName, aces);
-            }
-        }
-    }
+			// Stash away the ACL. This is indexed by name later in the MUD
+			// profile.
+			for (Acl acl : acls) {
+				String aclName = acl.getName();
+				Aces aces = acl.getAces();
+				sdnmudProvider.addAces(aclName, aces);
+			}
+		}
 
-    /**
-     * Add Aces for a given acl name scoped to a MUD URI.
-     *
-     * @param mudUri
-     *            -- the mudUri for wich to add the aces.
-     *
-     * @param aclName
-     *            -- the acl name for which we want to add aces.
-     *
-     * @param aces
-     *            -- the ACE entries to add.
-     */
-    private void addAces(String aclName, Aces aces) {
-        LOG.info("adding ACEs aclName =  {} ", aclName);
-        this.nameToAcesMap.put(aclName, aces);
-    }
-
-    /**
-     * Get the aces for a given acl name.
-     *
-     * @param aclName
-     *            -- acl name
-     * @return -- Aces list for the acl name
-     */
-    public Aces getAces(String mudUri, String aclName) {
-        LOG.info("getAces aclName =  " + aclName);
-        return this.nameToAcesMap.get(aclName);
-    }
+	}
 
 }

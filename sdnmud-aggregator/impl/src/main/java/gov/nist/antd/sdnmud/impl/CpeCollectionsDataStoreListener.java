@@ -34,40 +34,22 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.r
  * @author mranga
  *
  */
-public class CpeCollectionsDataStoreListener
-        implements
-            DataTreeChangeListener<CpeCollections> {
+public class CpeCollectionsDataStoreListener implements DataTreeChangeListener<CpeCollections> {
 
-    private SdnmudProvider sdnmudProvider;
+	private SdnmudProvider sdnmudProvider;
 
-    public CpeCollectionsDataStoreListener(SdnmudProvider sdnmudProvider) {
-        this.sdnmudProvider = sdnmudProvider;
-    }
+	public CpeCollectionsDataStoreListener(SdnmudProvider sdnmudProvider) {
+		this.sdnmudProvider = sdnmudProvider;
+	}
 
-    @Override
-    public void onDataTreeChanged(
-            Collection<DataTreeModification<CpeCollections>> changes) {
+	@Override
+	public void onDataTreeChanged(Collection<DataTreeModification<CpeCollections>> changes) {
 
-        for (DataTreeModification<CpeCollections> change : changes) {
-            CpeCollections topology = change.getRootNode().getDataAfter();
-            this.sdnmudProvider.setTopology(topology);
-            for (Uri cpeSwitch : topology.getCpeSwitches()) {
-                this.sdnmudProvider.addMudFlowsInstaller(cpeSwitch.getValue(),
-                        new MudFlowsInstaller(this.sdnmudProvider,
-                                cpeSwitch.getValue()));
-                this.sdnmudProvider.getWakeupListener()
-                        .installSendToControllerFlows(cpeSwitch.getValue());
+		for (DataTreeModification<CpeCollections> change : changes) {
+			CpeCollections topology = change.getRootNode().getDataAfter();
+			this.sdnmudProvider.setTopology(topology);
 
-                MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider
-                        .getMudFlowsInstaller(cpeSwitch.getValue());
-                if (mudFlowsInstaller != null) {
-                    for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
-                        mudFlowsInstaller.tryInstallFlows(mud);
-                    }
-                }
-            }
-            this.sdnmudProvider.getWakeupListener().installDefaultFlows();
-        }
-    }
+		}
+	}
 
 }

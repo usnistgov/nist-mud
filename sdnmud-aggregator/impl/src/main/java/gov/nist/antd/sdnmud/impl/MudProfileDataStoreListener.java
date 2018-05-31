@@ -56,39 +56,19 @@ public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListe
 		this.sdnmudProvider = sdnMudProvider;
 	}
 
-	private static void printMudProfile(Mud mud) {
-		short cacheValiditySeconds = mud.getCacheValidity();
-		LOG.info("cacheValiditySeconds {} ", cacheValiditySeconds);
-		FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
-		AccessLists accessLists = fromDevicePolicy.getAccessLists();
-		for (AccessList accessList : accessLists.getAccessList()) {
-			LOG.info("AccessList ACL-Name " + accessList.getName());
-		}
-		Uri uri = mud.getMudUrl();
-		LOG.info("mudURI {}", uri.getValue());
-	}
-
 	@Override
 	public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<Mud>> changes) {
 		LOG.info("onDataTreeChanged ");
 		for (DataTreeModification<Mud> change : changes) {
 			Mud mud = change.getRootNode().getDataAfter();
 
-			printMudProfile(mud);
+			Uri uri = mud.getMudUrl();
+			LOG.info("mudURI {}", uri.getValue());
 
 			// Put this in a map. Later when the MAC appears, we can pick it up
 			// from this map and install flow rules.
 			this.sdnmudProvider.addMudProfile(mud);
-			if (sdnmudProvider.getCpeCollections() != null) {
-				for (Uri cpeNodeId : sdnmudProvider.getCpeCollections().getCpeSwitches()) {
-					MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller(cpeNodeId.getValue());
-					if (mudFlowsInstaller != null) {
-						mudFlowsInstaller.tryInstallFlows(mud);
-					} else {
-						LOG.error("MudFlows installer not found");
-					}
-				}
-			}
+
 		}
 	}
 

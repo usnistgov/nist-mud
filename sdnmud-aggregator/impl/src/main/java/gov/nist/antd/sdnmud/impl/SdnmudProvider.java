@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
@@ -36,11 +38,13 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.controllerclass.mapping.Controller;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
@@ -90,14 +94,16 @@ public class SdnmudProvider {
 	// Map between the node URI and the mud uri.
 	private HashMap<String, List<Uri>> nodeToMudUriMap = new HashMap<>();
 
+	// Aces name to ace map.
+	private Map<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
+
 	// A map between a mac address and the associated FlowCapableNodes where MUD
 	// profiles were installed.
 	// This is used to retrieve a set of nodes where MUD rules have been
 	// installed for a given MAC address.
 	private HashMap<String, HashSet<InstanceIdentifier<FlowCapableNode>>> mudNodesMap = new HashMap<>();
 
-	// A map between the NODE uri and the Flow installer for that node.
-	private HashMap<String, MudFlowsInstaller> flowInstallerMap = new HashMap<>();
+	private HashMap<String, ControllerclassMapping> controllerMap = new HashMap<String, ControllerclassMapping>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
@@ -112,6 +118,10 @@ public class SdnmudProvider {
 	private SchemaService schemaService;
 
 	private BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer;
+
+	private MudFlowsInstaller mudFlowsInstaller;
+
+	private boolean configStateChanged;
 
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
@@ -160,6 +170,7 @@ public class SdnmudProvider {
 		LOG.info("SdnmudProvider Session Initiated");
 
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
+		this.mudFlowsInstaller = new MudFlowsInstaller(this);
 
 		/* Register data tree change listener for Topology change */
 		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
@@ -214,6 +225,11 @@ public class SdnmudProvider {
 				LogicalDatastoreType.OPERATIONAL, getWildcardPath());
 		this.dataTreeChangeListenerRegistration = this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier,
 				wakeupListener);
+		TimerTask scannerTask = new StateChangeScanner(this);
+
+		// Latency of 10 seconds for the scan.
+		new Timer(true).schedule(scannerTask, 0, 5 * 1000);
+
 		LOG.info("start() <--");
 
 	}
@@ -279,6 +295,7 @@ public class SdnmudProvider {
 	 */
 	synchronized void putInUriToNodeMap(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
 		this.uriToNodeMap.put(nodeUri, nodePath);
+		this.configStateChanged = true;
 	}
 
 	/**
@@ -355,12 +372,8 @@ public class SdnmudProvider {
 		return this.mudNodesMap.get(manufacturer);
 	}
 
-	public MudFlowsInstaller getMudFlowsInstaller(String nodeId) {
-		return this.flowInstallerMap.get(nodeId);
-	}
-
-	public void addMudFlowsInstaller(String nodeUri, MudFlowsInstaller MudFlowsInstaller) {
-		this.flowInstallerMap.put(nodeUri, MudFlowsInstaller);
+	public MudFlowsInstaller getMudFlowsInstaller() {
+		return this.mudFlowsInstaller;
 	}
 
 	public SalFlowService getFlowService() {
@@ -394,6 +407,7 @@ public class SdnmudProvider {
 
 	public void setTopology(CpeCollections topology) {
 		this.topology = topology;
+		this.configStateChanged = true;
 
 	}
 
@@ -407,6 +421,7 @@ public class SdnmudProvider {
 
 	public void addMudProfile(Mud mud) {
 		this.uriToMudMap.put(mud.getMudUrl(), mud);
+		this.configStateChanged = true;
 	}
 
 	public boolean isCpeNode(String nodeId) {
@@ -428,4 +443,68 @@ public class SdnmudProvider {
 		return this.schemaService;
 	}
 
+	/**
+	 * Add Aces for a given acl name scoped to a MUD URI.
+	 *
+	 * @param mudUri
+	 *            -- the mudUri for wich to add the aces.
+	 *
+	 * @param aclName
+	 *            -- the acl name for which we want to add aces.
+	 *
+	 * @param aces
+	 *            -- the ACE entries to add.
+	 */
+	public void addAces(String aclName, Aces aces) {
+		LOG.info("adding ACEs aclName =  {} ", aclName);
+		this.nameToAcesMap.put(aclName, aces);
+		this.configStateChanged = true;
+	}
+
+	/**
+	 * Get the aces for a given acl name.
+	 *
+	 * @param aclName
+	 *            -- acl name
+	 * @return -- Aces list for the acl name
+	 */
+	public Aces getAces(String aclName) {
+		LOG.info("getAces aclName =  " + aclName);
+		return this.nameToAcesMap.get(aclName);
+	}
+
+	/**
+	 * @param controllerMapping
+	 */
+	public void addControllerMap(ControllerclassMapping controllerMapping) {
+		String nodeId = controllerMapping.getSwitchId().getValue();
+		LOG.info("ControllerclassMappingDataStoreListener: onDataTreeChanged : Registering Controller for SwitchId "
+				+ nodeId);
+		this.controllerMap.put(nodeId, controllerMapping);
+		this.configStateChanged = true;
+
+	}
+
+	/**
+	 * @param nodeUri
+	 * @return
+	 */
+	public ControllerclassMapping getControllerClassMap(String nodeUri) {
+		return controllerMap.get(nodeUri);
+	}
+
+	public boolean isControllerMapped() {
+		return !this.controllerMap.isEmpty();
+	}
+
+	/**
+	 * @return
+	 */
+	public boolean isConfigStateChanged() {
+		return this.configStateChanged;
+	}
+
+	public void clearConfigStateChanged() {
+		this.configStateChanged = false;
+	}
 }

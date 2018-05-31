@@ -312,7 +312,7 @@ if __name__ == '__main__':
     setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:access-lists"),
+        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
         ("ietfmud.json","ietf-mud:mud") }:
@@ -324,6 +324,7 @@ if __name__ == '__main__':
         print "response ", r
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
+	time.sleep(10)
         unittest.main()
     else:
         cli()
