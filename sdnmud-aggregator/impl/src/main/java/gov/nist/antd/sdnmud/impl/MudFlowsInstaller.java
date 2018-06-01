@@ -769,7 +769,7 @@ public class MudFlowsInstaller {
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
 
-	public void installAllowToDnsAndNtpFlowRules(InstanceIdentifier<FlowCapableNode> node) throws Exception {
+	public void installAllowToDnsAndNtpFlowRules(InstanceIdentifier<FlowCapableNode> node) {
 		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
 
 		if (this.getDnsAddress(nodeId) != null) {

@@ -125,12 +125,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 				metadata, metadataMask);
 	}
 
-	private void installInitialFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
+	public void installInitialFlows(String nodeUri) {
+
+		InstanceIdentifier<FlowCapableNode> nodePath = sdnmudProvider.getNode(nodeUri);
 
 		assert nodePath != null;
-
-		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
-
 		assert sdnmudProvider.isCpeNode(nodeUri);
 
 		LOG.info("installInitialFlows: cpeNodeId = " + nodeUri);
@@ -147,17 +146,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
 
-		// All devices may access DNS and NTP.
+		// All devices may access DNS and NTP. The DHCP rule bumps the packet up
+		// to the controller.
 		try {
 			MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller();
-			// All devices may access DHCP (default rule).
+			mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
+			mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
 
-			if (mudFlowsInstaller != null) {
-				mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
-				mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
-			}
-
-		} catch (Exception ex) {
+		} catch (RuntimeException ex) {
 			LOG.error("installFlows : Exception installing default flows ", ex);
 		}
 	}

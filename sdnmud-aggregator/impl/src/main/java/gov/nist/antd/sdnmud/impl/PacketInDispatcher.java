@@ -581,7 +581,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					// this is a DH request.
 					DhcpPacket dhcpPacket = DhcpPacket.decodeFullPacket(notification.getPayload(), DhcpPacket.ENCAP_L2);
 
-					LOG.debug("This is a DHCP request " + dhcpPacket.getClass().getName());
+					LOG.info("This is a DHCP request " + dhcpPacket.getClass().getName());
 
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
