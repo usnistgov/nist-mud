@@ -468,38 +468,16 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				return;
 			}
 
-			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
-					|| tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-				/*
-				 * Flow miss from the first two tables indicates that we do not
-				 * have a mapping for this device.
-				 */
-				if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
-					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-					boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
-					installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
+			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
+				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+				boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
+				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 
-				} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-					boolean isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
-					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-				}
-
-			} /*
-				 * else if (tableId ==
-				 * BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) { //
-				 * installing redundant rule. Uri mudUri =
-				 * this.sdnmudProvider.getMappingDataStoreListener().getMudUri(
-				 * dstMac);
-				 *
-				 * boolean isLocalAddress = this.isLocalAddress(nodeId,
-				 * destIpAddress);
-				 * installDstMacMatchStampManufacturerModelFlowRules(dstMac,
-				 * isLocalAddress, mudUri.getValue(), node);
-				 *
-				 * }
-				 */
-			else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
+			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				boolean isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
+				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				byte[] rawPacket = notification.getPayload();
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
