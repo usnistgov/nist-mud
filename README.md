@@ -136,7 +136,7 @@ Add the following line to /etc/resolv.conf on the emulation VM.
 
 ### Configure the SDN Controller (OpenDaylight)  Host ###
 
-Add the following to /etc/hosts on your controller so the java library can look up our fake hosts.
+Add the following to /etc/hosts on your controller host so that the java library can look up our fake hosts.
 
       203.0.113.13   www.nist.local
       203.0.113.14   www.antd.local
@@ -161,6 +161,8 @@ X.509 extensions for MUD are not implemented.
 
 LLDP extensions for MUD support are not implemented.
 
+MUD file signature validation is not yet implemented.
+
 This code is shared for early review. It is an implementation of an IETF
 draft in progress. Much more testing and validation is required. Your help is 
 solicited and will be acknowledged on this page.
@@ -174,8 +176,8 @@ This will happen after:
 This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
 This limitation will be removed in subsequent releases as the MUD standard matures and gets deployed.
 
-The vlan management code is for testing purposes. The OpenDaylight network virtualization NetVirt project
-should be used for network virtualization.
+The vlan management code is for testing purposes to emulate a provider network. 
+The OpenDaylight network virtualization NetVirt project should be used for network virtualization.
 
 
 ## Copyrights and Disclaimers ##
