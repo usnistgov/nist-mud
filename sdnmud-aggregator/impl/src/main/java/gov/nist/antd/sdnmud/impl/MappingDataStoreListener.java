@@ -38,6 +38,8 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.nist.antd.baseapp.impl.BaseappConstants;
+
 /**
  * Data Store listener for MappingData store (Mapping of MAC addresses to MUD
  * URLs).
@@ -45,65 +47,72 @@ import org.slf4j.LoggerFactory;
  * @author mranga@nist.gov
  *
  */
-public class MappingDataStoreListener
-        implements
-            DataTreeChangeListener<Mapping> {
+public class MappingDataStoreListener implements DataTreeChangeListener<Mapping> {
 
-    private SdnmudProvider sdnmudProvider;
+	private SdnmudProvider sdnmudProvider;
 
-    private Map<MacAddress, Mapping> macAddressToMappingMap = new HashMap<MacAddress, Mapping>();
+	private Map<MacAddress, Mapping> macAddressToMappingMap = new HashMap<MacAddress, Mapping>();
 
-    private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
+	private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(MappingDataStoreListener.class);
+	private static final Logger LOG = LoggerFactory.getLogger(MappingDataStoreListener.class);
 
-    private void removeMacAddress(MacAddress macAddress) {
-        Mapping mapping = this.macAddressToMappingMap.remove(macAddress);
-        if (mapping != null) {
-            HashSet<MacAddress> macs = this.uriToMacs.get(mapping.getMudUrl());
-            macs.remove(macAddress);
-            if (macs.size() == 0) {
-                this.uriToMacs.remove(mapping.getMudUrl());
-            }
-        }
-    }
+	private void removeMacAddress(MacAddress macAddress) {
+		Mapping mapping = this.macAddressToMappingMap.remove(macAddress);
+		if (mapping != null) {
+			HashSet<MacAddress> macs = this.uriToMacs.get(mapping.getMudUrl());
+			macs.remove(macAddress);
+			if (macs.size() == 0) {
+				this.uriToMacs.remove(mapping.getMudUrl());
+			}
+		}
+	}
 
-    public MappingDataStoreListener(SdnmudProvider sdnmudProvider) {
-        this.sdnmudProvider = sdnmudProvider;
-    }
+	public MappingDataStoreListener(SdnmudProvider sdnmudProvider) {
+		this.sdnmudProvider = sdnmudProvider;
+	}
 
-    @Override
-    public void onDataTreeChanged(
-            Collection<DataTreeModification<Mapping>> collection) {
-        LOG.info("onDataTreeModification");
-        for (DataTreeModification<Mapping> change : collection) {
-            Mapping mapping = change.getRootNode().getDataAfter();
-            List<MacAddress> macAddresses = mapping.getDeviceId();
-            Uri uri = mapping.getMudUrl();
-            LOG.info("mudUri = " + uri.getValue());
-            // Cache the MAC addresses of the devices under the same URL.
-            for (MacAddress mac : macAddresses) {
-                this.removeMacAddress(mac);
-                LOG.info("Put MAC address mapping " + mac + " uri "
-                        + uri.getValue());
-                this.macAddressToMappingMap.put(mac, mapping);
-                HashSet<MacAddress> macs = this.uriToMacs.get(uri);
-                if (macs == null) {
-                    macs = new HashSet<MacAddress>();
-                    this.uriToMacs.put(uri, macs);
-                }
-                macs.add(mac);
-            }
-        }
-    }
+	@Override
+	public void onDataTreeChanged(Collection<DataTreeModification<Mapping>> collection) {
+		LOG.info("MappingDataStoreListener: onDataTreeChanged");
+		for (DataTreeModification<Mapping> change : collection) {
+			Mapping mapping = change.getRootNode().getDataAfter();
+			List<MacAddress> macAddresses = mapping.getDeviceId();
+			Uri uri = mapping.getMudUrl();
+			LOG.info("mudUri = " + uri.getValue());
+			// Cache the MAC addresses of the devices under the same URL.
+			for (MacAddress mac : macAddresses) {
+				this.removeMacAddress(mac);
+				LOG.info("Put MAC address mapping " + mac + " uri " + uri.getValue());
+				this.macAddressToMappingMap.put(mac, mapping);
+				HashSet<MacAddress> macs = this.uriToMacs.get(uri);
+				if (macs == null) {
+					macs = new HashSet<MacAddress>();
+					this.uriToMacs.put(uri, macs);
+				}
 
-    public Uri getMudUri(MacAddress macAddress) {
-        if (this.macAddressToMappingMap.containsKey(macAddress)) {
-            return this.macAddressToMappingMap.get(macAddress).getMudUrl();
-        } else {
-            return new Uri(SdnMudConstants.UNCLASSIFIED);
-        }
-    }
+				for (InstanceIdentifier<FlowCapableNode> node : sdnmudProvider.getNodes()) {
+					if (sdnmudProvider.isCpeNode(InstanceIdentifierUtils.getNodeUri(node))) {
+						String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
+						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
+								BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, null, mac);
+						flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
+						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
+								BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, mac, null);
+					}
+				}
+
+				macs.add(mac);
+			}
+		}
+	}
+
+	public Uri getMudUri(MacAddress macAddress) {
+		if (this.macAddressToMappingMap.containsKey(macAddress)) {
+			return this.macAddressToMappingMap.get(macAddress).getMudUrl();
+		} else {
+			return new Uri(SdnMudConstants.UNCLASSIFIED);
+		}
+	}
 
 }

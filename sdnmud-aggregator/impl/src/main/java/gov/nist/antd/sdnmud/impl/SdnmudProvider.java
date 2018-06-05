@@ -207,7 +207,6 @@ public class SdnmudProvider {
 		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(this);
 		ListenerRegistration<PacketInDispatcher> registration = this.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
-		packetInDispatcher.setListenerRegistration(registration);
 
 		/*
 		 * Register a data tree change listener for Controller Class mapping. A

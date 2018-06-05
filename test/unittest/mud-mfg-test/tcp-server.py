@@ -13,13 +13,15 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-H", help="Host address", default="127.0.0.1")
     parser.add_argument("-P", help="Port", default="4000")
+    parser.add_argument("-T", help="Timeout ", default = "10")
     args = parser.parse_args()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = args.H
     port = int(args.P)
+    timeout = int(args.T)
     s.bind((host, port))
     s.listen(1)
-    s.settimeout(10)
+    s.settimeout(timeout)
     conn, addr = s.accept()
     data = conn.recv(BUFFER_SIZE)
     if not data: 

@@ -10,7 +10,7 @@
               "name": "man0-todev",
               "matches": {
                 "ietf-mud:mud": {
-                  "manufacturer": "toothbrush.nist.gov"
+                  "manufacturer": "toothbrush.nist.local"
                 },
                 "ipv4": {
                   "protocol": 17
@@ -30,7 +30,7 @@
               "name": "man1-todev",
               "matches": {
                 "ietf-mud:mud": {
-                  "manufacturer": "hairbrush.nist.gov"
+                  "manufacturer": "hairbrush.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6
@@ -59,7 +59,7 @@
               "name": "man0-frdev",
               "matches": {
                 "ietf-mud:mud": {
-                  "manufacturer": "toothbrush.nist.gov"
+                  "manufacturer": "toothbrush.nist.local"
                 },
                 "ipv4": {
                   "protocol": 17
@@ -79,7 +79,7 @@
               "name": "man1-frdev",
               "matches": {
                 "ietf-mud:mud": {
-                  "manufacturer": "hairbrush.nist.gov"
+                  "manufacturer": "hairbrush.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6

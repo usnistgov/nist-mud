@@ -24,6 +24,8 @@
 package gov.nist.antd.baseapp.impl;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -122,11 +124,11 @@ public class FlowCommitWrapper {
 		}
 	}
 
-	public List<FlowKey> readFlows(
+	public Collection<FlowKey> readFlows(
 			InstanceIdentifier<FlowCapableNode> flowNodeIdent, short tableId,
-			String uriPrefix, MacAddress sourceMacAddress) {
+			String uriPrefix, MacAddress srcMacAddress, MacAddress dstMacAddress) {
 
-		List<FlowKey> retval = new ArrayList<FlowKey>();
+		HashSet<FlowKey> retval = new HashSet<FlowKey>();
 
 		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent
 				.child(Table.class, new TableKey(tableId));
@@ -139,7 +141,7 @@ public class FlowCommitWrapper {
 				List<Flow> flows = table.getFlow();
 				for (Flow flow : flows) {
 					String flowId = flow.getId().getValue();
-					if (sourceMacAddress != null) {
+					if (srcMacAddress != null) {
 						MacAddress flowSourceMacAddress = null;
 
 						if (flow.getMatch() != null
@@ -154,7 +156,27 @@ public class FlowCommitWrapper {
 						if (flowSourceMacAddress != null
 								&& flowId.startsWith(uriPrefix)
 								&& flowSourceMacAddress
-								.equals(sourceMacAddress)) {
+								.equals(srcMacAddress)) {
+							retval.add(flow.getKey());
+						}
+						
+					} 
+					if ( dstMacAddress != null) {
+						MacAddress flowDestinationMacAddress = null;
+
+						if (flow.getMatch() != null
+								&& flow.getMatch().getEthernetMatch() != null
+								&& flow.getMatch().getEthernetMatch()
+								.getEthernetDestination() != null) {
+							flowDestinationMacAddress = flow.getMatch()
+									.getEthernetMatch().getEthernetDestination()
+									.getAddress();
+						}
+
+						if (flowDestinationMacAddress != null
+								&& flowId.startsWith(uriPrefix)
+								&& flowDestinationMacAddress
+								.equals(dstMacAddress)) {
 							retval.add(flow.getKey());
 						}
 					} else {
@@ -183,14 +205,15 @@ public class FlowCommitWrapper {
 	 *            -- the mud URI
 	 * @param sourceMacAddress
 	 *            -- the device source mac address.
+	 *            RESUME HERE
 	 */
 
 	synchronized public void deleteFlows(
 			InstanceIdentifier<FlowCapableNode> flowCapableNode, String uri,
-			short table, MacAddress sourceMacAddress) {
+			short table, MacAddress sourceMacAddress, MacAddress destinationMacAddress) {
 
-		List<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri,
-				sourceMacAddress);
+		Collection<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri,
+				sourceMacAddress, destinationMacAddress);
 		for (FlowKey flowKey : flowKeys) {
 			deleteFlow(flowKey, table, flowCapableNode);
 		}

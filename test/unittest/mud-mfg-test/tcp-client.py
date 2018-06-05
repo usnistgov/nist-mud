@@ -14,7 +14,7 @@ if __name__=="__main__" :
     parser.add_argument("-P", help="Port", default="4000")
     args = parser.parse_args()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.settimeout(3)
+    s.settimeout(5)
     s.connect((args.H, int(args.P)))
     s.send(MESSAGE)
     data = s.recv(BUFFER_SIZE)

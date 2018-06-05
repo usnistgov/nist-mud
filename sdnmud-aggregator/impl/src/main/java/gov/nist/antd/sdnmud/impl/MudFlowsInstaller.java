@@ -682,11 +682,6 @@ public class MudFlowsInstaller {
 		return ipAddresses;
 	}
 
-	private static BigInteger createSrcManufacturerMetadata(String manufacturer) {
-		return BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(manufacturer))
-				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
-	}
-
 	private static BigInteger createSrcModelMetadata(String mudUri) {
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
 		return BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT);
@@ -758,8 +753,8 @@ public class MudFlowsInstaller {
 		String nodeId = InstanceIdentifierUtils.getNodeUri(node);
 		FlowCookie flowCookie = SdnMudConstants.DH_REQUEST_FLOW_COOKIE;
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
-		FlowBuilder flowBuilder = FlowUtils
-				.createToDhcpServerMatchGoToNextTableFlow(BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId);
+		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(
+				BaseappConstants.SDNMUD_RULES_TABLE, flowCookie, flowId, true);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
@@ -799,35 +794,6 @@ public class MudFlowsInstaller {
 			}
 		}
 
-	}
-
-	public static void installStampManufacturerModelFlowRules(MacAddress srcMac, String mudUri,
-			SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
-
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
-		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		BigInteger metadata = createSrcManufacturerMetadata(manufacturer).or(createSrcModelMetadata(mudUri));
-
-		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
-
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("stamp-manufactuer-model-flow");
-
-		FlowBuilder fb = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-				BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-
-		flowId = InstanceIdentifierUtils.createFlowId(mudUri);
-		metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
-		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
-
-		fb = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(srcMac, metadata, metadataMask,
-				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
 	/**
@@ -872,7 +838,7 @@ public class MudFlowsInstaller {
 
 			// Delete all the flows previously associated with this MUD URI.
 
-			flowCommitWrapper.deleteFlows(node, mudUri.getValue(), BaseappConstants.SDNMUD_RULES_TABLE, null);
+			flowCommitWrapper.deleteFlows(node, mudUri.getValue(), BaseappConstants.SDNMUD_RULES_TABLE, null, null);
 
 			/*
 			 * Track that we have added a node for this device MAC address for

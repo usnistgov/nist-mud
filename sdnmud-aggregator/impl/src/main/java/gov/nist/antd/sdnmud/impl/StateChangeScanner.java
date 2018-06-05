@@ -53,12 +53,12 @@ public class StateChangeScanner extends TimerTask {
 	public void run() {
 
 		if (sdnmudProvider.getCpeCollections() == null || !sdnmudProvider.isControllerMapped()) {
-			LOG.error("StateChangeScanner: Topology not found");
+			LOG.info("StateChangeScanner: Topology not found");
 			return;
 		}
 
 		if (!sdnmudProvider.isConfigStateChanged()) {
-			LOG.info("Config state is unchanged -- returning");
+			LOG.debug("Config state is unchanged -- returning");
 			return;
 		}
 
@@ -69,8 +69,12 @@ public class StateChangeScanner extends TimerTask {
 			boolean failed = false;
 			for (Uri cpeSwitch : topology.getCpeSwitches()) {
 
-				this.sdnmudProvider.getWakeupListener().installSendToControllerFlows(cpeSwitch.getValue());
-				this.sdnmudProvider.getWakeupListener().installInitialFlows(cpeSwitch.getValue());
+				if (!initialFlowsInstalled.contains(cpeSwitch.getValue())) {
+					this.sdnmudProvider.getWakeupListener().installSendToControllerFlows(cpeSwitch.getValue());
+					this.sdnmudProvider.getWakeupListener().installInitialFlows(cpeSwitch.getValue());
+					this.initialFlowsInstalled.add(cpeSwitch.getValue());
+				}
+
 				MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider.getMudFlowsInstaller();
 				for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
 					String key = mud.getMudUrl().getValue() + ":" + cpeSwitch.getValue();

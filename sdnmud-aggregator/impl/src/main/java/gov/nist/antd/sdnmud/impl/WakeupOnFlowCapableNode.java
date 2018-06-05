@@ -26,6 +26,7 @@ import java.util.Collection;
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
@@ -87,6 +88,21 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
+	/**
+	 * @param nodePath
+	 * @param srcDeviceManufacturerStampTable
+	 * @param metadata
+	 * @param metadataMask
+	 */
+	private void installToDhcpFlow(InstanceIdentifier<FlowCapableNode> nodePath, Short tableId, BigInteger metadata,
+			BigInteger metadataMask) {
+		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
+		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":bypassDhcp");
+		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
+		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, flowCookie, flowId, false);
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
+	}
+
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
@@ -117,12 +133,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
+		installToDhcpFlow(nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+
 		metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
-
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
+		installToDhcpFlow(nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 	}
 
 	public void installInitialFlows(String nodeUri) {

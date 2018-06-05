@@ -42,7 +42,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
-import java.net.URL;
 import java.nio.CharBuffer;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
@@ -58,20 +57,16 @@ import java.util.Set;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 
-import org.apache.http.auth.AuthenticationException;
-import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.NetUtils;
+import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
@@ -80,14 +75,14 @@ import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
 import org.opendaylight.mdsal.common.api.TransactionCommitFailedException;
 import org.opendaylight.openflowplugin.api.OFConstants;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev160218.access.lists.Acl;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Mud;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.MudBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
@@ -95,7 +90,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
@@ -105,30 +99,21 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.QName;
 import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
-import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier.PathArgument;
 import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
 import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNodeContainer;
 import org.opendaylight.yangtools.yang.data.api.schema.stream.NormalizedNodeStreamWriter;
-import org.opendaylight.yangtools.yang.data.codec.gson.JSONCodecFactory;
 import org.opendaylight.yangtools.yang.data.codec.gson.JsonParserStream;
 import org.opendaylight.yangtools.yang.data.impl.schema.ImmutableNormalizedNodeStreamWriter;
 import org.opendaylight.yangtools.yang.data.impl.schema.builder.api.NormalizedNodeContainerBuilder;
 import org.opendaylight.yangtools.yang.data.impl.schema.builder.impl.ImmutableContainerNodeBuilder;
-import org.opendaylight.yangtools.yang.model.api.SchemaContext;
 import org.opendaylight.yangtools.yang.model.api.SchemaNode;
 import org.opendaylight.yangtools.yang.model.api.SchemaPath;
 import org.opendaylight.yangtools.yang.model.parser.api.YangSyntaxErrorException;
 import org.opendaylight.yangtools.yang.model.repo.api.SchemaSourceException;
-import org.opendaylight.yangtools.yang.model.util.AbstractSchemaContext;
 import org.opendaylight.yangtools.yang.model.util.SchemaContextUtil;
-import org.opendaylight.yangtools.yang.parser.repo.YangTextSchemaContextResolver;
-import org.opendaylight.yangtools.yang.parser.spi.source.StatementStreamSource;
-import org.opendaylight.yangtools.yang.parser.stmt.reactor.EffectiveSchemaContext;
-import org.opendaylight.yangtools.yang.parser.stmt.rfc6020.YangStatementSourceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.base.Optional;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -162,21 +147,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private DOMDataBroker domDataBroker;
 
-	private ListenerRegistration<PacketInDispatcher> listenerRegistration;
-
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
 
-	private HashMap<String, Flow> flowTable = new HashMap<>();
-	private InstanceIdentifier<Mud> mudInstanceId = InstanceIdentifier.builder(Mud.class).build();
-	private InstanceIdentifier<Acls> aclsInstanceId = InstanceIdentifier.builder(Acls.class).build();
-	private BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer;
-
-	private static class DoubleSerializer implements JsonSerializer<Double> {
-		@Override
-		public JsonElement serialize(Double src, Type typeOfSrc, JsonSerializationContext context) {
-			return src == src.longValue() ? new JsonPrimitive(src.longValue()) : new JsonPrimitive(src);
-		}
-	}
+	private HashMap<String, Flow> flowTable = new HashMap<String, Flow>();
 
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
@@ -243,7 +216,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.sdnmudProvider = sdnmudProvider;
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
-		this.bindingNormalizedNodeSerializer = sdnmudProvider.getBindingNormalizedNodeSerializer();
 	}
 
 	private static MacAddress rawMacToMac(final byte[] rawMac) {
@@ -315,7 +287,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
-			String mudUri, SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
+			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
 		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
@@ -336,24 +308,25 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
-		String flowIdStr = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/" + srcMac.getValue() + "/"
-				+ metadata.toString(16) + "/" + metadataMask.toString(16);
+		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + srcMac.getValue()
+				+ "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
+
 		if (flow == null) {
 			FlowId flowId = new FlowId(flowIdStr);
 
 			flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie).build();
-			flowTable.put(flowIdStr, flow);
-
+					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie,
+					BaseappConstants.CACHE_TIMEOUT).build();
+			this.flowTable.put(flowIdStr, flow);
 		}
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
 	}
 
 	public void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
-			String mudUri, SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
+			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 
 		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
 		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
@@ -373,35 +346,23 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				.or(SdnMudConstants.DST_NETWORK_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
-		String flowIdStr = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/" + dstMac.getValue() + "/"
-				+ metadata.toString(16) + "/" + metadataMask.toString(16);
+		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + dstMac.getValue()
+				+ "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
+
 		if (flow == null) {
+
 			FlowId flowId = new FlowId(flowIdStr);
 
 			flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie).build();
+					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie,
+					BaseappConstants.CACHE_TIMEOUT).build();
 			this.flowTable.put(flowIdStr, flow);
+
 		}
+
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
-	}
-
-	public void setListenerRegistration(ListenerRegistration<PacketInDispatcher> registration) {
-		this.listenerRegistration = registration;
-
-	}
-
-	// installDstMacMatchStampDstLocalAddressFlowRules
-	private static void installDstMacMatchStampDstLocalAddressFlowRules(MacAddress dstMac,
-			SdnmudProvider sdnmudProvider, InstanceIdentifier<FlowCapableNode> node) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
-		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT);
-		BigInteger metadataMask = SdnMudConstants.DST_NETWORK_MASK;
-		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-				BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
 	private void importFromNormalizedNode(final DOMDataReadWriteTransaction rwTrx, final LogicalDatastoreType type,
@@ -509,22 +470,36 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE
 					|| tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
-				// We got a notification for a device that is connected to this
-				// switch.
-				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-				boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
-				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(),
-						this.sdnmudProvider, node);
-				// TODO -- check if a match for this already exists before
-				// installing redundant rule.
-				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				/*
+				 * Flow miss from the first two tables indicates that we do not
+				 * have a mapping for this device.
+				 */
+				if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
+					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+					boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
+					installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 
-				isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
+				} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+					boolean isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
+					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+				}
 
-				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(),
-						this.sdnmudProvider, node);
-
-			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
+			} /*
+				 * else if (tableId ==
+				 * BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) { //
+				 * installing redundant rule. Uri mudUri =
+				 * this.sdnmudProvider.getMappingDataStoreListener().getMudUri(
+				 * dstMac);
+				 *
+				 * boolean isLocalAddress = this.isLocalAddress(nodeId,
+				 * destIpAddress);
+				 * installDstMacMatchStampManufacturerModelFlowRules(dstMac,
+				 * isLocalAddress, mudUri.getValue(), node);
+				 *
+				 * }
+				 */
+			else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				byte[] rawPacket = notification.getPayload();
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
@@ -540,9 +515,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.debug("PacketInDispatcher: Got an illegal SYN -- blocking the flow");
 						String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":"
 								+ dstMac.getValue() + ":" + SdnMudConstants.TCP_PROTOCOL + ":" + port;
+						FlowId flowId = new FlowId(flowIdStr);
 						Flow fb = this.flowTable.get(flowIdStr);
 						if (fb == null) {
-							FlowId flowId = new FlowId(flowIdStr);
 							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 
 							fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac,
@@ -558,10 +533,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchGoTo:" + srcIp + ":"
 								+ dstMac.getValue() + ":" + SdnMudConstants.TCP_PROTOCOL + ":" + port;
 
+						FlowId flowId = new FlowId(flowIdStr);
 						Flow fb = this.flowTable.get(flowIdStr);
 
 						if (fb == null) {
-							FlowId flowId = new FlowId(flowIdStr);
 							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
 							/*
 							 * create a short term pass through flow to allow
@@ -655,6 +630,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 									this.importDatastore(aclStr, Acls.QNAME);
 
+									MappingBuilder mb = new MappingBuilder();
+									ArrayList<MacAddress> macAddresses = new ArrayList<>();
+									macAddresses.add(srcMac);
+									mb.setDeviceId(macAddresses);
+									mb.setMudUrl(new Uri(mudUrl));
+									InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)
+											.build();
+									ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+
+									tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
+									tx.submit();
+
 								} else {
 									LOG.error("Could not fetch MUD file statusCode = "
 											+ response.getStatusLine().getStatusCode());
@@ -675,6 +662,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				}
 
 			}
+
 			transmitPacket(notification);
 
 		}

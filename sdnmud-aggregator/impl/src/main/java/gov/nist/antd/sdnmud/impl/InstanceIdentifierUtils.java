@@ -40,128 +40,124 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class InstanceIdentifierUtils {
-    private static AtomicLong flowIdInc = new AtomicLong();
-    private static ArrayList<String> manufacturers = new ArrayList<String>();
-    private static ArrayList<String> models = new ArrayList<String>();
-    static {
-        manufacturers.add("NONE");
-        models.add("NONE");
-    }
+	private static AtomicLong flowIdInc = new AtomicLong();
+	private static ArrayList<String> manufacturers = new ArrayList<String>();
+	private static ArrayList<String> models = new ArrayList<String>();
+	static {
+		manufacturers.add("NONE");
+		models.add("NONE");
+	}
 
-    private static final Logger LOG = LoggerFactory
-            .getLogger(InstanceIdentifierUtils.class);
+	private static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
 
-    static {
-        // Dummy constants
-        models.add(SdnMudConstants.NONE);
-        manufacturers.add(SdnMudConstants.NONE);
-    }
+	static {
+		// Dummy constants
+		models.add(SdnMudConstants.NONE);
+		manufacturers.add(SdnMudConstants.NONE);
+	}
 
-    private InstanceIdentifierUtils() {
-        // hiding constructor for util class
-    }
+	private InstanceIdentifierUtils() {
+		// hiding constructor for util class
+	}
 
-    /**
-     * Shorten's node child path to node path.
-     *
-     * @param nodeChild
-     *            child of node, from which we want node path.
-     * @return
-     */
-    public static final InstanceIdentifier<Node> getNodePath(
-            final InstanceIdentifier<?> nodeChild) {
+	/**
+	 * Shorten's node child path to node path.
+	 *
+	 * @param nodeChild
+	 *            child of node, from which we want node path.
+	 * @return
+	 */
+	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
 
-        return nodeChild.firstIdentifierOf(Node.class);
-    }
+		return nodeChild.firstIdentifierOf(Node.class);
+	}
 
-    public static final String getNodeUri(
-            InstanceIdentifier<FlowCapableNode> node) {
-        return node.firstKeyOf(Node.class).getId().getValue();
+	public static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
+		return node.firstKeyOf(Node.class).getId().getValue();
 
-    }
+	}
 
-    public static final InstanceIdentifier<FlowCapableNode> getFlowCapableNodePath(
-            final InstanceIdentifier<?> nodeChild) {
+	public static final InstanceIdentifier<FlowCapableNode> getFlowCapableNodePath(
+			final InstanceIdentifier<?> nodeChild) {
 
-        return nodeChild.firstIdentifierOf(FlowCapableNode.class);
-    }
+		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
+	}
 
-    public static FlowId createFlowId(String prefix) {
-        return new FlowId(prefix + "/sdnmud/"
-                + String.valueOf(flowIdInc.getAndIncrement()));
-    }
+	public static FlowId createFlowId(String prefix) {
+		return new FlowId(prefix + "/sdnmud/" + String.valueOf(flowIdInc.getAndIncrement()));
+	}
 
-    public static FlowCookie createFlowCookie(String flowCookieId) {
-        return new FlowCookie(
-                BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
-    }
+	public static FlowCookie createFlowCookie(String flowCookieId) {
+		return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
+	}
 
-    static String getAuthority(Uri uri) {
-        return getAuthority(uri.getValue());
-    }
+	static String getAuthority(Uri uri) {
+		return getAuthority(uri.getValue());
+	}
 
-    static String getAuthority(String uri) {
-        int index = uri.indexOf("//");
-        if (index == -1) {
-            LOG.info("getAuthority : Malformed URI " + uri);
-            return SdnMudConstants.UNCLASSIFIED;
-        }
-        String rest = uri.substring(index + 2);
-        index = rest.indexOf("/");
-        String authority = rest.substring(0, index);
-        return authority;
-    }
+	static String getAuthority(String uri) {
+		int index = uri.indexOf("//");
+		if (index == -1) {
+			LOG.info("getAuthority : Malformed URI " + uri);
+			return SdnMudConstants.UNCLASSIFIED;
+		}
+		String rest = uri.substring(index + 2);
+		index = rest.indexOf("/");
+		String authority = rest.substring(0, index);
+		return authority;
+	}
 
-    /**
-     * Create a flow hash given a flow specification.
-     *
-     * @param flowSpec
-     *            -- the flow spec to hash.
-     *
-     */
-    public static int getFlowHash(String flowSpec) {
-        // Has to be within the size of an mpls label.
-        // or the flow does not appear.
-        return Math.abs(flowSpec.hashCode()) % (1 << 20);
-    }
+	/**
+	 * Create a flow hash given a flow specification.
+	 *
+	 * @param flowSpec
+	 *            -- the flow spec to hash.
+	 *
+	 */
+	public static int getFlowHash(String flowSpec) {
+		// Has to be within the size of an mpls label.
+		// or the flow does not appear.
+		return Math.abs(flowSpec.hashCode()) % (1 << 20);
+	}
 
-    public static int getFlowHash(String manufacturer, String flowType) {
-        String flowSpec = "flow:" + manufacturer + ":" + flowType;
-        return getFlowHash(flowSpec);
-    }
+	public static int getFlowHash(String manufacturer, String flowType) {
+		String flowSpec = "flow:" + manufacturer + ":" + flowType;
+		return getFlowHash(flowSpec);
+	}
 
-    public static synchronized int getManfuacturerId(String manufacturer) {
-        int index = -1;
-        for (int i = 0; i < manufacturers.size(); i++) {
-            if (manufacturers.get(i).compareTo(manufacturer) == 0) {
-                index = i;
-                break;
-            }
-        }
+	public static synchronized int getManfuacturerId(String manufacturer) {
+		int index = -1;
+		for (int i = 0; i < manufacturers.size(); i++) {
+			if (manufacturers.get(i).compareTo(manufacturer) == 0) {
+				index = i;
+				break;
+			}
+		}
 
-        if (index == -1) {
-            manufacturers.add(manufacturer);
-            index = manufacturers.size() - 1;
-        }
-        return index;
-    }
+		if (index == -1) {
+			manufacturers.add(manufacturer);
+			index = manufacturers.size() - 1;
+		}
+		LOG.info("getManifacturerId [" + manufacturer + "] manufacturerId " + index);
+		return index;
+	}
 
-    public static synchronized int getModelId(String model) {
-        int index = -1;
-        for (int i = 0; i < models.size(); i++) {
-            if (models.get(i).compareTo(model) == 0) {
-                index = i;
-                break;
-            }
-        }
+	public static synchronized int getModelId(String model) {
+		int index = -1;
+		for (int i = 0; i < models.size(); i++) {
+			if (models.get(i).compareTo(model) == 0) {
+				index = i;
+				break;
+			}
+		}
 
-        if (index == -1) {
-            models.add(model);
-            index = models.size() - 1;
-        }
+		if (index == -1) {
+			models.add(model);
+			index = models.size() - 1;
+		}
 
-        LOG.info("getModelId : model [" + model + "] modelId " + index);
-        return index;
-    }
+		LOG.info("getModelId : model [" + model + "] modelId " + index);
+		return index;
+	}
 
 }
