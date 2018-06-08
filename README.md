@@ -29,19 +29,24 @@ This project implements the following :
 
 - VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
 Packets outbound from the CPE switch on the uplink interface are tagged with the 
-VLAN tag. These packets are routed to the appropriate VNF router in the service
-provider network.
+VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
+network.
 
 ## Network Architecture ##
 
-Our  network model consists of a collection of CPE switches connected
-to an NPE switch. The NPE switch routes packets to a cloud-resident
-virtual network function VNF switch. MUD flow rules are installed only
-at CPE switches.  Packets that leave the CPE switch and are sent to the
-NPE switch are tagged with a VLAN tag that identifies the CPE switch
-from which they originated.  At the NPE switch the VLAN tag is used to
-direct packets to a corresponding VNF switch. This arrangement extends
-the CPE VLAN to the service provider cloud.
+The scenario is an enterprise network. In our scenario, there are several
+(CPE) switches that are assigned to departments. These are managed centrally.
+The central office (IT shop) provides a VNF platform such as OpenStack which
+can host Virtual Network functions.
+
+Our  network model consists of a collection of CPE switches connected to
+an NPE switch. The NPE switch routes packets to a cloud-resident virtual
+network function VNF switch. MUD flow rules are installed only at CPE
+switches.  Packets that leave the CPE switch and are sent to the NPE
+switch are tagged with a VLAN tag at the CPE switch that identifies the
+CPE switch from which they originated.  At the NPE switch the VLAN tag
+is used to direct packets to a corresponding VNF switch. This arrangement
+extends the CPE VLAN to the enterprise cloud.
 
 The following diagram shows the network architecture of the system.
 
