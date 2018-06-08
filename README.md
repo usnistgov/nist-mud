@@ -39,14 +39,15 @@ The scenario is an enterprise network. In our scenario, there are several
 The central office (IT shop) provides a VNF platform such as OpenStack which
 can host Virtual Network functions.
 
-Our  network model consists of a collection of CPE switches connected to
-an NPE switch. The NPE switch routes packets to a cloud-resident virtual
-network function VNF switch. MUD flow rules are installed only at CPE
-switches.  Packets that leave the CPE switch and are sent to the NPE
-switch are tagged with a VLAN tag at the CPE switch that identifies the
-CPE switch from which they originated.  At the NPE switch the VLAN tag
-is used to direct packets to a corresponding VNF switch. This arrangement
-extends the CPE VLAN to the enterprise cloud.
+The NPE switch routes packets to a cloud-resident virtual network
+function VNF switch. MUD flow rules are installed only at CPE switches.
+Packets that leave the CPE switch and are sent to the NPE switch are
+tagged with a VLAN tag at the CPE switch that identifies the CPE switch
+from which they originated.  At the NPE switch the VLAN tag is used to
+direct packets to a corresponding VNF switch. This arrangement extends the
+CPE (department) LAN to the enterprise cloud. We propose to host scalable
+Intrusion Detection platforms in the enterprise cloud to complement the
+functionality of MUD.
 
 The following diagram shows the network architecture of the system.
 
