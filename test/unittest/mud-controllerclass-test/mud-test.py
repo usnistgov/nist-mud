@@ -72,6 +72,7 @@ class TestAccess(unittest.TestCase) :
     def testUdpPingExpectFail(self):
         print "pinging a peer -- this should fail with MUD"
         h1 = hosts[0]
+        # prime flow table
         result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
 

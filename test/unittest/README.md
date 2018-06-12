@@ -9,6 +9,18 @@ a learning switch controller to set up our topology.
      cd ryu; pip install .
      pip install -r tools/optional-requires
 
+Edit config/sdnmud-config.json to specify keystore-home and keypass. This is used for mud file verification in the DHCP test. Here is a sample.
+
+
+    {
+        "sdnmud-config" : {
+                "keystore-home": "/home/mranga/jdk1.8.0_102/jre/lib/security/cacerts",
+                "key-pass" : "changeit"
+        }
+    }
+
+    
+
 The each test is its own directory and can be run standalone. You have to start the OpenDaylight controller and load the necessary feature to do the test.
 For example, for mud tests, you would load the features-sdnmud feature. You can run the test as follows:
 

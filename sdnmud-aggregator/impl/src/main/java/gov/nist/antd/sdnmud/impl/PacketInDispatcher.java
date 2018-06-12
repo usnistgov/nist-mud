@@ -36,7 +36,9 @@
  */
 package gov.nist.antd.sdnmud.impl;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -44,9 +46,11 @@ import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -57,6 +61,7 @@ import java.util.Set;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
 
+import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
@@ -131,6 +136,17 @@ import com.google.gson.stream.JsonReader;
 import gov.nist.antd.baseapp.impl.BaseappConstants;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpRequestPacket;
+
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.spec.X509EncodedKeySpec;
 
 /**
  * Packet in dispatcher that gets invoked on flow table miss when a packet is
@@ -378,6 +394,49 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 	}
 
+	private int doHttpGet(String url, byte[] data) throws NoSuchAlgorithmException, KeyStoreException,
+			KeyManagementException, ClientProtocolException, IOException {
+		SSLContextBuilder builder = new SSLContextBuilder();
+
+		/*
+		 * DUMMY Host Name verifier for testing purposes
+		 */
+
+		HostnameVerifier hv = new HostnameVerifier() {
+			@Override
+			public boolean verify(String urlHostName, SSLSession session) {
+				return true;
+			}
+
+		};
+
+		// BUGBUG -- only for testing. Should not trust self signed certs.
+
+		builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+
+		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
+
+		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+
+		HttpGet httpGet = new HttpGet(url);
+
+		CloseableHttpResponse response = httpclient.execute(httpGet);
+
+		try {
+			// Get the response
+			if (response.getStatusLine().getStatusCode() == 200) {
+				return response.getEntity().getContent().read(data);
+			} else {
+				LOG.error("Could not fetch from " + url + " statusCode = " + response.getStatusLine().getStatusCode());
+				throw new IOException(
+						"Could not fetch from " + url + " statusCode = " + response.getStatusLine().getStatusCode());
+			}
+		} finally {
+			response.close();
+		}
+
+	}
+
 	private void importDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
 			ReadFailedException, SchemaSourceException, YangSyntaxErrorException {
 		// create StringBuffer object
@@ -472,20 +531,22 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 				boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
-
+				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				byte[] rawPacket = notification.getPayload();
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
 				String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
+
 				LOG.info("PacketInDispatcher: protocol = " + protocol + " srcIp = " + srcIp);
 
 				if (protocol == SdnMudConstants.TCP_PROTOCOL) {
-					int port = PacketUtils.getTCPSourcePort(rawPacket);
+					int port = PacketUtils.getSourcePort(rawPacket);
 					BigInteger metadata = notification.getMatch().getMetadata().getMetadata();
 					BigInteger metadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
@@ -530,11 +591,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
 					}
+					transmitPacket(notification);
+
 				} else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
 					// this is a DH request.
 					DhcpPacket dhcpPacket = DhcpPacket.decodeFullPacket(notification.getPayload(), DhcpPacket.ENCAP_L2);
 
-					LOG.info("This is a DHCP request " + dhcpPacket.getClass().getName());
+					LOG.info("DHCP packet type = " + dhcpPacket.getClass().getName());
 
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
@@ -543,48 +606,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 							LOG.info("Options 161 request: MUD URL = " + mudUrl);
 							try {
 
-								// BUGBUG - trust selfsigned cert?
-								// This is only for testing.
+								byte[] mudFileChars = new byte[65536];
+								int nread = this.doHttpGet(mudUrl, mudFileChars);
 
-								/*
-								 * DUMMY Host Name verifier for testing purposes
-								 */
-
-								HostnameVerifier hv = new HostnameVerifier() {
-									@Override
-									public boolean verify(String urlHostName, SSLSession session) {
-										return true;
-									}
-
-								};
-
-								SSLContextBuilder builder = new SSLContextBuilder();
-								builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-
-								SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
-
-								CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf)
-										.build();
-
-								HttpGet httpGet = new HttpGet(mudUrl);
-
-								CloseableHttpResponse response = httpclient.execute(httpGet);
-
-								// Get the response
-								char[] mudFileChars = new char[65536];
-
-								CharBuffer charBuffer = CharBuffer.wrap(mudFileChars);
-
-								InputStreamReader isreader = new InputStreamReader(response.getEntity().getContent());
-								int nread = isreader.read(charBuffer);
-
-								if (response.getStatusLine().getStatusCode() == 200) {
+								if (nread > 0) {
 
 									LOG.info("read " + nread + " characters");
 
 									assert nread < 65536;
 
-									String mudFileStr = new String(mudFileChars, 0, nread);
+									byte[] mudfileData = Arrays.copyOf(mudFileChars, nread);
+
+									String mudFileStr = new String(mudfileData);
 
 									/* Set up gson to not convert to double */
 									Gson gson = new GsonBuilder().setLenient()
@@ -599,6 +632,51 @@ public class PacketInDispatcher implements PacketProcessingListener {
 									Map<?, ?> mudFile = gson.fromJson(mudFileStr,
 											new TypeToken<Map<String, LinkedHashMap>>() {
 											}.getType());
+
+									Map<?, ?> ietfMud = (Map<?, Object>) mudFile.get("ietf-mud:mud");
+
+									/*
+									 * The MUD signature points to the signature
+									 * file for this MUD file.
+									 */
+									String mudSignatureUrl = (String) ietfMud.get("mud-signature");
+
+									LOG.info("mud-signature " + mudSignatureUrl);
+
+									if (mudSignatureUrl != null) {
+
+										byte[] buffer = new byte[65536];
+										int bytesRead = this.doHttpGet(mudSignatureUrl, buffer);
+										LOG.debug("read " + bytesRead + " bytes");
+										byte[] signature = Arrays.copyOf(buffer, bytesRead);
+										String manufacturer = InstanceIdentifierUtils.getAuthority(mudUrl);
+										if (sdnmudProvider.getSdnmudConfig() == null) {
+											LOG.error("Configuration file not found -- not installing MUD profile");
+											return;
+										}
+										String keystoreHome = sdnmudProvider.getSdnmudConfig().getKeystoreHome();
+										LOG.debug("keystoreHome = " + keystoreHome);
+										FileInputStream is = new FileInputStream(keystoreHome);
+										String keyPass = sdnmudProvider.getSdnmudConfig().getKeyPass();
+										LOG.debug("keyPass = " + keyPass);
+										KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+										LOG.debug("keystore = " + keystore);
+										keystore.load(is, keyPass.toCharArray());
+										Certificate cert = keystore.getCertificate(manufacturer);
+										PublicKey publicKey = cert.getPublicKey();
+										String algorithm = publicKey.getAlgorithm();
+										Signature sig = Signature.getInstance("SHA256withRSA");
+										sig.initVerify(publicKey);
+										sig.update(mudfileData);
+										LOG.debug("Signature = " + sig + " algorithm = " + algorithm);
+										if (!sig.verify(signature)) {
+											LOG.error("Signature verification failed");
+											return;
+										} else {
+											LOG.info("Signature verification succeeded");
+										}
+
+									}
 
 									String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));
 
@@ -619,20 +697,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 									tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
 									tx.submit();
-
-								} else {
-									LOG.error("Could not fetch MUD file statusCode = "
-											+ response.getStatusLine().getStatusCode());
 								}
-								response.close();
 
 							} catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException
-									| TransactionCommitFailedException | ReadFailedException
-									| SchemaSourceException ex) {
+									| TransactionCommitFailedException | ReadFailedException | CertificateException
+									| SchemaSourceException | YangSyntaxErrorException | SignatureException
+									| InvalidKeyException ex) {
 								LOG.error("Error fetching MUD file -- not installing", ex);
-							} catch (YangSyntaxErrorException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
 							}
 
 						}
@@ -640,8 +711,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				}
 
 			}
-
-			transmitPacket(notification);
 
 		}
 	}

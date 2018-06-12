@@ -213,12 +213,12 @@ public abstract class PacketUtils {
 
     }
 
-    public static int getTCPSourcePort(final byte[] baseHeader) {
+    public static int getSourcePort(final byte[] baseHeader) {
         return (((baseHeader[PACKET_OFFSET_TCP_SRC_PORT] << 8) & 65280)
                 | (baseHeader[PACKET_OFFSET_TCP_SRC_PORT + 1] & 255));
     }
 
-    public static int getTCPDestinationPort(final byte[] baseHeader) {
+    public static int getDestinationPort(final byte[] baseHeader) {
         return (((baseHeader[PACKET_OFFSET_TCP_DST_PORT] << 8) & 65280)
                 | (baseHeader[PACKET_OFFSET_TCP_DST_PORT + 1] & 255));
 

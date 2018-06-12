@@ -51,6 +51,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -123,6 +124,8 @@ public class SdnmudProvider {
 
 	private boolean configStateChanged;
 
+	private SdnmudConfig sdnmudConfig;
+
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -163,6 +166,10 @@ public class SdnmudProvider {
 		return InstanceIdentifier.create(CpeCollections.class);
 	}
 
+	private static InstanceIdentifier<SdnmudConfig> getConfigWildCardPath() {
+		return InstanceIdentifier.create(SdnmudConfig.class);
+	}
+
 	/**
 	 * Method called when the blueprint container is created.
 	 */
@@ -171,6 +178,13 @@ public class SdnmudProvider {
 
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
+
+		/* Register listener for configuration state change */
+		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
+		final DataTreeIdentifier<SdnmudConfig> configId = new DataTreeIdentifier<SdnmudConfig>(
+				LogicalDatastoreType.CONFIGURATION, configWildCardPath);
+		SdnmudConfigDataStoreListener configDataStoreListener = new SdnmudConfigDataStoreListener(this);
+		this.dataBroker.registerDataTreeChangeListener(configId, configDataStoreListener);
 
 		/* Register data tree change listener for Topology change */
 		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
@@ -505,5 +519,16 @@ public class SdnmudProvider {
 
 	public void clearConfigStateChanged() {
 		this.configStateChanged = false;
+	}
+
+	/**
+	 * @param sdnmudConfig
+	 */
+	public void setSdnmudConfig(SdnmudConfig sdnmudConfig) {
+		this.sdnmudConfig = sdnmudConfig;
+	}
+
+	public SdnmudConfig getSdnmudConfig() {
+		return this.sdnmudConfig;
 	}
 }

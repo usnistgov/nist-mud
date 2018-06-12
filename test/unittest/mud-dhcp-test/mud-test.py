@@ -31,6 +31,13 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
+        h1 = hosts[0]
+        h1.cmdPrint("ifconfig h1-eth0 0")
+        h1.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
+        h2 = hosts[1]
+        h2.cmdPrint("ifconfig h2-eth0 0")
+        h2.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
+	time.sleep(5)
         pass
 
     def tearDown(self):
@@ -46,25 +53,18 @@ class TestAccess(unittest.TestCase) :
         rc = pieces[1].split(']')[0]
         return rc
 
-    def testDhClient(self):
-        h1 = hosts[0]
-        h1.cmdPrint("ifconfig h1-eth0 0")
-        h1.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
-	time.sleep(3)
+
+    def testAccessControl(self):
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
         print "result = ",result
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
-        print "pinging a same manufacturer peer before configuration -- this should fail"
+        print "pinging another host -- this should fail"
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect failed ping")
-        h2 = hosts[1]
-        h2.cmdPrint("ifconfig h2-eth0 0")
-        h2.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
-	time.sleep(3)
         print "pinging a same manufacturer peer after configuration -- this should work"
         result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) > 0, "expect successful ping")
@@ -73,8 +73,12 @@ class TestAccess(unittest.TestCase) :
         result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
         print "Wgetting from antd.local non mud host -- this succeed"
+        h3 = hosts[2]
         result = h3.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
+        h5 = hosts[4]
+        result = self.runAndReturnOutput(h5, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
+        self.assertTrue(int(result) > 0, "expect successful ping")
 
 
     
@@ -235,7 +239,7 @@ def setupTopology(controller_addr):
 
 
     # Start dnsmasq (our dns server).
-    h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid --dhcp-option=option:router,10.0.0.8'  )
+    h5.cmdPrint('/usr/sbin/dnsmasq --pid-file=/tmp/dnsmasq.pid --log-facility=/tmp/dnsmasq.log --dhcp-option=option:router,10.0.0.8'  )
 
     # Set up our router routes.
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
@@ -305,7 +309,9 @@ if __name__ == '__main__':
 
     setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
+    for (configfile,suffix) in { 
+        ("../config/sdnmud-config.json", "sdnmud:sdnmud-config"),
+        ("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping") }:
         data = json.load(open(configfile))
         print "configfile", configfile
