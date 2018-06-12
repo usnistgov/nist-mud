@@ -13,7 +13,7 @@ Access Control Rules at access points to restrict what the device can
 do on the network. In this project, MUD is implemented on SDN capable
 switches using OpenDaylight as the SDN controller.
 
-This repository aims to publish a public domain scalable implementation 
+Primarily, this repository publishes a public domain scalable implementation 
 of the  IETF MUD standard.  
 
 
@@ -32,7 +32,9 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
 network.
 
-## Network Architecture ##
+## MUD implementation architecture ##
+
+## Integration with IDS ##
 
 The scenario is an enterprise network. In our scenario, there are several
 (CPE) switches that are assigned to departments. These are managed centrally.
@@ -158,8 +160,9 @@ Add the following to /etc/hosts on your controller host so that the java library
 [See the instructions in the test/unittest directory](test/unittest/README.md)
 
 
-
 ## LIMITATIONS and CAVEATS ##
+
+This is BETA code. Much more testing and validation is needed.
 
 This is an IPV4 only implementation of MUD.  
 
@@ -167,7 +170,7 @@ X.509 extensions for MUD are not implemented.
 
 LLDP extensions for MUD support are not implemented.
 
-MUD file signature validation is not yet implemented.
+This is not a general ACL implementation.
 
 This code is shared for early review. It is an implementation of an IETF
 draft in progress. Much more testing and validation is required. Your help is 
@@ -178,9 +181,6 @@ This will happen after:
 
 1. The IETF MUD draft has achieved an RFC status.
 2. All issues are satisfactorily resolved.
-
-This project only implements the necessary ACL support for MUD profiles generated from MudMaker.org.
-This limitation will be removed in subsequent releases as the MUD standard matures and gets deployed.
 
 The vlan management code is for testing purposes to emulate a provider network. 
 The OpenDaylight network virtualization NetVirt project should be used for network virtualization.
@@ -216,9 +216,11 @@ source projects are noted in the source files as appropriate.
 * The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
 * Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
 * Implementation Design Contributors : Charif Mohammed, Doug Montgomery
-* Testing and Demonstrations : Omar Ilias Elmimouni
+* Testing : Omar Ilias Elmimouni
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
+* This work was funded using a Bridge to The Future (BTF) grant at NIST.
+
 Please acknowledge our work if you re-use this code or design.
 
 ![alt tag](docs/logos/nist-logo.png)
