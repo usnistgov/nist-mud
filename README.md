@@ -32,11 +32,16 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
 network.
 
-## MUD implementation architecture ##
+## Implementation architecture ##
+
+The following diagram shows the implementation architecture on OpenDaylight
+
+![alt tag](docs/arch/SDNMUD-SW-ARCH)
+
 
 ## Integration with IDS ##
 
-The scenario is an enterprise network. In our scenario, there are several
+The assumed scenario is an enterprise network. There are several
 (CPE) switches that are assigned to departments. These are managed centrally.
 The central office (IT shop) provides a VNF platform such as OpenStack which
 can host Virtual Network functions.
@@ -51,7 +56,9 @@ CPE (department) LAN to the enterprise cloud. We propose to host scalable
 Intrusion Detection platforms in the enterprise cloud to complement the
 functionality of MUD.
 
-The following diagram shows the network architecture of the system.
+The following diagrams shows the network architecture of the system.
+
+![alt tag](docs/arch/NetworkArch.png)
 
 ![alt tag](docs/arch/nw-arch.png)
 
@@ -65,7 +72,7 @@ The flow monitoring facility allows an IDS to indicate interest in specific clas
 - Packets that have hit a MUD flow rule and successfully been fowarded to the Network provider.
 - Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
 
-## Software Components ##
+## OpendDaylight Components ##
 
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
 This project consists of the following features:
