@@ -21,8 +21,7 @@ of the  IETF MUD standard.
 
 This project implements the following :
 
-- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation. 
-  We only implement the necessary ACLs to implement the profiles generated from mudmaker.org.
+- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation.   We only implement the necessary ACLs to implement the MUD profiles as described in the RFC.
 
 - Flow Monitor : A means for extracting outbound packets from IOT devices based on manufacturer 
 (or unclassified packets) to be provided to an IDS such as Snort.
@@ -32,14 +31,23 @@ Packets outbound from the CPE switch on the uplink interface are tagged with the
 VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
 network.
 
-## MUD implementation architecture ##
+## Implementation architecture ##
+
+The following diagram shows the implementation architecture on OpenDaylight
+
+![alt tag](docs/arch/SDNMUD-SW-ARCH.png)
+
 
 ## Integration with IDS ##
 
-The scenario is an enterprise network. In our scenario, there are several
+The assumed scenario is an enterprise network. There are several
 (CPE) switches that are assigned to departments. These are managed centrally.
 The central office (IT shop) provides a VNF platform such as OpenStack which
 can host Virtual Network functions.
+
+The following diagrams shows the network architecture of the system.
+
+![alt tag](docs/arch/NetworkArch.png)
 
 The NPE switch routes packets to a cloud-resident virtual network
 function VNF switch. MUD flow rules are installed only at CPE switches.
@@ -50,8 +58,6 @@ direct packets to a corresponding VNF switch. This arrangement extends the
 CPE (department) LAN to the enterprise cloud. We propose to host scalable
 Intrusion Detection platforms in the enterprise cloud to complement the
 functionality of MUD.
-
-The following diagram shows the network architecture of the system.
 
 ![alt tag](docs/arch/nw-arch.png)
 
@@ -65,7 +71,7 @@ The flow monitoring facility allows an IDS to indicate interest in specific clas
 - Packets that have hit a MUD flow rule and successfully been fowarded to the Network provider.
 - Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
 
-## Software Components ##
+## OpendDaylight Components ##
 
 OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
 This project consists of the following features:
