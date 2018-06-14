@@ -66,6 +66,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.ssl.SSLContextBuilder;
@@ -146,6 +147,7 @@ import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 
 /**
@@ -332,9 +334,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (flow == null) {
 			FlowId flowId = new FlowId(flowIdStr);
 
+			int timeout = this.sdnmudProvider.getSdnmudConfig() != null
+					? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
+					: BaseappConstants.CACHE_TIMEOUT;
 			flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie,
-					BaseappConstants.CACHE_TIMEOUT).build();
+					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
 		}
 
@@ -370,10 +374,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (flow == null) {
 
 			FlowId flowId = new FlowId(flowIdStr);
-
+			int timeout = this.sdnmudProvider.getSdnmudConfig() != null
+					? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
+					: BaseappConstants.CACHE_TIMEOUT;
 			flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie,
-					BaseappConstants.CACHE_TIMEOUT).build();
+					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
 
 		}
@@ -410,9 +415,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		};
 
-		// BUGBUG -- only for testing. Should not trust self signed certs.
+		if (sdnmudProvider.getSdnmudConfig().isTrustSelfSignedCert()) {
+			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+		} else {
 
-		builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+			TrustStrategy trustStrategy = new TrustStrategy() {
+				@Override
+				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
+					LOG.error("VALIDATION CODE SHOULD GO HERE -- this accepts ALL certificates");
+					// TODO -- verify the certificate chain.
+					return true;
+				}
+			};
+			builder.loadTrustMaterial(null, trustStrategy);
+		}
 
 		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
 
@@ -602,7 +618,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
 						String mudUrl = dhcpRequestPacket.getMudUrl();
-						if (mudUrl != null) {
+						if (mudUrl != null && sdnmudProvider.getSdnmudConfig() != null) {
 							LOG.info("Options 161 request: MUD URL = " + mudUrl);
 							try {
 
@@ -706,6 +722,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								LOG.error("Error fetching MUD file -- not installing", ex);
 							}
 
+						} else {
+							if (this.sdnmudProvider.getSdnmudConfig() == null) {
+								LOG.error("Configuration error -- sdnmudprovider.getsdnmudconfig() is null");
+							}
 						}
 					}
 				}

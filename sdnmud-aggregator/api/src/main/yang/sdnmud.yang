@@ -42,7 +42,23 @@ module sdnmud {
             type uint32;
             default "0";
             description
-                "Start of tables.";
+                "Start of tables in rules table space. Not yet implemented";
+      }
+
+      leaf mfg-id-rule-cache-timeout {
+            type uint32;
+            default "120";
+            description
+                "Time (in seconds) for timeout of flow rule that classifies packets by manufacturer.";
+      }
+
+      leaf trust-self-signed-cert {
+           type boolean;
+           default "false";
+           description
+                "Whether or not to trust MUD profiles that are self signed. This is for DEBUGGING ONLY 
+                self signed Certs should not be trusted under normal circumstances";
+
       }
   }
 

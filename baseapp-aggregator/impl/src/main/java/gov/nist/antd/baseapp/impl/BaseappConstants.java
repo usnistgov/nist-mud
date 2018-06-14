@@ -40,7 +40,7 @@ public interface BaseappConstants {
 	public static final Short SDNMUD_RULES_TABLE = (short) (FIRST_TABLE + 5);
 	public static final Short PASS_THRU_TABLE = (short) (FIRST_TABLE + 6);
 	public static final Short SET_VLAN_RULE_TABLE = (short) (FIRST_TABLE + 7);
-	public static final Short STRIP_MPLS_RULE_TABLE = (short) (FIRST_TABLE + 8);
+	public static final Short UNUSED_ENTRY = (short) (FIRST_TABLE + 8);
 	public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 9);
 	public static final Short MAX_TID = L2SWITCH_TABLE;
 	public static final Short DROP_TABLE = (short) (MAX_TID + 1);
