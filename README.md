@@ -21,8 +21,7 @@ of the  IETF MUD standard.
 
 This project implements the following :
 
-- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation. 
-  We only implement the necessary ACLs to implement the profiles generated from mudmaker.org.
+- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation.   We only implement the necessary ACLs to implement the MUD profiles as described in the RFC.
 
 - Flow Monitor : A means for extracting outbound packets from IOT devices based on manufacturer 
 (or unclassified packets) to be provided to an IDS such as Snort.
@@ -36,7 +35,7 @@ network.
 
 The following diagram shows the implementation architecture on OpenDaylight
 
-![alt tag](docs/arch/SDNMUD-SW-ARCH)
+![alt tag](docs/arch/SDNMUD-SW-ARCH.png)
 
 
 ## Integration with IDS ##
