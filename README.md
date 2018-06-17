@@ -23,9 +23,6 @@ This project implements the following :
 
 - SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation.   We only implement the necessary ACLs to implement the MUD profiles as described in the RFC.
 
-- Flow Monitor : A means for extracting outbound packets from IOT devices based on manufacturer 
-(or unclassified packets) to be provided to an IDS such as Snort.
-
 - VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
 Packets outbound from the CPE switch on the uplink interface are tagged with the 
 VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
@@ -82,9 +79,6 @@ This component can be used independently of the others.
 Packets sent from the IOT devices on the CPE switch are assigned a CPE-specific VLAN tag when they are sent to the uplink interface.
 Packets sent to the CPE switch via the Uplink interface have their VLAN tags stripped for consumption by the devices attached to the switch.
 It installs rules on the NPE switch to multiplex traffic based on the VLAN tag to the uplink interface.
-* features-flowmon installs flow rules on the VNF switch. It installs rules to mirror a subset of the traffic that appears 
-on the VNF switch onto a port from which an IDS can read and analyze the traffic. The packets of interest can be selected
-by manufacturer. 
 
 
 ## Building ##

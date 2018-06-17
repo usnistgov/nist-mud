@@ -686,7 +686,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 										sig.update(mudfileData);
 										LOG.debug("Signature = " + sig + " algorithm = " + algorithm);
 										if (!sig.verify(signature)) {
-											LOG.error("Signature verification failed");
+											LOG.error("Signature verification failed -- "
+													+ " need to alert the admin or block device.");
 											return;
 										} else {
 											LOG.info("Signature verification succeeded");
