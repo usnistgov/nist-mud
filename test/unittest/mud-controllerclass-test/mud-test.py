@@ -70,7 +70,7 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpPingExpectFail(self):
-        print "pinging a peer -- this should fail with MUD"
+        print "pinging a non-mud peer -- this should fail with MUD"
         h1 = hosts[0]
         # prime flow table
         result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
@@ -78,7 +78,7 @@ class TestAccess(unittest.TestCase) :
 
 
     def testHttpGetExpectPass(self):
-        print "wgetting from an allowed host -- this should succeed with MUD"
+        print "wgetting from a non-mud -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
         print "result = ",result

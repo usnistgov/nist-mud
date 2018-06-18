@@ -74,7 +74,7 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         h2 = hosts[1]
         h1.cmdPrint("python tcp-server.py -H 10.0.0.1 -P 8010 &")
-	time.sleep(2)
+        time.sleep(2)
         result = h2.cmdPrint("python tcp-client.py -H 10.0.0.1 -P 8010")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
@@ -314,8 +314,8 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-
     setupTopology(controller_addr)
+
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("access-control-list.json","ietf-access-control-list:acls"),
@@ -330,7 +330,6 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
-
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         time.sleep(10)
