@@ -2,6 +2,7 @@ module ietf-mud {
   yang-version 1.1;
   namespace "urn:ietf:params:xml:ns:yang:ietf-mud";
   prefix ietf-mud;
+
   import ietf-access-control-list {
     prefix acl;
   }
@@ -36,7 +37,6 @@ module ietf-mud {
      this document #].
 
      Copyright (c) 2016,2017 IETF Trust and the persons
-
      identified as the document authors.  All rights reserved.
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject
@@ -47,7 +47,7 @@ module ietf-mud {
      This version of this YANG module is part of RFC XXXX; see
      the RFC itself for full legal notices.";
 
-  revision 2018-04-12 {
+  revision 2018-06-15 {
     description
       "Initial proposed standard.";
     reference
@@ -57,12 +57,12 @@ module ietf-mud {
 
   typedef direction {
     type enumeration {
-      enum "to-device" {
+      enum to-device {
         description
           "packets or flows destined to the target
            Thing";
       }
-      enum "from-device" {
+      enum from-device {
         description
           "packets or flows destined from
            the target Thing";
@@ -84,15 +84,13 @@ module ietf-mud {
     description
       "Information about when support end(ed), and
        when to refresh";
-
-
     leaf mud-version {
       type uint8;
       mandatory true;
-      description "This is the version of the MUD
+      description
+        "This is the version of the MUD
          specification.  This memo specifies version 1.";
-     }
-
+    }
     leaf mud-url {
       type inet:uri;
       mandatory true;
@@ -108,13 +106,12 @@ module ietf-mud {
          was generated.  MUD Managers SHOULD NOT check
          for updates between this time plus cache validity";
     }
-
     leaf mud-signature {
       type inet:uri;
-      description "A URI that resolves to a signature as
-        described in this specification.";
+      description
+        "A URI that resolves to a signature as
+         described in this specification.";
     }
-
     leaf cache-validity {
       type uint8 {
         range "1..168";
@@ -134,7 +131,6 @@ module ietf-mud {
         "This boolean indicates whether or not the Thing is
          currently supported by the manufacturer.";
     }
-
     leaf systeminfo {
       type string;
       description
@@ -144,49 +140,47 @@ module ietf-mud {
          to allow the Thing on the
          network.";
     }
-
     leaf mfg-name {
-         type string;
-         description "Manufacturer name, as described in
-            the ietf-hardware YANG module.";
+      type string;
+      description
+        "Manufacturer name, as described in
+         the ietf-hardware YANG module.";
     }
-
     leaf model-name {
-         type string;
-         description "Model name, as described in the
+      type string;
+      description
+        "Model name, as described in the
          ietf-hardware YANG module.";
     }
-
     leaf firmware-rev {
-         type string;
-         description "firmware-rev, as described in the
+      type string;
+      description
+        "firmware-rev, as described in the
          ietf-hardware YANG module.  Note this field MUST
          NOT be included when the device can be updated
          but the MUD-URL cannot.";
     }
-
     leaf software-rev {
-         type string;
-         description "software-rev, as described in the
+      type string;
+      description
+        "software-rev, as described in the
          ietf-hardware YANG module.  Note this field MUST
          NOT be included when the device can be updated
          but the MUD-URL cannot.";
     }
-
     leaf documentation {
-         type inet:uri;
-         description "This URL points to documentation that
+      type inet:uri;
+      description
+        "This URL points to documentation that
          relates to this device and any classes that it uses
          in its MUD file.  A caution: MUD managers need
          not resolve this URL on their own, but rather simply
          provide it to the administrator.  Parsing HTML is
          not an intended function of a MUD manager.";
     }
-
-
     leaf-list extensions {
       type string {
-         length "1..40";
+        length "1..40";
       }
       description
         "A list of extension names that are used in this MUD
@@ -232,7 +226,6 @@ module ietf-mud {
              type.";
         leaf name {
           type leafref {
-
             path "/acl:acls/acl:acl/acl:name";
           }
           description
@@ -241,6 +234,7 @@ module ietf-mud {
       }
     }
   }
+
   augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches" {
     description
       "adding abstractions to avoid need of IP addresses";
@@ -281,7 +275,6 @@ module ietf-mud {
         description
           "This node names a class that has associated with it
            zero or more IP addresses to match against.  These
-
            may be scoped to a manufacturer or via a standard
            URN.";
       }
@@ -294,8 +287,8 @@ module ietf-mud {
       }
     }
   }
-  augment "/acl:acls/acl:acl/acl:aces/" +
-     "acl:ace/acl:matches/acl:l4/acl:tcp/acl:tcp" {
+  augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches" +
+    "/acl:l4/acl:tcp/acl:tcp" {
     description
       "add direction-initiated";
     leaf direction-initiated {

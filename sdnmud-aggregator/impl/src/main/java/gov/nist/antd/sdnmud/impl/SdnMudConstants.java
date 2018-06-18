@@ -26,7 +26,7 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180412.Direction;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Direction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 
 interface SdnMudConstants {
