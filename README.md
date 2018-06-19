@@ -15,18 +15,22 @@ This repository publishes a public domain scalable implementation of
 the  IETF MUD standard.  MUD is implemented on SDN capable switches
 using OpenDaylight as the SDN controller.
 
+## Deployment Assumptions ##
+
+The assumed deployment scenario is an enterprise network. There are several
+(CPE) switches that are assigned to departments. These are managed centrally.
+The central office (IT shop) provides a VNF platform such as OpenStack which
+can host Virtual Network functions.
+
 This project implements the following functions :
 
 - SDN-MUD : implements MUD ACLs on SDN Switches.
   Note that this is not a full ACL implementation.  We only implement the
   necessary ACLs to implement the MUD profiles as described in the RFC.
-
 - VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
-Packets outbound from the CPE switch on the uplink interface are tagged with the 
-VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
-network. The purpose of VLAN tagging is integration with a cloud resident, scalable IDS.
+  Packets outbound from the CPE switch on the uplink interface are tagged with the 
+  VLAN tag. These packets are routed to the appropriate VNF router in the OpenStack cloud.
 
-Thse are implemented as independent Karaf OpenDaylight features. 
 
 ## Implementation architecture ##
 
@@ -35,12 +39,8 @@ The following diagram shows the implementation architecture on OpenDaylight
 ![alt tag](docs/arch/SDNMUD-SW-ARCH.png)
 
 
-## Integration with IDS ##
+## Integration with cloud resident IDS ##
 
-The assumed scenario is an enterprise network. There are several
-(CPE) switches that are assigned to departments. These are managed centrally.
-The central office (IT shop) provides a VNF platform such as OpenStack which
-can host Virtual Network functions.
 
 The following diagrams shows the network architecture of the system.
 
@@ -59,10 +59,8 @@ functionality of MUD.
 ![alt tag](docs/arch/nw-arch.png)
 
 
-MUD-specifc flow rules are installed on the CPE switches.
-
 The NPE switch acts as a Multiplexer to forward packets from several CPE switches to its uplink interface towards the Cloud where 
-Virtual network functions for the CPE reside. The uplink is provided via standard VPN encapsulation. 
+Virtual network functions for the CPE reside. The uplink is provided via VPN encapsulation. 
 
 
 ## OpendDaylight Components ##
