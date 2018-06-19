@@ -9,24 +9,26 @@ file with a device - which is a specialized ACL file where the ACLs
 are specified to within deployment specific parameters. The MUD file is
 converted to ACLs which are deployed on the access point when the IOT
 device connects to the network.  The network infrastructure installs
-Access Control Rules at access points to restrict what the device can
-do on the network. In this project, MUD is implemented on SDN capable
-switches using OpenDaylight as the SDN controller.
+resolved ACL Rules at access points to restrict what the device can
+do on the network. 
 
-Primarily, this repository publishes a public domain scalable implementation 
-of the  IETF MUD standard.  
+This repository publishes a public domain scalable implementation of
+the  IETF MUD standard.  MUD is implemented on SDN capable switches
+using OpenDaylight as the SDN controller.
 
 
 [The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-21.txt)
 
-This project implements the following :
+This project implements the following functions :
 
 - SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation.   We only implement the necessary ACLs to implement the MUD profiles as described in the RFC.
 
 - VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
 Packets outbound from the CPE switch on the uplink interface are tagged with the 
 VLAN tag. These packets are routed to the appropriate VNF router in the enterprise
-network.
+network. The purpose of VLAN tagging is integration with a cloud resident, scalable IDS.
+
+Thse are implemented as independent Karaf OpenDaylight features. 
 
 ## Implementation architecture ##
 
@@ -62,15 +64,12 @@ functionality of MUD.
 MUD-specifc flow rules are installed on the CPE switches.
 
 The NPE switch acts as a Multiplexer to forward packets from several CPE switches to its uplink interface towards the Cloud where 
-Virtual network functions for the CPE reside.  
+Virtual network functions for the CPE reside. The uplink is provided via standard VPN encapsulation. 
 
-The flow monitoring facility allows an IDS to indicate interest in specific classes of packets i.e:
-- Packets that have hit a MUD flow rule and successfully been fowarded to the Network provider.
-- Packets that have no MUD rule associated with it and that are forwarded to the Network provider.
 
 ## OpendDaylight Components ##
 
-OpenDaylight is used as the SDN controller. The following Karaf features in opendaylight implement the features above:
+OpenDaylight is used as the SDN controller. The following Karaf features in OpenDaylight implement the features above:
 This project consists of the following features:
 
 * features-sdnmud is the scalable MUD implementation.  This application manages the mud-specific flow rules on the CPE switches.
@@ -99,7 +98,8 @@ unit tests and javadoc creation. This will change after the project is in a fina
 
 ## Try it out  ##
 
-The following is common configuration for Demo and Test.
+The following is common configuration for Demo and Test. The following describes
+how to exercise the MUD feature.
 
 #### Configure the emulation VM ####
 
@@ -172,18 +172,12 @@ LLDP extensions for MUD support are not implemented.
 
 This is not a general ACL implementation.
 
+This is experimental code. Much more testing is needed 
+before it can be deployed in a production network. The 
+authors solicit your help in testing and validation.
+
 This code is shared for early review. It is an implementation of an IETF
-draft in progress. Much more testing and validation is required. Your help is 
-solicited and will be acknowledged on this page.
-
-Please do not re-distribute until this repository is granted public access.
-This will happen after:
-
-1. The IETF MUD draft has achieved an RFC status.
-2. All issues are satisfactorily resolved.
-
-The vlan management code is for testing purposes to emulate a provider network. 
-The OpenDaylight network virtualization NetVirt project should be used for network virtualization.
+draft in progress. 
 
 
 ## Copyrights and Disclaimers ##
