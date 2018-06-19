@@ -269,21 +269,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
 	}
 
-	private Collection<String> getLocalNetworks(String nodeConnectorUri) {
-
-		ControllerclassMapping controllerMap = sdnmudProvider.getControllerClassMap(nodeConnectorUri);
-
-		if (controllerMap == null) {
-			return null;
-		}
-
-		return controllerMap.getLocalNetworks();
-	}
-
 	private boolean isLocalAddress(String nodeId, String ipAddress) {
 		boolean isLocalAddress = false;
-		if (this.getLocalNetworks(nodeId) != null) {
-			for (String localNetworkStr : this.getLocalNetworks(nodeId)) {
+		if (sdnmudProvider.getLocalNetworks(nodeId) != null) {
+			for (String localNetworkStr : sdnmudProvider.getLocalNetworks(nodeId)) {
 				LOG.debug("localNetworkStr = " + localNetworkStr);
 				String[] pieces = localNetworkStr.split("/");
 				int prefixLength = new Integer(pieces[1]) / 8;

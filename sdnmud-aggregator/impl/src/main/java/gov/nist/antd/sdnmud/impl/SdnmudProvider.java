@@ -39,6 +39,8 @@ import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -104,7 +106,9 @@ public class SdnmudProvider {
 	// installed for a given MAC address.
 	private HashMap<String, HashSet<InstanceIdentifier<FlowCapableNode>>> mudNodesMap = new HashMap<>();
 
-	private HashMap<String, ControllerclassMapping> controllerMap = new HashMap<String, ControllerclassMapping>();
+	private HashMap<String, HashMap<String, List<IpAddress>>> controllerMap = new HashMap<>();
+
+	private HashMap<String, List<String>> localNetworks = new HashMap<>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
@@ -491,9 +495,24 @@ public class SdnmudProvider {
 	 */
 	public void addControllerMap(ControllerclassMapping controllerMapping) {
 		String nodeId = controllerMapping.getSwitchId().getValue();
+		HashMap<String, List<IpAddress>> map = this.controllerMap.get(nodeId);
+		if (this.controllerMap.get(nodeId) == null) {
+			map = new HashMap<>();
+			this.controllerMap.put(nodeId, map);
+		}
+
+		for (Controller controller : controllerMapping.getController()) {
+			String name = controller.getUri().getValue();
+			List<IpAddress> addresses = controller.getAddressList();
+			map.put(name, addresses);
+		}
+
+		if (controllerMapping.getLocalNetworks() != null) {
+			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
+		}
+
 		LOG.info("ControllerclassMappingDataStoreListener: onDataTreeChanged : Registering Controller for SwitchId "
 				+ nodeId);
-		this.controllerMap.put(nodeId, controllerMapping);
 		this.configStateChanged = true;
 
 	}
@@ -502,8 +521,12 @@ public class SdnmudProvider {
 	 * @param nodeUri
 	 * @return
 	 */
-	public ControllerclassMapping getControllerClassMap(String nodeUri) {
+	public Map<String, List<IpAddress>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
+	}
+
+	public Collection<String> getLocalNetworks(String nodeUri) {
+		return localNetworks.get(nodeUri);
 	}
 
 	public boolean isControllerMapped() {

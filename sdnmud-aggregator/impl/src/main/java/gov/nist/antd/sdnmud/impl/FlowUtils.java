@@ -458,54 +458,10 @@ public class FlowUtils {
 
 	}
 
-	static FlowBuilder createIpMatchSendPacketToControllerAddMetadataAndGoToFlow(BigInteger metadata,
-			BigInteger metadataMask, Short tableId, FlowId flowId, FlowCookie flowCookie) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createIpV4Match(matchBuilder);
-		createEthernetTypeMatch(matchBuilder, 0x0800);
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		addSendPacketToControllerInstruction(instructions);
-		addWriteMetadataInstruction(instructions, metadata, metadataMask);
-		addGoToTableInstruction(instructions, (short) (tableId + 1));
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-		FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
-				.setFlowName("uncoditionalSendToController").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-
-		sendToControllerFlow.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return sendToControllerFlow;
-	}
-
 	static FlowBuilder createEthernetMatchSendPacketToControllerFlow(BigInteger metadata, BigInteger metadataMask,
 			Short tableId, FlowId flowId, FlowCookie flowCookie) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		// createIpV4Match(matchBuilder);
-		createEthernetTypeMatch(matchBuilder, 0x0800);
-		List<Instruction> instructions = new ArrayList<Instruction>();
-		addSendPacketToControllerInstruction(instructions);
-		addWriteMetadataInstruction(instructions, metadata, metadataMask);
-		// addGoToTableInstruction(instructions, (short) (tableId + 1));
-		InstructionsBuilder insb = new InstructionsBuilder();
-		insb.setInstruction(instructions);
-		FlowBuilder sendToControllerFlow = new FlowBuilder().setTableId(tableId)
-				.setFlowName("uncoditionalSendToController").setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
-
-		sendToControllerFlow.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return sendToControllerFlow;
-	}
-
-	static FlowBuilder createIpMatchSendPacketToControllerFlow(BigInteger metadata, BigInteger metadataMask,
-			Short tableId, FlowId flowId, FlowCookie flowCookie) {
-		MatchBuilder matchBuilder = new MatchBuilder();
-		createIpV4Match(matchBuilder);
 		createEthernetTypeMatch(matchBuilder, 0x0800);
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		addSendPacketToControllerInstruction(instructions);

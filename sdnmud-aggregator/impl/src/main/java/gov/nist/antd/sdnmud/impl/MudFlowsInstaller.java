@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Accept;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
@@ -220,6 +221,18 @@ public class MudFlowsInstaller {
 		return ipAddresses;
 	}
 
+	private IpAddress getControllerAddress(String nodeUri, String controllerUri) {
+		LOG.info(this.getClass().getName() + " getControllerAddress " + nodeUri + " controllerUri " + controllerUri);
+		Map<String, List<IpAddress>> controllerMap = sdnmudProvider.getControllerClassMap(nodeUri);
+		if (controllerMap == null) {
+			return null;
+		} else if (controllerMap.containsKey(controllerUri)) {
+			controllerMap.get(controllerUri).get(0);
+		}
+		return null;
+
+	}
+
 	/**
 	 * Get the DNS server address for the given mudUri.
 	 *
@@ -230,22 +243,8 @@ public class MudFlowsInstaller {
 
 	private IpAddress getDnsAddress(String nodeUri) {
 		LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri);
-		ControllerclassMapping controllerMap = sdnmudProvider.getControllerClassMap(nodeUri);
-		if (controllerMap == null) {
-			return null;
-		}
+		return getControllerAddress(nodeUri, SdnMudConstants.DNS_SERVER_URI);
 
-		List<Controller> controllers = controllerMap.getController();
-		for (Controller controller : controllers) {
-			Uri controllerUri = controller.getUri();
-			if (controllerUri.getValue().equals(SdnMudConstants.DNS_SERVER_URI)) {
-				return controller.getAddressList().get(0);
-			} else {
-				LOG.info(this.getClass().getName() + ": controllerUri " + controllerUri.getValue() + "/"
-						+ SdnMudConstants.DNS_SERVER_URI);
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -257,19 +256,9 @@ public class MudFlowsInstaller {
 	 */
 
 	public IpAddress getNtpAddress(String nodeUri) {
-		ControllerclassMapping controllerMap = sdnmudProvider.getControllerClassMap(nodeUri);
+		LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri);
+		return getControllerAddress(nodeUri, SdnMudConstants.NTP_SERVER_URI);
 
-		if (controllerMap == null) {
-			return null;
-		}
-		List<Controller> controllers = controllerMap.getController();
-		for (Controller controller : controllers) {
-			Uri controllerUri = controller.getUri();
-			if (controllerUri.getValue().equals(SdnMudConstants.NTP_SERVER_URI)) {
-				return controller.getAddressList().get(0);
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -652,19 +641,11 @@ public class MudFlowsInstaller {
 	 * @return
 	 */
 	private List<IpAddress> getControllerAddresses(String nodeConnectorUri, Uri mudUri, String controllerUriString) {
-		ControllerclassMapping controllerMap = sdnmudProvider.getControllerClassMap(nodeConnectorUri);
+		Map<String, List<IpAddress>> controllerMap = sdnmudProvider.getControllerClassMap(nodeConnectorUri);
 		if (controllerMap == null) {
 			return null;
 		}
-		List<Controller> controllers = controllerMap.getController();
-		for (Controller controller : controllers) {
-			Uri controllerUri = controller.getUri();
-			// TODO : could do this faster with a hash map.
-			if (controllerUri.getValue().compareToIgnoreCase(controllerUriString) == 0) {
-				return controller.getAddressList();
-			}
-		}
-		return null;
+		return controllerMap.get(nodeConnectorUri);
 	}
 
 	private List<Ipv4Address> getControllerMatchAddresses(String nodeConnectorUri, Uri mudUri, Uri controllerUri) {
