@@ -1,27 +1,25 @@
 
-The MUD standard specifies access controls for IOT devices. IOT devices
-are special purpose devices that implement a dedicated function.
-Such devices have communication patterns that are known a-priori.
-The goal of MUD is to provide a means for manufacturers of Things to
-indicate what sort of access and network functionality they require
-for the Thing to properly function.  A manufacturer associates an MUD
-file with a device - which is a specialized ACL file where the ACLs
-are specified to within deployment specific parameters. The MUD file is
-converted to ACLs which are deployed on the access point when the IOT
-device connects to the network.  The network infrastructure installs
-resolved ACL Rules at access points to restrict what the device can
-do on the network. 
+IOT devices are special purpose devices that implement a dedicated function.
+Such devices have communication patterns that are known a-priori to the manufacturer.
+
+
+The goal of MUD (Manufacturer Usage Description) is to provide a
+means for manufacturers of Things to indicate what sort of access and
+network functionality they require for the Thing to properly function.
+A manufacturer associates a MUD file with a device which specifies an
+ACL for the device to within deployment specific parameters.
+
+[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-25.txt)
 
 This repository publishes a public domain scalable implementation of
 the  IETF MUD standard.  MUD is implemented on SDN capable switches
 using OpenDaylight as the SDN controller.
 
-
-[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-21.txt)
-
 This project implements the following functions :
 
-- SDN-MUD : implements MUD ACLs on SDN Switches. Note that this is not a full ACL implementation.   We only implement the necessary ACLs to implement the MUD profiles as described in the RFC.
+- SDN-MUD : implements MUD ACLs on SDN Switches.
+  Note that this is not a full ACL implementation.  We only implement the
+  necessary ACLs to implement the MUD profiles as described in the RFC.
 
 - VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
 Packets outbound from the CPE switch on the uplink interface are tagged with the 
