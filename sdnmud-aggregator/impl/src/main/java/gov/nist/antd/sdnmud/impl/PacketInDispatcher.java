@@ -351,6 +351,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
 				.or(SdnMudConstants.DST_NETWORK_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
@@ -554,6 +555,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					int port = PacketUtils.getSourcePort(rawPacket);
 					BigInteger metadata = notification.getMatch().getMetadata().getMetadata();
 					BigInteger metadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
+
+					/*
+					 * Note - this could be included in a flow rule in openflow
+					 * 1.5
+					 */
 
 					if (PacketUtils.isSYNFlagOn(rawPacket)) {
 						LOG.debug("PacketInDispatcher: Got an illegal SYN -- blocking the flow");

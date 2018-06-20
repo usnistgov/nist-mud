@@ -106,4 +106,6 @@ interface SdnMudConstants {
 
 	String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
 
+	boolean IMPLEMENT_MODEL_ACLS = false;
+
 }

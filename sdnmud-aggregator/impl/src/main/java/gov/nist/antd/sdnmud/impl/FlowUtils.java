@@ -598,7 +598,7 @@ public class FlowUtils {
 
 	static FlowBuilder createMetadaProtocolAndSrcDestPortMatchGoToTable(BigInteger metadata, BigInteger metadataMask,
 			short protocol, int srcPort, int destPort, short tableId, BigInteger newMetadata,
-			BigInteger newMetadataMask, FlowId flowId, FlowCookie flowCookie) {
+			BigInteger newMetadataMask, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createEthernetTypeMatch(matchBuilder, 0x800);
@@ -606,7 +606,14 @@ public class FlowUtils {
 		createDstProtocolPortMatch(matchBuilder, protocol, destPort);
 
 		short targetTableId = (short) (tableId + 1);
-		InstructionsBuilder insb = createGoToNextTableInstruction(targetTableId, newMetadata, newMetadataMask);
+
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		if (sendToController)
+			addSendPacketToControllerInstruction(instructions);
+		addGoToTableInstruction(instructions, targetTableId);
+
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);
 
 		FlowBuilder fb = new FlowBuilder();
 		fb.setStrict(false);

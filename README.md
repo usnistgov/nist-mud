@@ -32,6 +32,8 @@ This project implements the following functions :
   VLAN tag. These packets are routed to the appropriate VNF router in the OpenStack cloud.
 
 
+
+
 ## Implementation architecture ##
 
 The following diagram shows the implementation architecture on OpenDaylight
@@ -116,10 +118,11 @@ Edit /etc/dnsmasq.conf.
 
 
 
-Add a fake host in /etc/dnsmasq.hosts by adding the following line.
+Add a fake hosts in /etc/dnsmasq.hosts by adding the following lines:
 
       203.0.113.13    www.nist.local
       203.0.113.14    www.antd.local
+      203.0.113.15    printer.nist.local
 
 Kill any existing instance of dnsmasq on the emulation VM. We will
 restart it in the test script.
@@ -144,6 +147,7 @@ Add the following to /etc/hosts on your controller host so that the java library
 
       203.0.113.13   www.nist.local
       203.0.113.14   www.antd.local
+      203.0.113.15   printer.nist.local
       127.0.0.1      toaster.nist.local
 
 ### DEMO ###
@@ -158,13 +162,15 @@ Add the following to /etc/hosts on your controller host so that the java library
 
 ## LIMITATIONS and CAVEATS ##
 
-This is BETA code. Much more testing and validation is needed.
+This is BETA code. It has been lightly tested. Much more testing and validation is needed.
 
 This is an IPV4 only implementation of MUD.  
 
 X.509 extensions for MUD are not implemented.
 
 LLDP extensions for MUD support are not implemented.
+
+Only MANUFACTURER ACLs for MUD are implemented. MODEL ACL's are not implemented.
 
 This is not a general ACL implementation.
 
