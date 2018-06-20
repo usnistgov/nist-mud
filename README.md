@@ -56,7 +56,7 @@ CPE (department) LAN to the enterprise cloud. We propose to host scalable
 Intrusion Detection platforms in the enterprise cloud to complement the
 functionality of MUD.
 
-![alt tag](docs/arch/nw-arch.png)
+![alt tag](docs/arch/ARCHITECTUE.png)
 
 
 The NPE switch acts as a Multiplexer to forward packets from several CPE switches to its uplink interface towards the Cloud where 
