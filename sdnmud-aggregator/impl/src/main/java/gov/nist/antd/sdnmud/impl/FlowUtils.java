@@ -306,10 +306,13 @@ public class FlowUtils {
 	private static MatchBuilder createDstProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int port) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
 		ipmatch.setIpProto(IpVersion.Ipv4);
-		ipmatch.setIpProtocol(protocol);
+
+		if (protocol != -1) {
+			ipmatch.setIpProtocol(protocol);
+		}
 		matchBuilder.setIpMatch(ipmatch.build());
 
-		if (port != -1) {
+		if (port != -1 && protocol != -1) {
 			PortNumber portNumber = new PortNumber(port);
 			Layer4Match l4match = null;
 			if (protocol == SdnMudConstants.TCP_PROTOCOL) {
@@ -326,11 +329,15 @@ public class FlowUtils {
 
 	private static MatchBuilder createSrcProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int port) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
-		ipmatch.setIpProtocol(protocol);
+
+		if (protocol != -1) {
+			ipmatch.setIpProtocol(protocol);
+		}
+
 		ipmatch.setIpProto(IpVersion.Ipv4);
 		matchBuilder.setIpMatch(ipmatch.build());
 
-		if (port != -1) {
+		if (port != -1 && protocol != -1) {
 			PortNumber portNumber = new PortNumber(port);
 			Layer4Match l4match = null;
 			if (protocol == SdnMudConstants.TCP_PROTOCOL) {
@@ -347,7 +354,6 @@ public class FlowUtils {
 	private static MatchBuilder createIpV4Match(MatchBuilder matchBuilder) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
 		ipmatch.setIpProto(IpVersion.Ipv4);
-
 		matchBuilder.setIpMatch(ipmatch.build());
 		return matchBuilder;
 	}

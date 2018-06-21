@@ -368,10 +368,6 @@ public class MudFlowsInstaller {
 		String authority = InstanceIdentifierUtils.getAuthority(mudUri);
 
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("Cannot install -- protocol field missing");
-			return;
-		}
 
 		int port = getDestinationPort(matches);
 		for (Ipv4Address address : addresses) {
@@ -447,10 +443,7 @@ public class MudFlowsInstaller {
 			String mudUri, String flowSpec, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowSpec " + flowSpec);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("Cannot install ");
-			return;
-		}
+
 		// Range of ports that this device is allowed to talk to.
 
 		int sourcePort = getSourcePort(matches);
@@ -482,10 +475,7 @@ public class MudFlowsInstaller {
 			String flowSpec, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowSpec " + flowSpec);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("Cannot install ");
-			return;
-		}
+
 		// Range of ports that this device is allowed to talk to.
 
 		int sourcePort = getSourcePort(matches);
@@ -521,10 +511,6 @@ public class MudFlowsInstaller {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("Cannot install ");
-			return;
-		}
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT)
@@ -548,10 +534,7 @@ public class MudFlowsInstaller {
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(flowSpec);
 		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("Cannot install protocol unspecified");
-			return;
-		}
+
 		FlowId flowId = InstanceIdentifierUtils.createFlowId(mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT)
@@ -572,10 +555,6 @@ public class MudFlowsInstaller {
 			String mudUri, String flowSpec, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowSpec " + flowSpec);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("invlid protocol -- cannot install ");
-			return;
-		}
 		// Range of ports that this device is allowed to talk to.
 
 		int sourcePort = getSourcePort(matches);
@@ -606,10 +585,7 @@ public class MudFlowsInstaller {
 			String flowSpec, Matches matches) {
 		LOG.info("InstallPermitSameManufacturerFlowRule " + mudUri + " flowSpec " + flowSpec);
 		Short protocol = getProtocol(matches);
-		if (protocol == -1) {
-			LOG.error("invlid protocol -- cannot install ");
-			return;
-		}
+
 		// Range of ports that this device is allowed to talk to.
 
 		int sourcePort = getSourcePort(matches);

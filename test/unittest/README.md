@@ -1,13 +1,5 @@
-For running the tests you will need RYU.
 
-On the emulation vm, RYU is used control portions of the test network. It is not
-part of the MUD implementation under test. We are using it strictly as
-a learning switch controller to set up our topology.
-
-     apt install gcc python-dev libffi-dev libssl-dev libxml2-dev libxslt1-dev zlib1g-dev
-     git clone git://github.com/osrg/ryu.git
-     cd ryu; pip install .
-     pip install -r tools/optional-requires
+Make sure you have the setup described in ../../README.md
 
 Edit config/sdnmud-config.json to specify keystore-home and keypass. This is used for mud file verification in the DHCP test. Here is a sample.
 
