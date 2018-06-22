@@ -39,7 +39,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class InstanceIdentifierUtils {
+public class IdUtils {
 	private static AtomicLong flowIdInc = new AtomicLong();
 	private static ArrayList<String> manufacturers = new ArrayList<String>();
 	private static ArrayList<String> models = new ArrayList<String>();
@@ -48,7 +48,7 @@ public class InstanceIdentifierUtils {
 		models.add("NONE");
 	}
 
-	private static final Logger LOG = LoggerFactory.getLogger(InstanceIdentifierUtils.class);
+	private static final Logger LOG = LoggerFactory.getLogger(IdUtils.class);
 
 	static {
 		// Dummy constants
@@ -56,7 +56,7 @@ public class InstanceIdentifierUtils {
 		manufacturers.add(SdnMudConstants.NONE);
 	}
 
-	private InstanceIdentifierUtils() {
+	private IdUtils() {
 		// hiding constructor for util class
 	}
 

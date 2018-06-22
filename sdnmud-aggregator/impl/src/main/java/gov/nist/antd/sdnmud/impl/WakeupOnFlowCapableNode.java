@@ -81,7 +81,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
 			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":sendToController");
+		FlowId flowId = IdUtils.createFlowId(nodeUri + ":sendToController");
 		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
 		FlowBuilder fb = FlowUtils.createEthernetMatchSendPacketToControllerFlow(metadata, metadataMask, tableId,
 				flowId, flowCookie);
@@ -96,15 +96,15 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 */
 	private void installToDhcpFlow(InstanceIdentifier<FlowCapableNode> nodePath, Short tableId, BigInteger metadata,
 			BigInteger metadataMask) {
-		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeUri + ":bypassDhcp");
+		String nodeUri = IdUtils.getNodeUri(nodePath);
+		FlowId flowId = IdUtils.createFlowId(nodeUri + ":bypassDhcp");
 		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
 		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, flowCookie, flowId, false);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
 	}
 
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(InstanceIdentifierUtils.getNodeUri(node));
+		FlowId flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
 				flowCookie);
@@ -113,8 +113,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
 			Short dropPacketTable) {
-		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
-		FlowId flowId = InstanceIdentifierUtils.createFlowId(nodeId);
+		FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
+		FlowId flowId = IdUtils.createFlowId(nodeId);
 
 		FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(dropPacketTable, flowId, flowCookie);
 		this.dataStoreAccessor.writeFlow(flow, nodePath);
@@ -127,7 +127,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			return;
 		}
 		BigInteger metadata = BigInteger
-				.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+				.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
 				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
 
@@ -135,7 +135,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 				metadata, metadataMask);
 		installToDhcpFlow(nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 
-		metadata = BigInteger.valueOf(InstanceIdentifierUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
@@ -185,7 +185,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 */
 	public synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		String nodeUri = InstanceIdentifierUtils.getNodeUri(nodePath);
+		String nodeUri = IdUtils.getNodeUri(nodePath);
 
 		LOG.info("onFlowCapableSwitchAppeared " + nodeUri);
 		// Stash away the URI to node path so we can reference it later.

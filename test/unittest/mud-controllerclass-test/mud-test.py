@@ -54,26 +54,26 @@ class TestAccess(unittest.TestCase) :
     def testUdpSameManPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpControllerPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 8002 --host 10.0.0.7 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8002 --host 10.0.0.7 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testLocalNetPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpPingExpectFail(self):
         print "pinging a non-mud peer -- this should fail with MUD"
         h1 = hosts[0]
         # prime flow table
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
 
 
@@ -255,15 +255,13 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    h2.cmdPrint("python udpping.py --port 4000 --server &")
-    h4.cmdPrint("python udpping.py --port 4000 --server &")
+    h2.cmdPrint("python ../util/udpping.py --port 4000 --server &")
+    h4.cmdPrint("python ../util/udpping.py --port 4000 --server &")
     # h5 is a localhost peer.
-    h5.cmdPrint("python udpping.py --port 8000 --server &")
+    h5.cmdPrint("python ../util/udpping.py --port 8000 --server &")
     # h7 is the controller peer.
-    h7.cmdPrint("python udpping.py --port 8002 --server &")
+    h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
     
-    # Start the IDS on node 8
-
 
     print "*********** System ready *********"
 

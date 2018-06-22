@@ -295,9 +295,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
-		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
+		String manufacturer = IdUtils.getAuthority(mudUri);
+		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
+		int modelId = IdUtils.getModelId(mudUri);
 		int flag = 0;
 		if (isLocalAddress) {
 			flag = 1;
@@ -337,9 +337,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	public void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 
-		String manufacturer = InstanceIdentifierUtils.getAuthority(mudUri);
-		int manufacturerId = InstanceIdentifierUtils.getManfuacturerId(manufacturer);
-		int modelId = InstanceIdentifierUtils.getModelId(mudUri);
+		String manufacturer = IdUtils.getAuthority(mudUri);
+		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
+		int modelId = IdUtils.getModelId(mudUri);
 		int flag = 0;
 		if (isLocalAddress) {
 			flag = 1;
@@ -568,7 +568,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						FlowId flowId = new FlowId(flowIdStr);
 						Flow fb = this.flowTable.get(flowIdStr);
 						if (fb == null) {
-							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+							FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 
 							fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac,
 									port, SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE, metadata,
@@ -587,7 +587,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						Flow fb = this.flowTable.get(flowIdStr);
 
 						if (fb == null) {
-							FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(nodeId);
+							FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 							/*
 							 * create a short term pass through flow to allow
 							 * packet through. Give it a short timeout.
@@ -660,7 +660,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 										int bytesRead = this.doHttpGet(mudSignatureUrl, buffer);
 										LOG.debug("read " + bytesRead + " bytes");
 										byte[] signature = Arrays.copyOf(buffer, bytesRead);
-										String manufacturer = InstanceIdentifierUtils.getAuthority(mudUrl);
+										String manufacturer = IdUtils.getAuthority(mudUrl);
 										if (sdnmudProvider.getSdnmudConfig() == null) {
 											LOG.error("Configuration file not found -- not installing MUD profile");
 											return;

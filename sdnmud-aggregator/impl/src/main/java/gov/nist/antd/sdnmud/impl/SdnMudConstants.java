@@ -75,28 +75,28 @@ interface SdnMudConstants {
 	String LOCAL = "local";
 
 	// Well known cookies.
-	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = InstanceIdentifierUtils
+	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils
 			.createFlowCookie("send-to-controller-flow-cookie");
 
-	FlowCookie BYPASS_DHCP_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("bypass-dhcp-flow-cookie");
+	FlowCookie BYPASS_DHCP_FLOW_COOKIE = IdUtils.createFlowCookie("bypass-dhcp-flow-cookie");
 
-	FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = InstanceIdentifierUtils
+	FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = IdUtils
 			.createFlowCookie("stamp-src-mac-manufacturer-model-flow-cookie");
 
-	FlowCookie DROP_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("DROP");
+	FlowCookie DROP_FLOW_COOKIE = IdUtils.createFlowCookie("DROP");
 
-	FlowCookie UNCLASSIFIED_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie(UNCLASSIFIED);
+	FlowCookie UNCLASSIFIED_FLOW_COOKIE = IdUtils.createFlowCookie(UNCLASSIFIED);
 
-	FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = InstanceIdentifierUtils
+	FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = IdUtils
 			.createFlowCookie("src-local-network-flow-cookie");
 
-	FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = InstanceIdentifierUtils
+	FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = IdUtils
 			.createFlowCookie("stamp-dst-mac-manufactuer-model-flow-cookie");
 
-	FlowCookie FROM_DEVICE_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie(Direction.FromDevice.getName());
-	FlowCookie TO_DEVICE_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie(Direction.ToDevice.getName());
+	FlowCookie FROM_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.FromDevice.getName());
+	FlowCookie TO_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.ToDevice.getName());
 
-	FlowCookie DH_REQUEST_FLOW_COOKIE = InstanceIdentifierUtils.createFlowCookie("dhcp-request-flow-cookie");
+	FlowCookie DH_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-request-flow-cookie");
 
 	// Cache timeout for network and model stamping flow rules.
 	int ETHERTYPE_LLDP = 0x88cc;

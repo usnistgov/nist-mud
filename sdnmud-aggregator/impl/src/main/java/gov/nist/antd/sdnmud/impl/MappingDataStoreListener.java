@@ -92,7 +92,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 				}
 
 				for (InstanceIdentifier<FlowCapableNode> node : sdnmudProvider.getNodes()) {
-					if (sdnmudProvider.isCpeNode(InstanceIdentifierUtils.getNodeUri(node))) {
+					if (sdnmudProvider.isCpeNode(IdUtils.getNodeUri(node))) {
 						String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
 						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
 								BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, null, mac);
