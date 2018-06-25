@@ -211,7 +211,7 @@ source projects are noted in the source files as appropriate.
 
 * The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
 * Lead designer / developer for this project : M. Ranganathan <mranga@nist.gov>
-* Implementation Design Contributors : Charif Mohammed, Doug Montgomery
+* Implementation Design Contributors : Charif Mahmoudi, Doug Montgomery
 * Testing : Omar Ilias Elmimouni
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
