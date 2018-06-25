@@ -55,7 +55,7 @@ interface SdnMudConstants {
 	BigInteger DST_MANUFACTURER_MASK = new BigInteger("0000000000000FFF", 16);
 	int DST_MANUFACTURER_SHIFT = 0;
 
-	BigInteger DST_MODEL_MASK = new BigInteger("000000000ffff000", 16);
+	BigInteger DST_MODEL_MASK = new BigInteger("000000000FFFF000", 16);
 	int DST_MODEL_SHIFT = "000".length() * 4;
 
 	BigInteger SRC_NETWORK_MASK = new BigInteger("0000000F00000000", 16);
@@ -75,8 +75,7 @@ interface SdnMudConstants {
 	String LOCAL = "local";
 
 	// Well known cookies.
-	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils
-			.createFlowCookie("send-to-controller-flow-cookie");
+	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils.createFlowCookie("send-to-controller-flow-cookie");
 
 	FlowCookie BYPASS_DHCP_FLOW_COOKIE = IdUtils.createFlowCookie("bypass-dhcp-flow-cookie");
 
@@ -87,8 +86,7 @@ interface SdnMudConstants {
 
 	FlowCookie UNCLASSIFIED_FLOW_COOKIE = IdUtils.createFlowCookie(UNCLASSIFIED);
 
-	FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = IdUtils
-			.createFlowCookie("src-local-network-flow-cookie");
+	FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = IdUtils.createFlowCookie("src-local-network-flow-cookie");
 
 	FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = IdUtils
 			.createFlowCookie("stamp-dst-mac-manufactuer-model-flow-cookie");
