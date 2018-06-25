@@ -1,0 +1,104 @@
+{
+  "ietf-access-control-list:acls": {
+    "acl": [
+      {
+        "name": "mud-99365-v4to",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "man0-todev",
+              "matches": {
+                "ietf-mud:mud": {
+     		  "model": "https://toothbrush.nist.local/super1"
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 8008
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "man1-todev",
+              "matches": {
+                "ietf-mud:mud": {
+     		  "model": "https://hairbrush.nist.local/super1"
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 8010
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "name": "mud-99365-v4fr",
+        "type": "ipv4-acl-type",
+        "aces": {
+          "ace": [
+            {
+              "name": "man0-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+     		  "model": "https://toothbrush.nist.local/super1"
+                },
+                "ipv4": {
+                  "protocol": 17
+                },
+                "udp": {
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 8008
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "man1-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+     		  "model": "https://hairbrush.nist.local/super1"
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 8010
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
