@@ -1,3 +1,4 @@
+##  Manufacturer Usage Description ##
 
 IOT devices are special purpose devices that implement a dedicated function.
 Such devices have communication patterns that are known a-priori to the manufacturer.
@@ -41,8 +42,9 @@ The following diagram shows the implementation architecture on OpenDaylight
 ![alt tag](docs/arch/SDNMUD-SW-ARCH.png)
 
 
-## Integration with cloud resident IDS ##
+## Integration with cloud resident IDS (Planned)  ##
 
+**This section describes work in progress.**
 
 The following diagrams shows the network architecture of the system.
 
@@ -162,7 +164,7 @@ Add the following to /etc/hosts on your controller host so that the java library
 
 ## LIMITATIONS and CAVEATS ##
 
-This is BETA code. It has been lightly tested. Much more testing and validation is needed.
+**This is ALPHA code.** It works but has only been lightly tested. Much more testing and validation is needed.
 
 This is an IPV4 only implementation of MUD.  
 
@@ -170,16 +172,14 @@ X.509 extensions for MUD are not implemented.
 
 LLDP extensions for MUD support are not implemented.
 
-Only MANUFACTURER ACLs for MUD are implemented. MODEL ACL's are not implemented.
-
 This is not a general ACL implementation.
 
-This is experimental code. Much more testing is needed 
-before it can be deployed in a production network. The 
-authors solicit your help in testing and validation.
+This is experimental code. Much more testing is needed before it can be
+deployed in anything close to a  production network. The authors solicit
+your help in testing and validation.
 
-This code is shared for early review. It is an implementation of an IETF
-draft in progress. 
+This code is shared for early review. It is an implementation of a
+propose IETF standard.
 
 
 ## Copyrights and Disclaimers ##
