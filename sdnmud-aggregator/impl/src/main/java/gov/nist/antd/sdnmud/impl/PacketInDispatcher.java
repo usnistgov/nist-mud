@@ -315,17 +315,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
+		int timeout = this.sdnmudProvider.getSdnmudConfig() != null
+				? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
+				: BaseappConstants.CACHE_TIMEOUT;
+
 		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + srcMac.getValue()
-				+ "/" + metadata.toString(16);
+				+ "/" + timeout + "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
 
 		if (flow == null) {
 			FlowId flowId = new FlowId(flowIdStr);
 
-			int timeout = this.sdnmudProvider.getSdnmudConfig() != null
-					? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
-					: BaseappConstants.CACHE_TIMEOUT;
 			flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
 					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
@@ -351,26 +352,24 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+		int timeout = this.sdnmudProvider.getSdnmudConfig() != null
+				? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
+				: BaseappConstants.CACHE_TIMEOUT;
 
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
 				.or(SdnMudConstants.DST_NETWORK_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
 		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + dstMac.getValue()
-				+ "/" + metadata.toString(16);
+				+ "/" + timeout + "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
 
 		if (flow == null) {
-
 			FlowId flowId = new FlowId(flowIdStr);
-			int timeout = this.sdnmudProvider.getSdnmudConfig() != null
-					? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
-					: BaseappConstants.CACHE_TIMEOUT;
 			flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
 					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
-
 		}
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);

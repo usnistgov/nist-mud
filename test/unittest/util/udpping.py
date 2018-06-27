@@ -7,6 +7,7 @@ import argparse
 import os
 import socket
 import struct
+import random
 
 global timeoutCount
 
@@ -15,7 +16,7 @@ global quiet
 global timeout
 
 
-def udp_client(host, port) :
+def udp_client(host, port, npings) :
     # Create a UDP socket
     # Notice the use of SOCK_DGRAM for UDP packets
     global timeoutCount
@@ -30,8 +31,10 @@ def udp_client(host, port) :
     # Declare server's socket address
     remoteAddr = (host, port)
     # Ping ten times
-    clientSocket.bind(('',port))
-    for i in range(10):
+    #clientSocket.bind(('',port))
+
+    lambd = (1.0 / 0.5)
+    for i in range(npings):
         sendTime = time.time()
         message = 'PING ' + str(i + 1) + " " + str(time.strftime("%H:%M:%S"))
         if not quiet:
@@ -40,6 +43,7 @@ def udp_client(host, port) :
     
         try:
             data, server = clientSocket.recvfrom(1024)
+            time.sleep(random.expovariate(lambd))
             recdTime = time.time()
             rtt = recdTime - sendTime
             if not quiet:
@@ -52,7 +56,7 @@ def udp_client(host, port) :
     clientSocket.close()
 
 
-def udp_server(port) :
+def udp_server(port,npings) :
 
     global timeout
 
@@ -75,7 +79,7 @@ def udp_server(port) :
             # Receive the client packet along with the address it is coming from
             message, address = serverSocket.recvfrom(1024)
             serverSocket.sendto(message, address)
-            if i >= 9 and timeout:
+            if i >= npings-1 and timeout:
                 break
             else:
                 i = 1 + 1
@@ -124,6 +128,10 @@ if __name__ == "__main__":
             action="store_true",dest='timeout', 
                     help='enable server timeout')
 
+    parser.add_argument("--npings",
+                type=int, default=10, required=False, 
+                help="number of pings")
+
     parser.set_defaults(client=False)
     parser.set_defaults(server=False)
     parser.set_defaults(quiet=False)
@@ -137,6 +145,7 @@ if __name__ == "__main__":
     host = args.host
     quiet = args.quiet
     timeout = args.timeout
+    npings = args.npings
     
     
     count = 0
@@ -160,13 +169,13 @@ if __name__ == "__main__":
 
         with open("/tmp/udpclient.pid",'w') as f:
            f.write(str(pid))
-        udp_client(host,port)
+        udp_client(host,port,npings)
 
-        print "[rc=" + str(10  - timeoutCount ) + "]"
+        print "[rc=" + str(npings  - timeoutCount ) + "]"
     elif args.server:
         with open("/tmp/udpserver.pid",'w') as f:
            f.write(str(pid))
-        udp_server(port)
+        udp_server(port,npings)
         sys.exit( 0 )
 
 

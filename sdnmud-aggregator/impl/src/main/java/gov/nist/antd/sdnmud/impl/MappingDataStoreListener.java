@@ -51,14 +51,14 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 
 	private SdnmudProvider sdnmudProvider;
 
-	private Map<MacAddress, Mapping> macAddressToMappingMap = new HashMap<MacAddress, Mapping>();
+	private Map<String, Mapping> macAddressToMappingMap = new HashMap<String, Mapping>();
 
 	private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(MappingDataStoreListener.class);
 
 	private void removeMacAddress(MacAddress macAddress) {
-		Mapping mapping = this.macAddressToMappingMap.remove(macAddress);
+		Mapping mapping = this.macAddressToMappingMap.remove(macAddress.getValue());
 		if (mapping != null) {
 			HashSet<MacAddress> macs = this.uriToMacs.get(mapping.getMudUrl());
 			macs.remove(macAddress);
@@ -83,8 +83,8 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {
 				this.removeMacAddress(mac);
-				LOG.info("Put MAC address mapping " + mac + " uri " + uri.getValue());
-				this.macAddressToMappingMap.put(mac, mapping);
+				LOG.info("Put MAC address mapping " + mac.getValue() + " uri " + uri.getValue());
+				this.macAddressToMappingMap.put(mac.getValue().toUpperCase(), mapping);
 				HashSet<MacAddress> macs = this.uriToMacs.get(uri);
 				if (macs == null) {
 					macs = new HashSet<MacAddress>();
@@ -108,9 +108,12 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	}
 
 	public Uri getMudUri(MacAddress macAddress) {
-		if (this.macAddressToMappingMap.containsKey(macAddress)) {
-			return this.macAddressToMappingMap.get(macAddress).getMudUrl();
+		if (this.macAddressToMappingMap.containsKey(macAddress.getValue().toUpperCase())) {
+			Uri retval = this.macAddressToMappingMap.get(macAddress.getValue().toUpperCase()).getMudUrl();
+			LOG.debug("getMudUri " + macAddress.getValue() + " uri  " + retval.getValue());
+			return retval;
 		} else {
+			LOG.debug("getMudUri : " + macAddress.getValue() + " cannot find mapping");
 			return new Uri(SdnMudConstants.UNCLASSIFIED);
 		}
 	}
