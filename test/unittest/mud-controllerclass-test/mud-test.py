@@ -55,19 +55,19 @@ class TestAccess(unittest.TestCase) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
-        self.assertTrue(int(result) >= 0, "expect successful ping")
+        self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpControllerPingExpectPass(self) :
-        print "pinging a same manufacturer peer -- this should succeed with MUD"
+        print "pinging UDP controller -- this should succeed with MUD"
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8002 --host 10.0.0.7 --client --quiet")
-        self.assertTrue(int(result) >= 0, "expect successful ping")
+        self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testLocalNetPingExpectPass(self) :
-        print "pinging a same manufacturer peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
+        print "pinging a local network peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
-        self.assertTrue(int(result) >= 0, "expect successful ping")
+        self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpPingExpectFail(self):
         print "pinging a non-mud peer -- this should fail with MUD"

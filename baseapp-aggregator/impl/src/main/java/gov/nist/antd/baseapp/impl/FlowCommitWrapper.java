@@ -75,7 +75,11 @@ public class FlowCommitWrapper {
 				.child(Flow.class, flow.getKey());
 
 		modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow, true);
-		modification.submit();
+		try {
+			modification.submit().get();
+		} catch (InterruptedException | ExecutionException e) {
+			LOG.error("Error writing transaction to data store",e);
+		}
 	}
 
 	private boolean deleteFlow(FlowKey flowKey, short tableId,
@@ -201,18 +205,18 @@ public class FlowCommitWrapper {
 	 *
 	 * @param flowCapableNode
 	 *            -- the node from which to delete the flows.
-	 * @param uri
-	 *            -- the mud URI
+	 * @param uriPrefix
+	 *            -- the URI prefix.
 	 * @param sourceMacAddress
 	 *            -- the device source mac address.
-	 *            RESUME HERE
+	 *            
 	 */
 
 	synchronized public void deleteFlows(
-			InstanceIdentifier<FlowCapableNode> flowCapableNode, String uri,
+			InstanceIdentifier<FlowCapableNode> flowCapableNode, String uriPrefix,
 			short table, MacAddress sourceMacAddress, MacAddress destinationMacAddress) {
 
-		Collection<FlowKey> flowKeys = readFlows(flowCapableNode, table, uri,
+		Collection<FlowKey> flowKeys = readFlows(flowCapableNode, table, uriPrefix,
 				sourceMacAddress, destinationMacAddress);
 		for (FlowKey flowKey : flowKeys) {
 			deleteFlow(flowKey, table, flowCapableNode);

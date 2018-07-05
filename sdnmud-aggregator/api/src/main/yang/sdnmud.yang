@@ -60,6 +60,75 @@ module sdnmud {
                 self signed Certs should not be trusted under normal circumstances";
 
       }
+
+      leaf relaxed-acl {
+           type boolean;
+           default "false";
+           description
+              "Fowrard packet before installing classification rules - this reduces the packet drop and allows
+               for continued operation when controller is not connected. Warn operator if ACL violated.";
+      }
+
+      leaf openstack-url {
+           type inet:uri;
+           mandatory false;
+           description
+              "The URL prefix for OpenStack";
+      }
+
+      leaf openstack-user {
+            type string;
+            mandatory false;
+            description
+                "The openstack user name";
+
+      }
+
+      leaf openstack-pass {
+            type string;
+            mandatory false;
+            description
+                "The openstack password";
+      }
+
+  }
+
+  rpc clear-packet-count {
+    output {
+        leaf success {
+            description 
+                "Clear the packet count. This is for testing purposes. Return OK if the call succeeded. ";
+            type boolean;
+        }
+    }
+  }
+
+  rpc clear-cache {
+    output {
+        leaf success {
+            description 
+                "Clear the mfg model flow rules in tables 3 and 4. This is for testing purposes. Return OK if the call succeeded. ";
+            type boolean;
+        }
+    }
+  }
+
+  rpc get-packet-count {
+    output {
+        leaf packet-count {
+            description 
+                "returns the number of packets seen at the controller since the last invocation.
+                This is for performance benchmarking.";
+            type uint32;
+        }
+
+        leaf mud-packet-count {
+            description 
+                "returns the number of packets seen at the controller on tables 3,4,5.
+                 This is for performance benchmarking.";
+            type uint32;
+        }
+    }
   }
 
 }

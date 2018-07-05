@@ -36,6 +36,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
+import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
@@ -54,6 +55,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -130,10 +132,14 @@ public class SdnmudProvider {
 
 	private SdnmudConfig sdnmudConfig;
 
+	private PacketInDispatcher packetInDispatcher;
+
+	private RpcProviderRegistry rpcProviderRegistry;
+
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
-			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer) {
+			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer, RpcProviderRegistry rpcProviderRegistry) {
 
 		LOG.info("SdnMudProvider: SdnMudProvider - init");
 		this.dataBroker = dataBroker;
@@ -143,6 +149,7 @@ public class SdnmudProvider {
 		this.domDataBroker = domDataBroker;
 		this.schemaService = schemaService;
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
+		this.rpcProviderRegistry = rpcProviderRegistry;
 
 	}
 
@@ -222,7 +229,7 @@ public class SdnmudProvider {
 		this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
 
 		/* Listener for flow miss packets sent to the controller */
-		PacketInDispatcher packetInDispatcher = new PacketInDispatcher(this);
+		this.packetInDispatcher = new PacketInDispatcher(this);
 		ListenerRegistration<PacketInDispatcher> registration = this.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 
@@ -236,6 +243,10 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<ControllerclassMapping> ccmappingTreeId = new DataTreeIdentifier<ControllerclassMapping>(
 				LogicalDatastoreType.CONFIGURATION, controllerClassMappingWildCardPath);
 		this.dataBroker.registerDataTreeChangeListener(ccmappingTreeId, controllerClassMappingDataStoreListener);
+
+		SdnmudServiceImpl service = new SdnmudServiceImpl(this);
+		this.rpcProviderRegistry.addRpcImplementation(SdnmudService.class, service);
+
 		// Create a listener that wakes up on a node being added.
 		this.wakeupListener = new WakeupOnFlowCapableNode(this);
 		final DataTreeIdentifier<FlowCapableNode> dataTreeIdentifier = new DataTreeIdentifier<FlowCapableNode>(
@@ -495,6 +506,7 @@ public class SdnmudProvider {
 	 */
 	public void addControllerMap(ControllerclassMapping controllerMapping) {
 		String nodeId = controllerMapping.getSwitchId().getValue();
+		LOG.info("SdnmudProvider: Registering Controller for SwitchId " + nodeId);
 		HashMap<String, List<IpAddress>> map = this.controllerMap.get(nodeId);
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();
@@ -511,8 +523,6 @@ public class SdnmudProvider {
 			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
 		}
 
-		LOG.info("ControllerclassMappingDataStoreListener: onDataTreeChanged : Registering Controller for SwitchId "
-				+ nodeId);
 		this.configStateChanged = true;
 
 	}
@@ -553,5 +563,9 @@ public class SdnmudProvider {
 
 	public SdnmudConfig getSdnmudConfig() {
 		return this.sdnmudConfig;
+	}
+
+	public PacketInDispatcher getPacketInDispatcher() {
+		return this.packetInDispatcher;
 	}
 }

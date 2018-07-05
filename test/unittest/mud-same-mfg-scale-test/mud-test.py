@@ -5,19 +5,18 @@ from mininet.log import setLogLevel
 from mininet.net import Mininet
 from mininet.node import RemoteController
 from mininet.topo import Topo
+from mininet.log import setLogLevel 
+
 import pdb
 import subprocess
 import argparse
 import os
 import sys
 import signal
-from distutils.spawn import find_executable
 from subprocess import call
 import time
 import requests
 import json
-from mininet.log import setLogLevel 
-import unittest
 import re
 import os
 import signal
@@ -29,18 +28,18 @@ import threading
 
 #########################################################
 
-global hosts
+global _hosts
 
-hosts = []
+_hosts = []
 
 
 
 
 def cli():
     global net,c1,s1
-    global hosts
+    global _hosts
     cli = CLI( net )
-    for h in hosts:
+    for h in _hosts:
         h.terminate()
     net.stop()
 
@@ -52,9 +51,9 @@ def padded_hex(given_int):
     extra_zeros = '0' * (given_len - num_hex_chars)
     return extra_zeros + hex_result
 
-def setupTopology(controller_addr, nhosts):
+def setupTopology(controller_addr, n_hosts):
     global net,c1,s1
-    global hosts
+    global _hosts
     "Create and run multiple link network"
 
     net = Mininet(controller=RemoteController)
@@ -68,19 +67,19 @@ def setupTopology(controller_addr, nhosts):
     # h2 : StatciDHCPD
     # h3 : router / NAT
     # h4 : Non IOT device.
-    for i in range(1,nhosts + 1) :
-        hosts.append(net.addHost('h' + str(i)))
+    for i in range(1,n_hosts + 1) :
+        _hosts.append(net.addHost('h' + str(i)))
 
 
     s1 = net.addSwitch('s1',dpid="1")
 
-    for i in range(0,len(hosts)):
-        s1.linkTo(hosts[i])
+    for i in range(0,len(_hosts)):
+        s1.linkTo(_hosts[i])
 
-    for i in range(0,len(hosts)):
+    for i in range(0,len(_hosts)):
         addr = padded_hex(i + 1)
         mac = ':'.join(s.encode('hex') for s in addr.decode('hex'))
-        hosts[i].setMAC(mac,hosts[i].name + "-eth0")
+        _hosts[i].setMAC(mac,_hosts[i].name + "-eth0")
 
     net.build()
     c1.start()
@@ -100,29 +99,32 @@ def setupTopology(controller_addr, nhosts):
 
 
 def communicate(avgSleepTime=10, npings=10) :
-    global hosts
-    global result
-    global doneFlag
-    global cacheTimeout
+    global _hosts
+    global _result
+    global _doneFlag
+    global _cacheTimeout
+    global _packetsSent
+    global _topoSize
 
     destaddr = []
-    nhosts = len(hosts)
-    for i in range(0,len(hosts)):
-        addr = hosts[i].cmdPrint("hostname -I").strip()
+    n_hosts = len(_hosts)
+    for i in range(0,len(_hosts)):
+        addr = _hosts[i].cmdPrint("hostname -I").strip()
         destaddr.append(addr)
 
-    doneFlag = False
+    _doneFlag = False
 
-    while not doneFlag:
-        source = random.randint(0, nhosts -1)
-        dest = random.randint(0,nhosts -1)
+    while not _doneFlag:
+        source = random.randint(0, n_hosts -1)
+        dest = random.randint(0,n_hosts -1)
         while dest == source :
-            dest = random.randint(0,nhosts-1)
-        print "src = " +  hosts[source].name + " dst = " + hosts[dest].name
+            dest = random.randint(0,n_hosts-1)
+        print "src = " +  _hosts[source].name + " dst = " + _hosts[dest].name
         lambd = 1.0/avgSleepTime
         sleeptime = random.expovariate(lambd)
         time.sleep(sleeptime)
-        res = hosts[source].cmdPrint("ping " + destaddr[dest]  + " -c " +str(npings) + " -q >> results/pingout." + str(cacheTimeout) + ".txt &")
+        res = _hosts[source].cmdPrint("ping " + destaddr[dest]  + " -c " +str(npings) + " -q >> results/" + str(_topoSize) + "/pingout."  + str(_cacheTimeout) + ".txt &")
+        _packetsSent = _packetsSent + npings
 
     sys.exit()
     os.exit()
@@ -132,25 +134,26 @@ def sampleTableSize() :
     """
     Periodically sample the flow table and record its size.
     """
-    global result
-    global sampleCount
-    global startTime
-    global doneFlag
-    global cacheTimeout
+    global _result
+    global _sampleCount
+    global _startTime
+    global _doneFlag
+    global _cacheTimeout
+    global _topoSize
 
 
     times = {}
-    times["seconds"] = int(time.time() - startTime)
+    times["seconds"] = int(time.time() - _startTime)
            
     cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
     proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cmd = [ "wc", "-l" ]
     proc2 = subprocess.Popen(cmd,shell=False, stdin=proc1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout,stderr = proc2.communicate()
-    times["table-size"] = int(stdout)
+    times["all-flows"] = int(stdout)
 
-	 
-    # The src manufacturer tag table.
+     
+    # The src manufacturer tag and the dest manufacturer table.
     cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
     proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     cmd = [ "grep", "-e", "table=3", "-e", "table=4" ]
@@ -158,39 +161,72 @@ def sampleTableSize() :
     cmd = [ "wc", "-l" ]
     proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout,stderr = proc3.communicate()
-    # Record the number of cached flow rules.
-    times["cache-size"] = int(stdout) - 4
+    print "mfg-flows = ",stdout
+    times["manufacturer-tag-flows"] =   int(stdout) - 4 if int(stdout) - 4 >= 0  else 0
 
-    if not "cache-sizes" in result:
-        result["cache-sizes"] = []
+    # The l2switch table.
+    cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
+    proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ "grep", "-e", "table=9"]
+    proc2 = subprocess.Popen(cmd,shell=False, stdin=proc1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    cmd = [ "wc", "-l" ]
+    proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout,stderr = proc3.communicate()
+    times["l2switch-flows"] =   int(stdout)
 
-    result["cache-sizes"].append(times)
+    # Get the number of packets seen at the controller.
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:get-packet-count"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    result = r.json()
+    times["total-packet-count"] = result["output"]["packet-count"]
+    times["mud-packet-count"] = result["output"]["mud-packet-count"]
+    times["packets-sent"] = _packetsSent
+    print times
 
-    if sampleCount == 100:
-        with  open("results/result." + str(cacheTimeout) + ".json","w") as res:
-            resultStr = json.dumps(result, indent=8)
+    if not "cache-sizes" in _result:
+        _result["cache-sizes"] = []
+
+    _result["cache-sizes"].append(times)
+
+    # Give it 10 minutes for the cache to settle down.
+    if _sampleCount == 200:
+        cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
+        proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd = [ "grep", "-e", "table=5" ]
+        proc2 = subprocess.Popen(cmd,shell=False, stdin=proc1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        cmd = [ "wc", "-l" ]
+        proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout,stderr = proc3.communicate()
+        _result["mud-rules-flow-table-size"] = int(stdout)
+        with  open("results/" + str(_topoSize) + "/result."  + str(_cacheTimeout) + ".json","w") as res:
+            resultStr = json.dumps(_result, indent=8)
             res.write(resultStr)
-            doneFlag = True
+            _doneFlag = True
             sys.exit()
             os.exit()
     else:
-    	sampleCount = sampleCount + 1
+        _sampleCount = _sampleCount + 1
         threading.Timer(5,sampleTableSize).start()
 
 if __name__ == '__main__':
     setLogLevel( 'info' )
+    global _topoSize
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
-    parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
+    parser.add_argument("-f",help="Config file",default="sdnmud-config.json")
+    parser.add_argument("-s",help="topology size", type=int, default=100)
 
     parser.set_defaults(test=False)
 
     args = parser.parse_args()
     controller_addr = args.c
-    test = args.test
-
-
+    cfgfile = args.f
+    _topoSize = args.s
+    
+    print "cfgfile ", cfgfile
+    
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
@@ -204,17 +240,22 @@ if __name__ == '__main__':
         except:
             print "Failed to kill dnsmasq check if process is running"
 
+    if not os.path.isdir("results/" + str(_topoSize)):
+       os.makedirs("results/" + str(_topoSize))
 
-    print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr,100)
 
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-packet-count"
     headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-cache"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
     for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-toaster-100.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        ("sdnmud-config.json", "sdnmud:sdnmud-config"),
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("ietfmud.json","ietf-mud:mud")} :
         with open(configfile) as f:
             data = json.load(f)
@@ -224,32 +265,30 @@ if __name__ == '__main__':
             r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
             print "response ", r
 
+    setupTopology(controller_addr,_topoSize)
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         time.sleep(2)
-        with open("sdnmud-config.json") as f:
+        with open(cfgfile) as f:
             config = json.load(f)
         print config
-        global result
-        global cacheTimeout
-        global startTime
-        global doneFlag 
-        global sampleCount
+        global _result
+        global _cacheTimeout
+        global _startTime
+        global _doneFlag 
+        global _sampleCount
+        global _packetsSent
 
-        sampleCount = 0
-        doneFlag = False
-        result = {}
-        cacheTimeout  = config['sdnmud-config']['mfg-id-rule-cache-timeout']
+        _sampleCount = 0
+        _doneFlag = False
+        _result = {}
+        _cacheTimeout  = config['sdnmud-config']['mfg-id-rule-cache-timeout']
+        if os.path.exists("results/" + str(_topoSize) + "/pingout." + str(_cacheTimeout) + ".txt"):
+            os.remove("results/" + str(_topoSize) + "/pingout." + str(_cacheTimeout) + ".txt")
         # The src manufacturer tag table.
-        cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
-        proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cmd = [ "grep", "-e", "table=5" ]
-        proc2 = subprocess.Popen(cmd,shell=False, stdin=proc1.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        cmd = [ "wc", "-l" ]
-        proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout,stderr = proc3.communicate()
-        result["mud-rules-table-size"] = int(stdout)
-        result["cache-timeout"] = cacheTimeout
-        startTime = time.time()
+        _result["cache-timeout"] = _cacheTimeout
+        _startTime = time.time()
+        _packetsSent = 0
         sampleTableSize()
         communicate(avgSleepTime = 5 , npings = 10)
     else:

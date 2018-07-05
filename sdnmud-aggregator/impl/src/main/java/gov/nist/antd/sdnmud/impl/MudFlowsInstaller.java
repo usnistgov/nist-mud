@@ -21,6 +21,8 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -65,6 +67,26 @@ public class MudFlowsInstaller {
 	private SdnmudProvider sdnmudProvider;
 	static final Logger LOG = LoggerFactory.getLogger(MudFlowsInstaller.class);
 
+	class TcpSynFlagCheck {
+		BigInteger metadata;
+		BigInteger metadataMask;
+
+		int sourcePort;
+		int destinationPort;
+		Ipv4Address destinationAddress;
+		Ipv4Address sourceAddress;
+
+		TcpSynFlagCheck() {
+			sourcePort = -1;
+			destinationPort = -1;
+			destinationAddress = null;
+			sourceAddress = null;
+		}
+
+	};
+
+	private HashMap<String, TcpSynFlagCheck> tcpSynFlagCheckTable = new HashMap<String, TcpSynFlagCheck>();
+
 	private interface MatchesType {
 		int CONTROLLER_MAPPING = 1;
 		int SAME_MANUFACTURER = 3;
@@ -77,12 +99,32 @@ public class MudFlowsInstaller {
 
 	}
 
-	public MudFlowsInstaller(SdnmudProvider sdnmudProvider) {
-		this.sdnmudProvider = sdnmudProvider;
+	private void registerTcpSynFlagCheck(String mudUri, BigInteger metadata, BigInteger metadataMask, int sourcePort,
+			int destinationPort) {
+		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck();
+		flagCheck.metadata = metadata;
+		flagCheck.metadataMask = metadataMask;
+		flagCheck.sourcePort = sourcePort;
+		flagCheck.destinationPort = destinationPort;
+
+		this.tcpSynFlagCheckTable.put(mudUri, flagCheck);
 	}
 
-	private static String createDropFlowSpec(String manufacturer) {
-		return "DROP";
+	private void registerTcpSynFlagCheck(String mudUri, BigInteger metadata, BigInteger metadataMask,
+			Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress, int destinationPort) {
+		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck();
+		flagCheck.metadata = metadata;
+		flagCheck.metadataMask = metadataMask;
+		flagCheck.sourcePort = -1;
+		flagCheck.destinationPort = destinationPort;
+		flagCheck.destinationAddress = destinationAddress;
+		flagCheck.sourceAddress = sourceAddress;
+		flagCheck.sourcePort = -1;
+		this.tcpSynFlagCheckTable.put(mudUri, flagCheck);
+	}
+
+	public MudFlowsInstaller(SdnmudProvider sdnmudProvider) {
+		this.sdnmudProvider = sdnmudProvider;
 	}
 
 	private static String createFlowSpec(Ipv4Address address) {
@@ -393,6 +435,10 @@ public class MudFlowsInstaller {
 			FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
 			this.installPermitFromDeviceToIpAddressFlow(node, flowId, metadata, metadataMask, address, port,
 					protocol.shortValue(), sendToController, flowCookie);
+
+			if (sendToController) {
+				this.registerTcpSynFlagCheck(mudUri, metadata, metadataMask, null, -1, address, port);
+			}
 		}
 
 	}
@@ -440,6 +486,9 @@ public class MudFlowsInstaller {
 
 			this.installPermitFromIpToDeviceFlow(metadata, metadataMask, address, port, protocol.shortValue(),
 					sendToController, flowCookie, flowId, node);
+			if (sendToController) {
+				this.registerTcpSynFlagCheck(mudUri, metadata, metadataMask, address, port, null, -1);
+			}
 
 		}
 
@@ -537,6 +586,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 
 	}
 
@@ -561,6 +613,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 	}
 
 	private void installPermitFromDeviceToLocalNetworksFlowRule(InstanceIdentifier<FlowCapableNode> node, String mudUri,
@@ -585,6 +640,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 	}
 
 	private void installPermitToDeviceFromSameManufacturerFlowRule(InstanceIdentifier<FlowCapableNode> node,
@@ -613,6 +671,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 	}
 
 	private void installPermitFromModelToDeviceRule(InstanceIdentifier<FlowCapableNode> node, String mudUri,
@@ -641,6 +702,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 	}
 
 	private void installPermitToDeviceFromManufacturerFlowRule(InstanceIdentifier<FlowCapableNode> node, String mudUri,
@@ -672,6 +736,9 @@ public class MudFlowsInstaller {
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(metadata, mask, protocol.shortValue(), sourcePort,
 				destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask, sendToController,
 				flowCookie, flowId, node);
+		if (sendToController) {
+			this.registerTcpSynFlagCheck(mudUri, metadata, mask, sourcePort, destinationPort);
+		}
 	}
 
 	private void installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(BigInteger metadata, BigInteger metadataMask,
@@ -698,21 +765,20 @@ public class MudFlowsInstaller {
 	 *            -- The URI string for the controller class we want.
 	 * @return
 	 */
-	private List<IpAddress> getControllerAddresses(String nodeConnectorUri, Uri mudUri, String controllerUriString) {
+	private List<IpAddress> getControllerAddresses(String nodeConnectorUri, String controllerUriString) {
 		Map<String, List<IpAddress>> controllerMap = sdnmudProvider.getControllerClassMap(nodeConnectorUri);
 		if (controllerMap == null) {
 			return null;
 		}
-		return controllerMap.get(nodeConnectorUri);
+		return controllerMap.get(controllerUriString);
 	}
 
 	private List<Ipv4Address> getControllerMatchAddresses(String nodeConnectorUri, Uri mudUri, Uri controllerUri) {
 		// Resolve it.
 		List<Ipv4Address> ipAddresses = new ArrayList<Ipv4Address>();
 		LOG.info("Resolving controller address for " + controllerUri.getValue());
-		if (getControllerAddresses(nodeConnectorUri, mudUri, controllerUri.getValue()) != null) {
-			List<IpAddress> controllerIpAddresses = getControllerAddresses(nodeConnectorUri, mudUri,
-					controllerUri.getValue());
+		if (getControllerAddresses(nodeConnectorUri, controllerUri.getValue()) != null) {
+			List<IpAddress> controllerIpAddresses = getControllerAddresses(nodeConnectorUri, controllerUri.getValue());
 			for (IpAddress ipAddress : controllerIpAddresses) {
 				LOG.info("controllerAddress " + ipAddress.getIpv4Address().getValue());
 				ipAddresses.add(ipAddress.getIpv4Address());
@@ -727,8 +793,7 @@ public class MudFlowsInstaller {
 	}
 
 	private static BigInteger createDstModelMetadata(String mudUri) {
-		return BigInteger.valueOf(IdUtils.getModelId(mudUri))
-				.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT);
+		return BigInteger.valueOf(IdUtils.getModelId(mudUri)).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT);
 	}
 
 	static void installPermitPacketsFromToServer(SdnmudProvider sdnmudProvider,

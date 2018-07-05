@@ -31,7 +31,7 @@ def udp_client(host, port, npings) :
     # Declare server's socket address
     remoteAddr = (host, port)
     # Ping ten times
-    #clientSocket.bind(('',port))
+    clientSocket.bind(('',port))
 
     lambd = (1.0 / 0.5)
     for i in range(npings):

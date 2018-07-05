@@ -34,6 +34,10 @@
 	<odl:rpc-service id="packetProcessingService"
 		interface="org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService" />
 
+    <reference id="rpcRegistry"
+     interface="org.opendaylight.controller.sal.binding.api.RpcProviderRegistry"/>
+
+
 
 
 	<!-- mranga: 
@@ -49,8 +53,8 @@
 		<argument ref="packetNotificationService" />
 		<argument ref="domDataBroker" />
 		<argument ref="schemaService" />
-		<argument ref="bindingNormalizedNodeSerializer" 
-        />
+		<argument ref="bindingNormalizedNodeSerializer" />
+        <argument ref="rpcRegistry" />
 	</bean>
 
 </blueprint>

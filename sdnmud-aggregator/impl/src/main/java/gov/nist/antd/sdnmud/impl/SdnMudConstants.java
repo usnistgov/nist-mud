@@ -77,6 +77,9 @@ interface SdnMudConstants {
 	// Well known cookies.
 	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils.createFlowCookie("send-to-controller-flow-cookie");
 
+	FlowCookie SEND_TCP_PACKET_TO_CONTROLLER_FLOW_COOKIE = IdUtils
+			.createFlowCookie("send-tcp-packet-to-controller-flow-cookie");
+
 	FlowCookie BYPASS_DHCP_FLOW_COOKIE = IdUtils.createFlowCookie("bypass-dhcp-flow-cookie");
 
 	FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = IdUtils

@@ -169,6 +169,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private HashMap<String, Flow> flowTable = new HashMap<String, Flow>();
 
+	private int mudRelatedPacketInCounter = 0;
+
+	private int packetInCounter = 0;
+
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
 		 * (non-Javadoc)
@@ -236,6 +240,27 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.schemaService = sdnmudProvider.getSchemaService();
 	}
 
+	public int getMudPacketInCount(boolean clearFlag) {
+		int retval = this.mudRelatedPacketInCounter;
+		if (clearFlag) {
+			mudRelatedPacketInCounter = 0;
+		}
+		return retval;
+	}
+
+	public int getPacketInCount(boolean clearFlag) {
+		int retval = this.packetInCounter;
+		if (clearFlag) {
+			packetInCounter = 0;
+		}
+		return retval;
+	}
+
+	public void clearPacketInCount() {
+		mudRelatedPacketInCounter = 0;
+		packetInCounter = 0;
+	}
+
 	private static MacAddress rawMacToMac(final byte[] rawMac) {
 		MacAddress mac = null;
 		if (rawMac != null) {
@@ -255,6 +280,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		tpib.setEgress(notification.getIngress());
 		OutputActionBuilder output = new OutputActionBuilder();
 		output.setMaxLength(Integer.valueOf(0xffff));
+
 		String matchInPortUri = notification.getMatch().getInPort().getValue();
 
 		output.setOutputNodeConnector(new Uri(matchInPortUri));
@@ -264,7 +290,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		List<Action> actionList = new ArrayList<Action>();
 		actionList.add(ab.build());
-		tpib.setAction(actionList);
+		// tpib.setAction(actionList);
 
 		this.sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
 	}
@@ -293,6 +319,22 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return isLocalAddress;
 	}
 
+	public boolean checkIfTcpSynAllowed(byte[] rawPacket) {
+		// If any rule matches in the synflagcheck table, then we should not see
+		// a Syn in this packet.
+		String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
+		String destIp = PacketUtils.extractDstIpStr(rawPacket);
+		int sourcePort = PacketUtils.getSourcePort(rawPacket);
+		int destinationPort = PacketUtils.getDestinationPort(rawPacket);
+		MacAddress srcMac = PacketUtils.extractSrcMacAddress(rawPacket);
+		MacAddress destinationMac = PacketUtils.extractDstMacAddress(rawPacket);
+		Uri srcMudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+		Uri dstMudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(destinationMac);
+
+		// TODO -- finish this method
+		return true;
+	}
+
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 		String manufacturer = IdUtils.getAuthority(mudUri);
@@ -319,8 +361,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
 				: BaseappConstants.CACHE_TIMEOUT;
 
-		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + srcMac.getValue()
-				+ "/" + timeout + "/" + metadata.toString(16);
+		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
+				+ srcMac.getValue() + "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
 
@@ -360,8 +402,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				.or(SdnMudConstants.DST_NETWORK_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
-		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + dstMac.getValue()
-				+ "/" + timeout + "/" + metadata.toString(16);
+		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
+				+ dstMac.getValue() + "/" + metadata.toString(16);
 
 		Flow flow = this.flowTable.get(flowIdStr);
 
@@ -373,6 +415,25 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
+
+	/**
+	 *
+	 */
+	public void clearMfgModelRules() {
+		String uriPrefix1 = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
+		String uriPrefix2 = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
+		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
+			InstanceIdentifier<FlowCapableNode> flowCapableNode = sdnmudProvider.getNode(nodeId);
+			if (flowCapableNode != null) {
+
+				sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix2,
+						BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, null, null);
+				sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix1,
+						BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, null, null);
+			}
+		}
+		this.flowTable.clear();
 	}
 
 	private void importFromNormalizedNode(final DOMDataReadWriteTransaction rwTrx, final LogicalDatastoreType type,
@@ -518,35 +579,40 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
 				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
 
+		this.packetInCounter++;
+
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
 			LOG.debug("LLDP Pakcet -- dropping it");
 			return;
 		}
 
 		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) {
-			String sourceIpAddress = PacketUtils.extractSrcIpStr(notification.getPayload());
-			String destIpAddress = PacketUtils.extractDstIpStr(notification.getPayload());
-			LOG.info("Source IP  " + sourceIpAddress + " dest IP  " + destIpAddress);
+			String srcIp = PacketUtils.extractSrcIpStr(notification.getPayload());
+			String dstIp = PacketUtils.extractDstIpStr(notification.getPayload());
+			LOG.debug("Source IP  " + srcIp + " dest IP  " + dstIp);
 
 			if (!this.sdnmudProvider.isCpeNode(nodeId)) {
 				return;
 			}
 
 			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
+				// Keeps track of the number of packets seen at controller.
+				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-				boolean isLocalAddress = this.isLocalAddress(nodeId, sourceIpAddress);
+				boolean isLocalAddress = this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-				boolean isLocalAddress = this.isLocalAddress(nodeId, destIpAddress);
+				boolean isLocalAddress = this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
+				this.mudRelatedPacketInCounter++;
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				byte[] rawPacket = notification.getPayload();
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
-				String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
 
 				LOG.info("PacketInDispatcher: protocol = " + protocol + " srcIp = " + srcIp);
 

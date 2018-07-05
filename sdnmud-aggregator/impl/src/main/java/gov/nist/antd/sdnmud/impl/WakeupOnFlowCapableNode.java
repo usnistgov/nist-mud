@@ -83,8 +83,13 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask) {
 		FlowId flowId = IdUtils.createFlowId(nodeUri + ":sendToController");
 		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createEthernetMatchSendPacketToControllerFlow(metadata, metadataMask, tableId,
+
+		boolean forwardFlag = this.sdnmudProvider.getSdnmudConfig() != null
+				&& this.sdnmudProvider.getSdnmudConfig().isRelaxedAcl();
+
+		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerFlow(metadata, metadataMask, forwardFlag, tableId,
 				flowId, flowCookie);
+
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
@@ -126,8 +131,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			LOG.info("Node not seen -- not installing flow ");
 			return;
 		}
-		BigInteger metadata = BigInteger
-				.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
+		BigInteger metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
 				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
 
@@ -141,6 +145,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
 		installToDhcpFlow(nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+
 	}
 
 	public void installInitialFlows(String nodeUri) {
