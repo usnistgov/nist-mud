@@ -1,0 +1,28 @@
+{  
+  "ietf-mud:mud": {
+    "mud-version": 1,
+    "mud-url": "https://toaster.nist.local/super1",
+    "last-update": "2018-07-09T04:29:05+02:00",
+    "cache-validity": 48,
+    "is-supported": true,
+    "systeminfo": "The NIST toaster",
+    "from-device-policy": {
+      "access-lists": {
+        "access-list": [
+          {
+            "name": "mud-53094-v4fr"
+          }
+        ]
+      }
+    },
+    "to-device-policy": {
+      "access-lists": {
+        "access-list": [
+          {
+            "name": "mud-53094-v4to"
+          }
+        ]
+      }
+    }
+  }
+}
