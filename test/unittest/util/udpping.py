@@ -21,6 +21,7 @@ def udp_client(host, port, npings) :
     # Notice the use of SOCK_DGRAM for UDP packets
     global timeoutCount
     global quiet
+    global bind
     timeoutCount = 0
     clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -31,7 +32,8 @@ def udp_client(host, port, npings) :
     # Declare server's socket address
     remoteAddr = (host, port)
     # Ping ten times
-    clientSocket.bind(('',port))
+    if bind:
+       clientSocket.bind(('',port))
 
     lambd = (1.0 / 0.5)
     for i in range(npings):
@@ -101,6 +103,7 @@ if __name__ == "__main__":
     global timeoutCount
     global quiet
     global timeout
+    global bind
 
     parser = argparse.ArgumentParser('argument parser')
     parser.add_argument("--quiet", 
@@ -115,6 +118,10 @@ if __name__ == "__main__":
     parser.add_argument("--host", default=None,
                     help='server host (required if Client flag is True)')
         
+
+    parser.add_argument("--bind",  
+            action="store_true",dest='bind', 
+                    help='bind client sock')
 
     parser.add_argument("--client",  
             action="store_true",dest='client', 
@@ -132,10 +139,12 @@ if __name__ == "__main__":
                 type=int, default=10, required=False, 
                 help="number of pings")
 
+
     parser.set_defaults(client=False)
     parser.set_defaults(server=False)
     parser.set_defaults(quiet=False)
     parser.set_defaults(timeout=False)
+    parser.set_defaults(bind=False)
 
     args  = parser.parse_args()
 
@@ -146,6 +155,7 @@ if __name__ == "__main__":
     quiet = args.quiet
     timeout = args.timeout
     npings = args.npings
+    bind = args.bind
     
     
     count = 0

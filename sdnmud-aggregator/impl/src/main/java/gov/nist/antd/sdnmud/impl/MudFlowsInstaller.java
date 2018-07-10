@@ -73,8 +73,8 @@ public class MudFlowsInstaller {
 
 		int sourcePort;
 		int destinationPort;
-		Ipv4Address destinationAddress;
-		Ipv4Address sourceAddress;
+		String destinationAddress;
+		String sourceAddress;
 
 		TcpSynFlagCheck() {
 			sourcePort = -1;
@@ -106,6 +106,8 @@ public class MudFlowsInstaller {
 		flagCheck.metadataMask = metadataMask;
 		flagCheck.sourcePort = sourcePort;
 		flagCheck.destinationPort = destinationPort;
+		flagCheck.sourceAddress = null;
+		flagCheck.destinationAddress = null;
 
 		this.tcpSynFlagCheckTable.put(mudUri, flagCheck);
 	}
@@ -117,10 +119,63 @@ public class MudFlowsInstaller {
 		flagCheck.metadataMask = metadataMask;
 		flagCheck.sourcePort = -1;
 		flagCheck.destinationPort = destinationPort;
-		flagCheck.destinationAddress = destinationAddress;
-		flagCheck.sourceAddress = sourceAddress;
+		flagCheck.destinationAddress = destinationAddress != null ? destinationAddress.getValue() : null;
+		flagCheck.sourceAddress = sourceAddress != null ? sourceAddress.getValue() : null;
 		flagCheck.sourcePort = -1;
 		this.tcpSynFlagCheckTable.put(mudUri, flagCheck);
+	}
+
+	public boolean checkSynFlagMatch(BigInteger metadata, String sourceAddress, int sourcePort, String destAddress,
+			int destPort) {
+		LOG.debug("checkSynFlagMatch : " + metadata.toString(16) + " sourceAddress " + sourceAddress + " sourcePort "
+				+ sourcePort + " destAddress " + destAddress + " destPort " + destPort);
+
+		for (TcpSynFlagCheck flagCheck : this.tcpSynFlagCheckTable.values()) {
+			BigInteger mask = flagCheck.metadataMask;
+
+			LOG.debug("checkSynFlagMatch : flagCheckFields : " + " metadata : " + flagCheck.metadata.toString(16)
+					+ " mask " + flagCheck.metadataMask.toString(16) + " sourceAddress " + flagCheck.sourceAddress
+					+ " sourcePort " + flagCheck.sourcePort + " destAddress " + flagCheck.destinationAddress
+					+ " destPort " + flagCheck.destinationPort);
+
+			LOG.debug("metadataAndMask : " + metadata.and(mask).toString(16));
+
+			if (!metadata.and(mask).equals(flagCheck.metadata)) {
+				LOG.debug("checkSynFlagMatch : metadataCheck failed");
+				continue;
+			}
+
+			if (flagCheck.sourceAddress != null) {
+				if (!sourceAddress.equals(flagCheck.sourceAddress)) {
+					LOG.debug("checkSynFlagMatch : sourceAddress check failed");
+					continue;
+				}
+			}
+			if (flagCheck.sourcePort != -1) {
+				if (sourcePort != flagCheck.sourcePort) {
+					LOG.debug("checkSynFlagMatch : sourcePortCheck failed");
+					continue;
+				}
+			}
+			if (flagCheck.destinationAddress != null) {
+				if (!destAddress.equals(flagCheck.destinationAddress)) {
+					LOG.debug("checkSynFlagMatch : desitnationAddress Check failed");
+					continue;
+				}
+			}
+
+			if (flagCheck.destinationPort != -1) {
+				if (destPort != flagCheck.destinationPort) {
+					LOG.debug("checkSynFlagMatch: destinationPort Check failed");
+					continue;
+				}
+			}
+			LOG.debug("checkSynFlagMatch : return TRUE");
+			return true;
+
+		}
+		LOG.debug("checSynFlagMatch : return FALSE");
+		return false;
 	}
 
 	public MudFlowsInstaller(SdnmudProvider sdnmudProvider) {
@@ -270,12 +325,16 @@ public class MudFlowsInstaller {
 	}
 
 	private IpAddress getControllerAddress(String nodeUri, String controllerUri) {
-		LOG.info(this.getClass().getName() + " getControllerAddress " + nodeUri + " controllerUri " + controllerUri);
+		LOG.info(" getControllerAddress " + nodeUri + " controllerUri " + controllerUri);
 		Map<String, List<IpAddress>> controllerMap = sdnmudProvider.getControllerClassMap(nodeUri);
 		if (controllerMap == null) {
+			LOG.info("getControllerAddress : controllerMap is null ");
 			return null;
 		} else if (controllerMap.containsKey(controllerUri)) {
-			controllerMap.get(controllerUri).get(0);
+			LOG.info("getControllerAddress : found a controller for " + controllerUri);
+			return controllerMap.get(controllerUri).get(0);
+		} else {
+			LOG.info("getControllerAddress : could not find controller for " + controllerUri);
 		}
 		return null;
 
@@ -290,9 +349,14 @@ public class MudFlowsInstaller {
 	 */
 
 	private IpAddress getDnsAddress(String nodeUri) {
-		LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri);
-		return getControllerAddress(nodeUri, SdnMudConstants.DNS_SERVER_URI);
-
+		IpAddress retval = getControllerAddress(nodeUri, SdnMudConstants.DNS_SERVER_URI);
+		if (retval != null) {
+			LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri + " dnsAddress "
+					+ retval.getIpv4Address().getValue());
+		} else {
+			LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri + " dnsAddress is null");
+		}
+		return retval;
 	}
 
 	/**
@@ -304,8 +368,14 @@ public class MudFlowsInstaller {
 	 */
 
 	public IpAddress getNtpAddress(String nodeUri) {
-		LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri);
-		return getControllerAddress(nodeUri, SdnMudConstants.NTP_SERVER_URI);
+		IpAddress retval = getControllerAddress(nodeUri, SdnMudConstants.NTP_SERVER_URI);
+		if (retval != null) {
+			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress "
+					+ retval.getIpv4Address().getValue());
+		} else {
+			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress is null");
+		}
+		return retval;
 
 	}
 

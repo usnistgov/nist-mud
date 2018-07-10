@@ -283,12 +283,14 @@ if __name__ == '__main__':
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
+    parser.add_argument("-f",help="Config file",default="sdnmud-config.json")
 
     parser.set_defaults(test=False)
 
     args = parser.parse_args()
     controller_addr = args.c
     test = args.test
+    cfgfile = args.f
 
 
     cmd = ['sudo','mn','-c']
@@ -314,6 +316,7 @@ if __name__ == '__main__':
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("ietfmud.json","ietf-mud:mud") }:
         data = json.load(open(configfile))
         print "configfile", configfile

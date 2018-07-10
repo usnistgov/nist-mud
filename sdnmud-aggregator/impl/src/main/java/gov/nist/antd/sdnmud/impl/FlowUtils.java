@@ -764,8 +764,8 @@ public class FlowUtils {
 		createEthernetDestMatch(matchBuilder, dstMac);
 		FlowUtils.createSrcProtocolPortMatch(matchBuilder, protocol, port);
 
-		InstructionsBuilder isb = FlowUtils.createGoToNextTableAndSendToControllerInstruction((short) (tableId + 1),
-				metadata, metadataMask);
+		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction((short) (tableId + 1), metadata,
+				metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
 				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
@@ -788,8 +788,7 @@ public class FlowUtils {
 		createEthernetDestMatch(matchBuilder, dstMac);
 		FlowUtils.createSrcProtocolPortMatch(matchBuilder, protocol, port);
 
-		InstructionsBuilder isb = FlowUtils.createGoToNextTableAndSendToControllerInstruction(targetTableId, metadata,
-				metadataMask);
+		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(targetTableId, metadata, metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
 				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)

@@ -319,20 +319,62 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return isLocalAddress;
 	}
 
-	public boolean checkIfTcpSynAllowed(byte[] rawPacket) {
+	private void checkIfTcpSynAllowed(InstanceIdentifier<FlowCapableNode> node, byte[] rawPacket) {
 		// If any rule matches in the synflagcheck table, then we should not see
 		// a Syn in this packet.
+
+		byte ipProtocol = PacketUtils.extractIpProtocol(rawPacket);
+		if (ipProtocol != SdnMudConstants.TCP_PROTOCOL) {
+			// Don't care about Non-tcp protocol.
+			LOG.info("checkIfTcpSynAllowed (Not tcp) protocol: " + ipProtocol);
+			return;
+		}
+
 		String srcIp = PacketUtils.extractSrcIpStr(rawPacket);
 		String destIp = PacketUtils.extractDstIpStr(rawPacket);
 		int sourcePort = PacketUtils.getSourcePort(rawPacket);
-		int destinationPort = PacketUtils.getDestinationPort(rawPacket);
+		int destPort = PacketUtils.getDestinationPort(rawPacket);
 		MacAddress srcMac = PacketUtils.extractSrcMacAddress(rawPacket);
 		MacAddress destinationMac = PacketUtils.extractDstMacAddress(rawPacket);
 		Uri srcMudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 		Uri dstMudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(destinationMac);
+		String srcMfg = IdUtils.getAuthority(srcMudUri.getValue());
+		String dstMfg = IdUtils.getAuthority(dstMudUri.getValue());
 
-		// TODO -- finish this method
-		return true;
+		long srcModelId = IdUtils.getModelId(srcMudUri.getValue());
+		long dstModelId = IdUtils.getModelId(dstMudUri.getValue());
+		long srcMfgId = IdUtils.getManfuacturerId(srcMfg);
+		long dstMfgId = IdUtils.getManfuacturerId(dstMfg);
+		String nodeId = IdUtils.getNodeUri(node);
+		long isSrcIpLocal = this.isLocalAddress(nodeId, srcIp) ? 1 : 0;
+		long isDstIpLocal = this.isLocalAddress(nodeId, destIp) ? 1 : 0;
+
+		BigInteger metadata = BigInteger.valueOf(srcModelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT)
+				.or(BigInteger.valueOf(srcMfgId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
+				.or(BigInteger.valueOf(isSrcIpLocal).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(dstModelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT))
+				.or(BigInteger.valueOf(dstMfgId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT))
+				.or(BigInteger.valueOf(isDstIpLocal).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT));
+
+		LOG.info("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
+
+		if (this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata, srcIp, sourcePort, destIp,
+				destPort)) {
+			LOG.info("checkSynFlagMatch returned true -- checking for illegal SYN flag");
+			if (PacketUtils.isSYNFlagOn(rawPacket)) {
+				LOG.info("checkIfTcpSynAllowed: PacketInDispatcher: Got an illegal SYN -- blocking the flow");
+				// Block the TCP flow on the mud rules table.
+				this.installBlockTcpFlow(srcIp, sourcePort, destinationMac, metadata,
+						BaseappConstants.DEFAULT_METADATA_MASK, node);
+			} else {
+				// override the bump up to the controller on the MUD rules table
+				this.installAllowTcpFlow(srcIp, sourcePort, destinationMac, metadata,
+						BaseappConstants.DEFAULT_METADATA_MASK, node);
+			}
+		} else {
+			LOG.info("checkSynFlagMatch returned false");
+		}
+
 	}
 
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
@@ -375,6 +417,55 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
+
+	private void installAllowTcpFlow(String srcIp, int port, MacAddress dstMac, BigInteger metadata,
+			BigInteger metadataMask, InstanceIdentifier<FlowCapableNode> node) {
+		String nodeId = IdUtils.getNodeUri(node);
+		String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchGoTo:" + srcIp + ":" + dstMac.getValue() + ":"
+				+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
+
+		FlowId flowId = new FlowId(flowIdStr);
+		Flow fb = this.flowTable.get(flowIdStr);
+
+		if (fb == null) {
+			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
+			/*
+			 * create a short term pass through flow to allow packet through.
+			 * Give it a short timeout.
+			 */
+			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
+
+			fb = FlowUtils
+					.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac, port,
+							SdnMudConstants.TCP_PROTOCOL, tableId, metadata, metadataMask, 1, flowId, flowCookie)
+					.build();
+			this.flowTable.put(flowIdStr, fb);
+		}
+
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+	}
+
+	private void installBlockTcpFlow(String srcIp, int port, MacAddress dstMac, BigInteger metadata,
+			BigInteger metadataMask, InstanceIdentifier<FlowCapableNode> node) {
+
+		LOG.info("installBlockTcpFlow srcIp = " + srcIp + " dstMac = " + dstMac.getValue() + " metadata "
+				+ metadata.toString(16) + " metadataMask " + metadataMask.toString(16));
+		String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":" + dstMac.getValue() + ":"
+				+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
+		FlowId flowId = new FlowId(flowIdStr);
+		Flow fb = this.flowTable.get(flowIdStr);
+		String nodeId = IdUtils.getNodeUri(node);
+		if (fb == null) {
+			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
+			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
+			fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac, port,
+					SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE, metadata, metadataMask, 1,
+					flowId, flowCookie).build();
+			this.flowTable.put(flowIdStr, fb);
+		}
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
 	}
 
 	public void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
@@ -594,6 +685,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (!this.sdnmudProvider.isCpeNode(nodeId)) {
 				return;
 			}
+			byte[] rawPacket = notification.getPayload();
 
 			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				// Keeps track of the number of packets seen at controller.
@@ -601,17 +693,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 				boolean isLocalAddress = this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
+				this.checkIfTcpSynAllowed(node, rawPacket);
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+				this.checkIfTcpSynAllowed(node, rawPacket);
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				this.mudRelatedPacketInCounter++;
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
-				byte[] rawPacket = notification.getPayload();
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
 
 				LOG.info("PacketInDispatcher: protocol = " + protocol + " srcIp = " + srcIp);
@@ -627,47 +720,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					 */
 
 					if (PacketUtils.isSYNFlagOn(rawPacket)) {
-						LOG.debug("PacketInDispatcher: Got an illegal SYN -- blocking the flow");
-						String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":"
-								+ dstMac.getValue() + ":" + SdnMudConstants.TCP_PROTOCOL + ":" + port;
-						FlowId flowId = new FlowId(flowIdStr);
-						Flow fb = this.flowTable.get(flowIdStr);
-						if (fb == null) {
-							FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-
-							fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac,
-									port, SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE, metadata,
-									metadataMask, 1, flowId, flowCookie).build();
-							this.flowTable.put(flowIdStr, fb);
-						}
-
-						this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-
+						LOG.info("PacketInDispatcher: Got an illegal SYN -- blocking the flow");
+						installBlockTcpFlow(srcIp, port, dstMac, metadata, metadataMask, node);
 					} else {
-						LOG.debug("PacketInDispatcher: SYN flag is OFF. Allowing the flow to pass through");
-						String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchGoTo:" + srcIp + ":"
-								+ dstMac.getValue() + ":" + SdnMudConstants.TCP_PROTOCOL + ":" + port;
-
-						FlowId flowId = new FlowId(flowIdStr);
-						Flow fb = this.flowTable.get(flowIdStr);
-
-						if (fb == null) {
-							FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-							/*
-							 * create a short term pass through flow to allow
-							 * packet through. Give it a short timeout.
-							 */
-
-							fb = FlowUtils.createSrcIpAddressProtocolDestMacMatchGoTo(new Ipv4Address(srcIp), dstMac,
-									port, SdnMudConstants.TCP_PROTOCOL, tableId, metadata, metadataMask, 1, flowId,
-									flowCookie).build();
-							this.flowTable.put(flowIdStr, fb);
-						}
-
-						this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+						LOG.info("PacketInDispatcher: SYN flag is OFF. Allowing the flow to pass through");
+						installAllowTcpFlow(srcIp, port, dstMac, metadata, metadataMask, node);
 
 					}
-					transmitPacket(notification);
+					// transmitPacket(notification);
 
 				} else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
 					// this is a DH request.

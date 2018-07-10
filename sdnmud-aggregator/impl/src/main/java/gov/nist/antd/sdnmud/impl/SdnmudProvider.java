@@ -128,7 +128,7 @@ public class SdnmudProvider {
 
 	private MudFlowsInstaller mudFlowsInstaller;
 
-	private boolean configStateChanged;
+	private int configStateChanged = 0;
 
 	private SdnmudConfig sdnmudConfig;
 
@@ -323,7 +323,7 @@ public class SdnmudProvider {
 	 */
 	synchronized void putInUriToNodeMap(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
 		this.uriToNodeMap.put(nodeUri, nodePath);
-		this.configStateChanged = true;
+		this.configStateChanged++;
 	}
 
 	/**
@@ -435,7 +435,7 @@ public class SdnmudProvider {
 
 	public void setTopology(CpeCollections topology) {
 		this.topology = topology;
-		this.configStateChanged = true;
+		this.configStateChanged++;
 
 	}
 
@@ -449,7 +449,7 @@ public class SdnmudProvider {
 
 	public void addMudProfile(Mud mud) {
 		this.uriToMudMap.put(mud.getMudUrl(), mud);
-		this.configStateChanged = true;
+		this.configStateChanged++;
 	}
 
 	public boolean isCpeNode(String nodeId) {
@@ -486,7 +486,7 @@ public class SdnmudProvider {
 	public void addAces(String aclName, Aces aces) {
 		LOG.info("adding ACEs aclName =  {} ", aclName);
 		this.nameToAcesMap.put(aclName, aces);
-		this.configStateChanged = true;
+		this.configStateChanged++;
 	}
 
 	/**
@@ -523,7 +523,7 @@ public class SdnmudProvider {
 			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
 		}
 
-		this.configStateChanged = true;
+		this.configStateChanged++;
 
 	}
 
@@ -547,11 +547,11 @@ public class SdnmudProvider {
 	 * @return
 	 */
 	public boolean isConfigStateChanged() {
-		return this.configStateChanged;
+		return this.configStateChanged > 0;
 	}
 
 	public void clearConfigStateChanged() {
-		this.configStateChanged = false;
+		this.configStateChanged--;
 	}
 
 	/**

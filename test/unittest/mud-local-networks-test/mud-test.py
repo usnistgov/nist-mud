@@ -64,15 +64,15 @@ class TestAccess(unittest.TestCase) :
     def testContactLocalHostFromPrinterExpectFail(self):
         h1 = hosts[0]
         h3 = hosts[2]
-        h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 &")
-        result = h1.cmdPrint("python tcp-client.py -H 10.0.0.3 -P 80")
+        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 20 &")
+        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 80 -B")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
     def testContactPrinterFromLocalHostExpectPass(self):
         h1 = hosts[0]
         h3 = hosts[2]
-        h1.cmdPrint("python tcp-server.py -H 10.0.0.1 -P 80 &")
-        result = h3.cmdPrint("python tcp-client.py -H 10.0.0.1 -P 80")
+        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 &")
+        result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
 
@@ -256,12 +256,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
+    parser.add_argument("-f",help="Config file",default=os.environ.get("SDNMUD_CONFIG"))
 
     parser.set_defaults(test=False)
 
     args = parser.parse_args()
     controller_addr = args.c
     test = args.test
+    cfgfile = args.f
+    if cfgfile is None:
+       cfgfile = "sdnmud-config.json"
 
 
     cmd = ['sudo','mn','-c']
@@ -288,6 +292,7 @@ if __name__ == '__main__':
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-printer.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("ietfmud.json","ietf-mud:mud")
         } :
         data = json.load(open(configfile))
