@@ -200,11 +200,12 @@ public abstract class PacketUtils {
 		return pktDstIpStr;
 	}
 
-	public static boolean isSYNFlagOn(final byte[] rawPacket) {
+	public static boolean isSYNFlagOnAndACKFlagOff(final byte[] rawPacket) {
 
 		byte flags = (byte) (rawPacket[PACKET_OFFSET_TCP_SRC_PORT + 13] & 63);
-		return (flags & 2) == 2;
-
+		boolean synFlag = (flags & 2) == 2;
+		boolean ackFlag = (flags & 0x10) == 0x010;
+		return synFlag && !ackFlag;
 	}
 
 	public static int getSourcePort(final byte[] baseHeader) {

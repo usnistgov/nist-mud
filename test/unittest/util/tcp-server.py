@@ -3,7 +3,13 @@ import argparse
 import sys
 import os
 
-BUFFER_SIZE = 20  # Normally 1024, but we want fast response
+BUFFER_SIZE = 10*1024  # Normally 1024, but we set to 20 --  we want fast response
+MESSAGE = "Hello, World!" 
+
+for i in range(1,100000):
+   MESSAGE=MESSAGE+"Hello world"
+
+BUFFER_SIZE = len(MESSAGE) + 1
 
 if __name__=="__main__":
 

@@ -15,15 +15,15 @@ module nist-cpe-nodes {
     email: mranga@nist.gov
     ";
   description
-    "Description of the topology of the system. 
-     This identifies the npe and cpe devices associated
-     with those NPE devices.";
+    " This identifies the collection of switches where MUD rules are installed
+      (i.e. the collection of switches (such as openflow:xxx) which are managed by this
+      application.";
 
   revision 2017-09-15 {
     description
       "Implementation YANG model.";
     reference
-      "Collection of CPE nodes where MUD flows are installed.";
+      "Collection of CPE nodes where MUD-related flows are installed.";
   }
 
   container cpe-collections {
@@ -31,10 +31,9 @@ module nist-cpe-nodes {
           "The collection of CPE switches on which MUD rules are installed.";
        leaf-list cpe-switches {
           description 
-             "CPE switch ID's associated with this NPE switch";
+             "CPE switch ID's where MUD rules are installed";
           type inet:uri;
        }
   }
-
 }
 

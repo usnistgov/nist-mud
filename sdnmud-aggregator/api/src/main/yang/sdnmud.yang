@@ -19,7 +19,8 @@ module sdnmud {
 
   revision 2017-09-15 {
     description
-      "Implementation YANG model for system configuration.";
+      "Implementation YANG model for system configuration. This provides various parameter 
+       settings for the application.";
   }
 
   container sdnmud-config {
@@ -97,7 +98,9 @@ module sdnmud {
     output {
         leaf success {
             description 
-                "Clear the packet count. This is for testing purposes. Return OK if the call succeeded. ";
+                "Clear the packet count. This is for testing purposes. Return OK if the call succeeded. 
+                 This is for test and measurement purposes.
+                ";
             type boolean;
         }
     }
@@ -107,7 +110,8 @@ module sdnmud {
     output {
         leaf success {
             description 
-                "Clear the mfg model flow rules in tables 3 and 4. This is for testing purposes. Return OK if the call succeeded. ";
+                "Clear the mfg model flow rules in tables 3 and 4. This is for test and measurement purposes. 
+                 Return OK if the call succeeded. ";
             type boolean;
         }
     }
@@ -117,15 +121,15 @@ module sdnmud {
     output {
         leaf packet-count {
             description 
-                "returns the number of packets seen at the controller since the last invocation.
+                "returns the number of packets seen at the controller. 
                 This is for performance benchmarking.";
             type uint32;
         }
 
         leaf mud-packet-count {
             description 
-                "returns the number of packets seen at the controller on tables 3,4,5.
-                 This is for performance benchmarking.";
+                "returns the number of packets seen at the controller resulting from packets directed to the 
+                 controller from flow rules in tables 3,4,5. This is for performance benchmarking.";
             type uint32;
         }
     }

@@ -46,7 +46,9 @@ class TestAccess(unittest.TestCase) :
                 if os.path.exists(fname):
                     with  open(fname) as f:
                         for h in hosts:
-                            os.kill(int(f.read()),signal.SIGTERM)
+                            pid = int(f.read())
+                            os.kill(pid,signal.SIGKILL)
+                            os.kill(pid,signal.SIGTERM)
                     os.remove(fname)
 
 		time.sleep(3)
@@ -57,21 +59,79 @@ class TestAccess(unittest.TestCase) :
     def testTcpGetFromDeviceExpectSuccess(self):
         h1 = hosts[0]
         h4 = hosts[3]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8000 &")
-        time.sleep(2)
-        #result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
-        result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8000")
+        for i in range(1,5):
+            h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8000 &")
+            time.sleep(1)
+            result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8000  -B ")
+            if re.search("OK",result) is not None:
+               break
+            else:
+               time.sleep(3)
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
-    def testDeviceTcpGetExpectFail(self):
+    def testTcpGetFromDeviceExpectFail(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 &")
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8000 -B")
+        h4 = hosts[3]
+        for i in range(1,5):
+            h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 800 &")
+            time.sleep(1)
+            result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 800 -B ")
+            if re.search("OK",result) is None:
+               break
+            else:
+               time.sleep(3)
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
+    def testDeviceTcpGetFromLocalNetworkExpectFail(self):
+        h1 = hosts[0]
+        h3 = hosts[2]
+        for i in range(1,5):
+            h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 &")
+            time.sleep(1)
+            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8000 -B")
+            if re.search("OK",result) is None:
+               break
+            else:
+               time.sleep(3)
+        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
+    def testDeviceTcpGetFromLocalNetworkExpectPass(self):
+        h1 = hosts[0]
+        h3 = hosts[2]
+        for i in range(1,3):
+           h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 800 &")
+           time.sleep(1)
+           result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 800 -B ")
+           if re.search("OK",result) is not None:
+              break
+           else:
+              time.sleep(3)
+        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
+    def testDeviceTcpGetFromLocalNetworkExpectFail1(self):
+        h1 = hosts[0]
+        h4 = hosts[3]
+        for i in range(1,3):
+            h4.cmdPrint("python ../util/tcp-server.py -H 10.0.0.4 -P 8000 &")
+            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.4 -P 8000 ")
+            if re.search("OK",result) is None:
+               break
+            else:
+               time.sleep(3)
+        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+
+    def testDeviceTcpGetFromLocalNetworkExpectPass1(self):
+        h1 = hosts[0]
+        h5 = hosts[4]
+        for i in range(1,3):
+            h5.cmdPrint("python ../util/tcp-server.py -H 10.0.0.5 -P 800 &")
+            time.sleep(1)
+            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.5 -P 800 ")
+            if re.search("OK",result) is not None:
+               break
+            else:
+               time.sleep(3)
+        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
 #########################################################
 
@@ -232,8 +292,9 @@ def setupTopology(controller_addr):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-    	h1.cmdPrint("python ../util/tcp-server.py -P 8000 -H 10.0.0.1 -T 10000 -C&")
-    	h4.cmdPrint("python ../util/tcp-server.py -P 80 -H 10.0.0.4 -T 10000 -C&")
+        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 -T 10000 -C&")
+    	#h1.cmdPrint("python ../util/tcp-server.py -P 8000 -H 10.0.0.1 -T 10000 -C&")
+    	#h4.cmdPrint("python ../util/tcp-server.py -P 80 -H 10.0.0.4 -T 10000 -C&")
     
 
     print "*********** System ready *********"

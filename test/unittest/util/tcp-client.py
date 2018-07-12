@@ -4,10 +4,15 @@ import os
 import time
 
 BUFFER_SIZE = 1024
-MESSAGE = "Hello, World!"
+MESSAGE = "Hello, World!" 
+
+for i in range(1,100000):
+   MESSAGE=MESSAGE+"Hello world"
+
+BUFFER_SIZE = len(MESSAGE) + 1
+
 if __name__=="__main__" :
     
-    bind = False
     with open("/tmp/tcpclient.pid","w") as f:
         f.write(str(os.getpid()))
 
@@ -19,7 +24,7 @@ if __name__=="__main__" :
     args = parser.parse_args()
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-    if bind:
+    if args.bind:
       s.bind(("",args.P))
 
     s.settimeout(5)
