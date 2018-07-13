@@ -35,7 +35,14 @@ This project implements the following functions :
 
 
 
-## Implementation architecture ##
+## Implementation Highlights ##
+
+* Model Driven design : Works directly with the IETF published YANG models.
+* Implements DHCP or Directly administered MUD profiles. DHCP support is transparent - does not depend on modifications to the
+  DHCP server. DHCP interactions are handled in the SDN controller.
+* Scalable - *O(N)* flow rules for *N* distinct MAC addresses at a switch.
+* Implements the full set of MUD-defined ACLs (including Manufacturer, Controller, Model classes).
+
 
 The following diagram shows the implementation architecture on OpenDaylight
 
