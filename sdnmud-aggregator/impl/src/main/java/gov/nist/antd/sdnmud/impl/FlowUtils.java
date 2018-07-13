@@ -70,6 +70,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Layer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.MetadataBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.TcpFlagsMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._3.match.Ipv4MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.TcpMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.layer._4.match.UdpMatchBuilder;
@@ -148,6 +149,14 @@ public class FlowUtils {
 
 	}
 
+	private static MatchBuilder createTcpSynMatch(MatchBuilder matchBuilder) {
+		TcpFlagsMatchBuilder tcpFlagsMatchBuilder = new TcpFlagsMatchBuilder();
+		tcpFlagsMatchBuilder.setTcpFlags(2);
+		tcpFlagsMatchBuilder.setTcpFlagsMask(0xFF);
+		matchBuilder.setTcpFlagsMatch(tcpFlagsMatchBuilder.build());
+		return matchBuilder;
+	}
+
 	private static MatchBuilder createEthernetTypeMatch(MatchBuilder matchBuilder, int ethernetType) {
 		EthernetMatchBuilder ethernetMatchBuilder = new EthernetMatchBuilder()
 				.setEthernetType(new EthernetTypeBuilder().setType(new EtherType(Long.valueOf(ethernetType))).build());
@@ -210,8 +219,10 @@ public class FlowUtils {
 	private static MatchBuilder createSrcDestIpv4Match(MatchBuilder matchBuilder, Ipv4Address srcIpv4Address,
 			Ipv4Address destIpv4Address) {
 		Ipv4MatchBuilder imb = new Ipv4MatchBuilder();
-		imb.setIpv4Source(iPv4PrefixFromIPv4Address(srcIpv4Address.getValue()));
-		imb.setIpv4Destination(iPv4PrefixFromIPv4Address(destIpv4Address.getValue()));
+		if (srcIpv4Address != null)
+			imb.setIpv4Source(iPv4PrefixFromIPv4Address(srcIpv4Address.getValue()));
+		if (destIpv4Address != null)
+			imb.setIpv4Destination(iPv4PrefixFromIPv4Address(destIpv4Address.getValue()));
 		matchBuilder.setLayer3Match(imb.build());
 		return matchBuilder;
 	}
@@ -341,6 +352,38 @@ public class FlowUtils {
 
 		return matchBuilder;
 
+	}
+
+	private static MatchBuilder createSrcDstProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int srcPort,
+			int dstPort) {
+		IpMatchBuilder ipmatch = new IpMatchBuilder();
+		ipmatch.setIpProto(IpVersion.Ipv4);
+
+		ipmatch.setIpProtocol(protocol);
+
+		matchBuilder.setIpMatch(ipmatch.build());
+
+		if (dstPort != -1 && srcPort != -1) {
+			PortNumber destPortNumber = new PortNumber(dstPort);
+			PortNumber srcPortNumber = new PortNumber(srcPort);
+			Layer4Match l4match = null;
+			if (protocol == SdnMudConstants.TCP_PROTOCOL) {
+				l4match = new TcpMatchBuilder().setTcpDestinationPort(destPortNumber).setTcpSourcePort(srcPortNumber)
+						.build();
+			} else if (protocol == SdnMudConstants.UDP_PROTOCOL) {
+				l4match = new UdpMatchBuilder().setUdpDestinationPort(destPortNumber).setUdpSourcePort(srcPortNumber)
+						.build();
+			}
+			matchBuilder.setLayer4Match(l4match);
+			return matchBuilder;
+		} else if (dstPort != -1) {
+			return FlowUtils.createDstProtocolPortMatch(matchBuilder, protocol, dstPort);
+		} else if (srcPort != -1) {
+			return FlowUtils.createSrcProtocolPortMatch(matchBuilder, protocol, srcPort);
+
+		} else {
+			return matchBuilder;
+		}
 	}
 
 	private static MatchBuilder createSrcProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int port) {
@@ -650,8 +693,7 @@ public class FlowUtils {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createEthernetTypeMatch(matchBuilder, 0x800);
-		createSrcProtocolPortMatch(matchBuilder, protocol, srcPort);
-		createDstProtocolPortMatch(matchBuilder, protocol, destPort);
+		createSrcDstProtocolPortMatch(matchBuilder, protocol, srcPort, destPort);
 
 		short targetTableId = (short) (tableId + 1);
 
@@ -838,6 +880,7 @@ public class FlowUtils {
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		MatchBuilder matchBuilder = new MatchBuilder();
 
+		createEthernetTypeMatch(matchBuilder, 0x800);
 		createSrcIpv4Match(matchBuilder, srcIp);
 		createSrcProtocolPortMatch(matchBuilder, protocol, port);
 		ArrayList<Instruction> instructions = new ArrayList<>();
@@ -849,6 +892,63 @@ public class FlowUtils {
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
+	}
+
+	public static FlowBuilder createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(BigInteger metadata,
+			BigInteger metadataMask, Ipv4Address srcIp, int sourcePort, Ipv4Address dstIp, int dstPort, Short tableId,
+			Short targetTableId, FlowId flowId, FlowCookie flowCookie, int timeout) {
+		// TODO Auto-generated method stub
+		MatchBuilder matchBuilder = new MatchBuilder();
+
+		createEthernetTypeMatch(matchBuilder, 0x800);
+		FlowUtils.createSrcDestIpv4Match(matchBuilder, srcIp, dstIp);
+		FlowUtils.createSrcDstProtocolPortMatch(matchBuilder, BaseappConstants.TCP_PROTOCOL, sourcePort, dstPort);
+		createMetadataMatch(matchBuilder, metadata, metadataMask);
+		createTcpSynMatch(matchBuilder);
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
+		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
+		// newMetadataMask);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName("MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
+	}
+
+	public static FlowBuilder createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(BigInteger metadata,
+			BigInteger metadataMask, int srcPort, int dstPort, Short tableId, Short targetTableId, FlowId flowId,
+			FlowCookie flowCookie, int timeout) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetTypeMatch(matchBuilder, 0x800);
+		createSrcDstProtocolPortMatch(matchBuilder, SdnMudConstants.TCP_PROTOCOL, srcPort, dstPort);
+		createMetadataMatch(matchBuilder, metadata, metadataMask);
+		createTcpSynMatch(matchBuilder);
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
+		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
+		// newMetadataMask);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName("MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+
 	}
 
 }

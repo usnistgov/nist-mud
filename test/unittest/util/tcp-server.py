@@ -33,12 +33,15 @@ if __name__=="__main__":
     if not c_flag: 
         s.settimeout(timeout)
 
-    while True:
-        conn, addr = s.accept()
-        data = conn.recv(BUFFER_SIZE)
-        if not data: 
-            conn.send(data)  # echo
-        conn.close()
-        if not c_flag:
-	    s.close()
-            sys.exit()
+    try:
+        while True:
+            conn, addr = s.accept()
+            data = conn.recv(BUFFER_SIZE)
+            if not data: 
+                conn.send(data)  # echo
+            conn.close()
+            if not c_flag:
+                break
+    finally:
+        s.close()
+        sys.exit()

@@ -27,15 +27,17 @@ if __name__=="__main__" :
     if args.bind:
       s.bind(("",args.P))
 
-    s.settimeout(5)
     try:
-    	s.connect((args.H, args.P))
-    except:
-	time.sleep(3)
-        print("Failed to connect -- retrying")
-        # Try connect again to make sure no race conditions.
-    	s.connect((args.H, args.P))
-    s.send(MESSAGE)
-    data = s.recv(BUFFER_SIZE)
-    s.close()
-    print "OK"
+        s.settimeout(5)
+        try:
+    	    s.connect((args.H, args.P))
+        except:
+	    time.sleep(3)
+            print("Failed to connect -- retrying")
+            # Try connect again to make sure no race conditions.
+    	    s.connect((args.H, args.P))
+        s.send(MESSAGE)
+        data = s.recv(BUFFER_SIZE)
+        print "OK"
+    finally:
+        s.close()

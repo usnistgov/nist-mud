@@ -360,8 +360,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		LOG.info("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
 
-		if (this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata, srcIp, sourcePort, destIp,
-				destPort)) {
+		if (sdnmudProvider.isOpenflow13Only() && this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata,
+				srcIp, sourcePort, destIp, destPort)) {
 			LOG.info("checkSynFlagMatch returned true -- checking for illegal SYN flag");
 			if (PacketUtils.isSYNFlagOnAndACKFlagOff(rawPacket)) {
 				LOG.info("checkIfTcpSynAllowed: PacketInDispatcher: Got an illegal SYN -- blocking the flow");
@@ -373,7 +373,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						node);
 			}
 		} else {
-			LOG.info("checkSynFlagMatch returned false");
+			LOG.info("checkSynFlagMatch returned false OR openflow 1.5 support assumed.");
 		}
 
 	}
@@ -459,7 +459,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		if (fb == null) {
 			int timeout = new Long(sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue();
-			// int timeout = 1;
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
 			fb = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
@@ -723,20 +722,22 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					 * the first packet of a tcp connection establishment.
 					 */
 
-					if (PacketUtils.isSYNFlagOnAndACKFlagOff(rawPacket)) {
-						LOG.info(String.format(
-								"PacketInDispatcher: Got an illegal SYN srcIp %s srcPort %d destIp %s destPort %d "
-										+ " -- blocking the flow",
-								srcIp, port, dstIp, PacketUtils.getDestinationPort(rawPacket)));
+					if (sdnmudProvider.isOpenflow13Only()) {
+						if (PacketUtils.isSYNFlagOnAndACKFlagOff(rawPacket)) {
+							LOG.info(String.format(
+									"PacketInDispatcher: Got an illegal SYN srcIp %s srcPort %d destIp %s destPort %d "
+											+ " -- blocking the flow",
+									srcIp, port, dstIp, PacketUtils.getDestinationPort(rawPacket)));
 
-						installBlockTcpFlow(srcIp, dstIp, port, metadata, metadataMask, node);
-					} else {
-						LOG.info(String.format(
-								"PacketInDispatcher: SYN flag is OFF. Allowing the flow to pass "
-										+ " through srcIp %s srcPort %d destIp %s destPort %d",
-								srcIp, port, dstIp, PacketUtils.getDestinationPort(rawPacket)));
-						installAllowTcpFlow(srcIp, dstIp, port, metadata, metadataMask, node);
+							installBlockTcpFlow(srcIp, dstIp, port, metadata, metadataMask, node);
+						} else {
+							LOG.info(String.format(
+									"PacketInDispatcher: SYN flag is OFF. Allowing the flow to pass "
+											+ " through srcIp %s srcPort %d destIp %s destPort %d",
+									srcIp, port, dstIp, PacketUtils.getDestinationPort(rawPacket)));
+							installAllowTcpFlow(srcIp, dstIp, port, metadata, metadataMask, node);
 
+						}
 					}
 
 					// transmitPacket(notification);

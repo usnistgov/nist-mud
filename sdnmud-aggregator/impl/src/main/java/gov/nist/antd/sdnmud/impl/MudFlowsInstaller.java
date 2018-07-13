@@ -138,20 +138,44 @@ public class MudFlowsInstaller {
 
 	}
 
-	private void registerTcpSynFlagCheck(String mudUri, BigInteger metadata, BigInteger metadataMask, int sourcePort,
-			int destinationPort) {
-		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, null, sourcePort, null,
-				destinationPort);
+	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
+			BigInteger metadataMask, int sourcePort, int destinationPort) {
+		if (sdnmudProvider.isOpenflow13Only()) {
+			TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, null, sourcePort, null,
+					destinationPort);
 
-		this.tcpSynFlagCheckTable.add(flagCheck);
+			this.tcpSynFlagCheckTable.add(flagCheck);
+		} else {
+			// flag.
+			FlowId fid = new FlowId(mudUri + "/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/"
+					+ sourcePort + "/" + destinationPort + "/synFlagCheck");
+			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
+			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
+					metadataMask, sourcePort, destinationPort, BaseappConstants.SDNMUD_RULES_TABLE,
+					BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
+			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		}
 	}
 
-	private void registerTcpSynFlagCheck(String mudUri, BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress, int destinationPort) {
-		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, sourceAddress, sourcePort,
-				destinationAddress, destinationPort);
+	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
+			BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress,
+			int destinationPort) {
+		if (sdnmudProvider.isOpenflow13Only()) {
+			TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, sourceAddress, sourcePort,
+					destinationAddress, destinationPort);
+			this.tcpSynFlagCheckTable.add(flagCheck);
+		} else {
+			// Insert a flow which will drop the packet if it sees a Syn
+			// flag.
+			FlowId fid = new FlowId(
+					mudUri + "/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/synFlagCheck");
+			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
+			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
+					metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
+					BaseappConstants.SDNMUD_RULES_TABLE, BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
+			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		}
 
-		this.tcpSynFlagCheckTable.add(flagCheck);
 	}
 
 	public boolean checkSynFlagMatch(BigInteger metadata, String sourceAddress, int sourcePort, String destAddress,
@@ -513,15 +537,16 @@ public class MudFlowsInstaller {
 			int destinationPort, short protocol, boolean sendToController, FlowCookie flowCookie) {
 		BigInteger newMetadata = flowCookie.getValue();
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
-		// BUGBUG -- sendToControllerFlag is set to FALSE. We catch the Syn flag
-		// check in the first table.
+		boolean ctrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
+
 		FlowBuilder fb = FlowUtils.createMetadataDestIpAndPortMatchGoToNextTableFlow(metadata, metadataMask,
-				destinationAddress, destinationPort, protocol, sendToController, BaseappConstants.SDNMUD_RULES_TABLE,
+				destinationAddress, destinationPort, protocol, ctrlFlag, BaseappConstants.SDNMUD_RULES_TABLE,
 				newMetadata, newMetadataMask, flowId, flowCookie);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (sendToController) {
-			this.registerTcpSynFlagCheck(mudUri, metadata, metadataMask, null, -1, destinationAddress, destinationPort);
+			this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, null, -1, destinationAddress,
+					destinationPort);
 		}
 	}
 
@@ -563,15 +588,15 @@ public class MudFlowsInstaller {
 			BigInteger newMetadata = flowCookie.getValue();
 			BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
-			// BUGBUG -- set the sendToController flag to FALSE catch it on the
-			// mfg table miss.
+			boolean toCtrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
 
 			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, address,
-					sourcePort, protocol, sendToController, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata,
-					newMetadataMask, flowId, flowCookie);
+					sourcePort, protocol, toCtrlFlag, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask,
+					flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 			if (sendToController) {
-				this.registerTcpSynFlagCheck(mudUri, metadata, metadataMask, address, sourcePort, null, -1);
+				// Check for TCP SYN when packet arrives at the controller.
+				this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, address, sourcePort, null, -1);
 			}
 
 		} catch (Exception ex) {
@@ -781,13 +806,14 @@ public class MudFlowsInstaller {
 			BigInteger metadataMask, short protocol, int srcPort, int destinationPort, short tableId,
 			BigInteger newMetadata, BigInteger newMetadataMask, boolean sendToController, FlowCookie flowCookie,
 			FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
-
+		boolean ctrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
-				srcPort, destinationPort, tableId, newMetadata, newMetadataMask, sendToController, flowId, flowCookie);
+				srcPort, destinationPort, tableId, newMetadata, newMetadataMask, ctrlFlag, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (sendToController) {
-			this.registerTcpSynFlagCheck(mudUri, metadata, metadataMask, srcPort, destinationPort);
+			this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, srcPort, destinationPort);
 		}
+
 	}
 
 	private static String createLocalFlowSpec(String manufacturer) {
