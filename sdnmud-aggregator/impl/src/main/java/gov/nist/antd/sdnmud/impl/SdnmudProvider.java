@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -38,10 +39,10 @@ import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
+import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -60,8 +61,6 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
 
 import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
 
@@ -136,6 +135,10 @@ public class SdnmudProvider {
 
 	private RpcProviderRegistry rpcProviderRegistry;
 
+	private String openstackAuthToken;
+
+	private FlowWriter flowWriter;
+
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -143,13 +146,14 @@ public class SdnmudProvider {
 
 		LOG.info("SdnMudProvider: SdnMudProvider - init");
 		this.dataBroker = dataBroker;
-		this.flowService = flowService;
+		// this.flowService = flowService;
 		this.packetProcessingService = packetProcessingService;
 		this.notificationService = notificationService;
 		this.domDataBroker = domDataBroker;
 		this.schemaService = schemaService;
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
 		this.rpcProviderRegistry = rpcProviderRegistry;
+		this.flowService = rpcProviderRegistry.getRpcService(SalFlowService.class);
 
 	}
 
@@ -188,6 +192,7 @@ public class SdnmudProvider {
 		LOG.info("SdnmudProvider Session Initiated");
 
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
+		this.flowWriter = new FlowWriter(this.flowService);
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
 
 		/* Register listener for configuration state change */
@@ -216,7 +221,7 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<Acls> aclTreeId = new DataTreeIdentifier<Acls>(LogicalDatastoreType.CONFIGURATION,
 				aclWildCardPath);
 		this.aclDataStoreListener = new AclDataStoreListener(dataBroker, this);
-		this.dataBroker.registerDataTreeChangeListener(aclTreeId, getAclDataStoreListener());
+		this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
 
 		/*
 		 * Register a data tree change listener for MAC to MUD URL mapping. The
@@ -291,6 +296,10 @@ public class SdnmudProvider {
 
 	public ControllerclassMappingDataStoreListener getControllerclassMappingDataStoreListener() {
 		return this.controllerClassMappingDataStoreListener;
+	}
+
+	public FlowWriter getFlowWritier() {
+		return this.flowWriter;
 	}
 
 	public FlowCommitWrapper getFlowCommitWrapper() {
@@ -576,4 +585,12 @@ public class SdnmudProvider {
 		// TODO Auto-generated method stub
 		return false;
 	}
+
+	/**
+	 * @return
+	 */
+	public FlowWriter getFlowWriter() {
+		return this.flowWriter;
+	}
+
 }

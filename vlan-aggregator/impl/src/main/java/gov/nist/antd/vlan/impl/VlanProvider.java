@@ -25,6 +25,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.genius.interfacemanager.rpc
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.OpenstackConfig;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -63,6 +64,8 @@ public class VlanProvider {
 
     private TrunkConfigDataStoreListener trunksDataStoreListener;
 
+    private OpenstackConfig openstackConfig;
+
     private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
         return InstanceIdentifier.create(Topology.class);
     }
@@ -74,6 +77,10 @@ public class VlanProvider {
 
     private static InstanceIdentifier<TrunkSwitches> getTrunksWildCardPath() {
         return InstanceIdentifier.create(TrunkSwitches.class);
+    }
+    
+    private static InstanceIdentifier<OpenstackConfig> getOpenstackConfigWildCardPath() {
+        return InstanceIdentifier.create(OpenstackConfig.class);
     }
 
     @SuppressWarnings("ucd")
@@ -114,6 +121,11 @@ public class VlanProvider {
         this.trunksDataStoreListener = new TrunkConfigDataStoreListener(this);
         this.dataBroker.registerDataTreeChangeListener(trunkDtI,
                 trunksDataStoreListener);
+        
+        final DataTreeIdentifier<OpenstackConfig> ocDti = new DataTreeIdentifier<OpenstackConfig> (
+                LogicalDatastoreType.CONFIGURATION,getOpenstackConfigWildCardPath());
+        OpenstackConfigDatastoreListener oscDsl = new OpenstackConfigDatastoreListener(this);
+        this.dataBroker.registerDataTreeChangeListener(ocDti, oscDsl);
 
         this.ifMRpcService = rpcProviderRegistry
                 .getRpcService(OdlInterfaceRpcService.class);
@@ -244,6 +256,19 @@ public class VlanProvider {
 
     public boolean isConfigured() {
         return  this.links != null && this.trunks != null;
+    }
+
+    public void setOpenstackConfig(OpenstackConfig config) {
+       this.openstackConfig = config;
+        
+    }
+
+    public OpenstackConfig getOpenstackConfig() {
+        return this.openstackConfig;
+    }
+    
+    public String getHeatTemplate() {
+        return this.openstackConfig.getOpenstackHeatTemplate();
     }
 
 }

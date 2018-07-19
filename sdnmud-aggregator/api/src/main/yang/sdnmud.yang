@@ -70,29 +70,10 @@ module sdnmud {
                for continued operation when controller is not connected. Warn operator if ACL violated.";
       }
 
-      leaf openstack-url {
-           type inet:uri;
-           mandatory false;
-           description
-              "The URL prefix for OpenStack";
-      }
 
-      leaf openstack-user {
-            type string;
-            mandatory false;
-            description
-                "The openstack user name";
-
-      }
-
-      leaf openstack-pass {
-            type string;
-            mandatory false;
-            description
-                "The openstack password";
-      }
 
   }
+
 
   rpc clear-packet-count {
     output {

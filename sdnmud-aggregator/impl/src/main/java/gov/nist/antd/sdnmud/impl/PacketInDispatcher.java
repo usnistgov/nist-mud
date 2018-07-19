@@ -418,6 +418,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+
 	}
 
 	private void installAllowTcpFlow(String srcIp, String dstIp, int port, BigInteger metadata, BigInteger metadataMask,
@@ -427,9 +428,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
 
 		FlowId flowId = new FlowId(flowIdStr);
-		Flow fb = this.flowTable.get(flowIdStr);
+		Flow flow = this.flowTable.get(flowIdStr);
 
-		if (fb == null) {
+		if (flow == null) {
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 			/*
 			 * create a short term pass through flow to allow packet through.
@@ -437,13 +438,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			 */
 			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
 
-			fb = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
+			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
 					new Ipv4Address(dstIp), port, SdnMudConstants.TCP_PROTOCOL, tableId, (short) (tableId + 1),
 					metadata, metadataMask, 1, flowId, flowCookie).build();
-			this.flowTable.put(flowIdStr, fb);
+			this.flowTable.put(flowIdStr, flow);
 		}
 
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+
 	}
 
 	private void installBlockTcpFlow(String srcIp, String dstIp, int dstPort, BigInteger metadata,
@@ -454,19 +456,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":" + dstIp + ":"
 				+ SdnMudConstants.TCP_PROTOCOL + ":" + dstPort;
 		FlowId flowId = new FlowId(flowIdStr);
-		Flow fb = this.flowTable.get(flowIdStr);
+		Flow flow = this.flowTable.get(flowIdStr);
 		String nodeId = IdUtils.getNodeUri(node);
 
-		if (fb == null) {
+		if (flow == null) {
 			int timeout = new Long(sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue();
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
-			fb = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
+			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
 					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE,
 					metadata, metadataMask, timeout, flowId, flowCookie).build();
-			this.flowTable.put(flowIdStr, fb);
+			this.flowTable.put(flowIdStr, flow);
 		}
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
 
 	}
 

@@ -89,13 +89,9 @@ public class SdnmudServiceImpl implements SdnmudService {
 	@Override
 	public Future<RpcResult<GetPacketCountOutput>> getPacketCount() {
 		GetPacketCountOutputBuilder gpcob = new GetPacketCountOutputBuilder();
-
 		gpcob.setPacketCount(new Long(sdnmudProvider.getPacketInDispatcher().getPacketInCount(false)));
-
 		gpcob.setMudPacketCount(new Long(sdnmudProvider.getPacketInDispatcher().getMudPacketInCount(false)));
-
 		RpcResult<GetPacketCountOutput> result = RpcResultBuilder.success(gpcob).build();
-
 		return new CompletedFuture<RpcResult<GetPacketCountOutput>>(result);
 	}
 

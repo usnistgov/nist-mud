@@ -1,0 +1,114 @@
+module nist-openstack {
+    yang-version 1.1;
+    namespace "urn:opendaylight:params:xml:ns:yang:nist-openstack";
+    prefix "osconfig";
+
+    import ietf-inet-types {
+        prefix inet;
+    }
+  
+    organization
+        "NIST Advanced Networking Technologies Division.";
+
+    contact
+        "Web: http://www.nist.gov
+        email: mranga@nist.gov";
+
+     description
+            "Application system configuration parameters. ";
+
+     revision 2018-07-15 {
+        description
+            "Implementation YANG model for system configuration. This provides various parameter 
+            settings for the application.";
+     }
+
+     container openstack-config {
+        leaf openstack-url {
+            type inet:uri;
+            mandatory false;
+            description
+              "The URL prefix for OpenStack";
+        }
+
+        leaf openstack-user {
+            type string;
+            mandatory false;
+            description
+                "The openstack user name";
+
+        }
+
+        leaf openstack-pass {
+            type string;
+            mandatory false;
+            description
+                "The openstack password";
+        }
+     
+        leaf openstack-domain {
+            type string;
+            mandatory false;
+            description
+                "The openstack auth domain";
+        }
+
+        leaf openstack-project {
+            type string;
+            mandatory false;
+            description
+                "The openstack project";
+
+        }
+    
+        leaf openstack-heat-template {
+            type string;
+            mandatory false;
+            description
+                "The Heat template";
+        }
+     }
+
+     rpc vnf-ready {
+        input {
+            leaf vlan-id {
+                type uint32;
+                mandatory true;
+                description
+                    "The VLAN ID of the cloud resident network";
+            }
+
+            leaf stack-id {
+                type string;
+                mandatory true;
+                description
+                    "The Stack ID of the cloud stack";
+            }
+
+            leaf vnf-switch-dpn-id {
+                type string;
+                mandatory true;
+                description
+                    "The DPN-ID of the cloud switch";
+            }
+        }
+
+        output {
+            leaf status-code {
+                type int32;
+                mandatory true;
+                description
+                    "Success code - 0 is success, -1 is failed";
+            }
+
+            leaf status-message {
+                type string;
+                mandatory false;
+                description
+                    "Detailed message in case of failure";
+            }
+        }
+     }
+
+ 
+}

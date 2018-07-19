@@ -23,6 +23,10 @@
 	<name>ODL :: gov.nist.antd :: ${project.artifactId}</name>
 	<packaging>bundle</packaging>
 
+   <properties>
+      <jclouds.version>2.1.0</jclouds.version>
+   </properties>
+
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
@@ -50,6 +54,7 @@
 	</dependencyManagement>
 
 	<dependencies>
+       
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
@@ -143,12 +148,7 @@
 			<scope>compile</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core -->
-        <!-- dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>2.9.5</version>
-        </dependency -->
+       
 
 
         <dependency>

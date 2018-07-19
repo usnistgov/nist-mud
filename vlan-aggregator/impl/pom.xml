@@ -57,9 +57,6 @@
 			<version>${project.version}</version>
 		</dependency>
 
-		<!-- dependency> <groupId>${project.groupId}</groupId> <artifactId>sdnmud-api</artifactId> 
-			<version>${project.version}</version> </dependency -->
-
 		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
 			<artifactId>sal-binding-api</artifactId>
@@ -114,6 +111,20 @@
 			<classifier>features</classifier>
             <scope>compile</scope>
 		</dependency>
+
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.5</version>
+			<scope>compile</scope>
+        </dependency>
 
 
 		<dependency>
@@ -194,6 +205,34 @@
 					<failOnViolation>false</failOnViolation>
 				</configuration>
 			</plugin>
+
+            <!-- 
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-artifacts</id>
+                        <goals>
+                            <goal>attach-artifact</goal>
+                        </goals>
+                        <phase>package</phase>
+                        <configuration>
+                            <artifacts>
+                                <artifact>
+                                    <file>${project.build.directory}/classes/resources/login-template.txt</file>
+                                    <type>txt</type>
+                                    <classifier>login-template-resource</classifier>
+                                </artifact>
+                            </artifacts>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            -->
+
 		</plugins>
 	</build>
 </project>

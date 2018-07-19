@@ -153,6 +153,7 @@ public class MudFlowsInstaller {
 			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
 					metadataMask, sourcePort, destinationPort, BaseappConstants.SDNMUD_RULES_TABLE,
 					BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
+
 			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		}
 	}

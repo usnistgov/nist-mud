@@ -74,7 +74,8 @@ module nist-network-topology {
         key vlan;
         leaf vlan {
             description
-             "The vlan tags to be attached to outbound packets";
+             "The vlan tags to be attached to outbound packets. We will use this
+              Vlan tag to configure a vnf on openstack.";
             type int32;
             mandatory true;
         }
