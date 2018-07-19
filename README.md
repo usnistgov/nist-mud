@@ -35,7 +35,14 @@ This project implements the following functions :
 
 
 
-## Implementation architecture ##
+## Implementation Highlights ##
+
+* Model Driven design : Works directly with the IETF published YANG models.
+* Implements DHCP or Directly administered MUD profiles. DHCP support is transparent - does not depend on modifications to the
+  DHCP server. DHCP interactions are handled in the SDN controller.
+* Scalable - *O(N)* flow rules for *N* distinct MAC addresses at a switch.
+* Implements the full set of MUD-defined ACLs (including Manufacturer, Controller, Model classes).
+
 
 The following diagram shows the implementation architecture on OpenDaylight
 
@@ -161,6 +168,16 @@ Add the following to /etc/hosts on your controller host so that the java library
 
 [See the instructions in the test/unittest directory](test/unittest/README.md)
 
+## CONTRIBUTING ##
+
+Contributions are eagerly solicited. In order to contribute to this project, please git fork the repository and
+make your additions there. Then please post an issue with a pointer to a pull request that targets the MASTER branch.
+
+See here on how to create a pull request from a fork:
+
+https://help.github.com/articles/creating-a-pull-request-from-a-fork/
+
+Your contributions will be acknowledged.
 
 ## LIMITATIONS and CAVEATS ##
 
