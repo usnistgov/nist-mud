@@ -1,0 +1,9 @@
+{
+	"input" : {
+		"vlan-id" : 772,
+		"stack-id" : "rangas-stack",
+		"vnf-switch-dpn-id":"openstack:123"
+	}
+
+}
+                
