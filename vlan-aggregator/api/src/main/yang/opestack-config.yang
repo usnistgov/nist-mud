@@ -70,6 +70,8 @@ module nist-openstack {
      }
 
      rpc vnf-ready {
+        description
+            "The response from OpenStack informing us that the VNF container is ready";
         input {
             leaf vlan-id {
                 type uint32;

@@ -55,6 +55,12 @@ public class NistOpenstackServiceImpl implements NistOpenstackService {
 
     }
 
+    private VlanProvider vlanProvider;
+
+    public NistOpenstackServiceImpl(VlanProvider vlanProvider) {
+        this.vlanProvider  = vlanProvider;
+    }
+
     @Override
     public Future<RpcResult<VnfReadyOutput>> vnfReady(VnfReadyInput input) {
         String stackId = input.getStackId();
@@ -62,7 +68,7 @@ public class NistOpenstackServiceImpl implements NistOpenstackService {
         String switchDpnId = input.getVnfSwitchDpnId();
         VnfReadyOutputBuilder vnfrob = new VnfReadyOutputBuilder();
         vnfrob.setStatusCode(0);
-        LOG.info(String.format("vnfReady : %s %l %s", stackId, vlanId, switchDpnId));
+        LOG.info("vnfReady : " + stackId + " vlanId " +  vlanId + " dpnId " +  switchDpnId);
         return new CompletedFuture<RpcResult<VnfReadyOutput>>(RpcResultBuilder.success (vnfrob).build());
         
     }

@@ -25,6 +25,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.genius.interfacemanager.rpc
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.NistOpenstackService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.OpenstackConfig;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -121,6 +122,12 @@ public class VlanProvider {
         this.trunksDataStoreListener = new TrunkConfigDataStoreListener(this);
         this.dataBroker.registerDataTreeChangeListener(trunkDtI,
                 trunksDataStoreListener);
+       
+        // Register callback for NIST Openstack to call us.
+        NistOpenstackServiceImpl nosi = new NistOpenstackServiceImpl(this);
+        this.rpcProviderRegistry.addRpcImplementation(NistOpenstackService.class, nosi);
+        
+        
         
         final DataTreeIdentifier<OpenstackConfig> ocDti = new DataTreeIdentifier<OpenstackConfig> (
                 LogicalDatastoreType.CONFIGURATION,getOpenstackConfigWildCardPath());
