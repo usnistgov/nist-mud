@@ -1,0 +1,11 @@
+{
+"trunk-switches" : {
+  "forwarders" : [
+	{
+	  "switch-id" : "openflow:2",
+	  "trunk-interface" : "2:s2-eth2",
+	  "vlans" : [772]
+	}
+   ]
+ }
+}

@@ -23,9 +23,6 @@
 	<name>ODL :: gov.nist.antd :: ${project.artifactId}</name>
 	<packaging>bundle</packaging>
 
-   <properties>
-      <jclouds.version>2.1.0</jclouds.version>
-   </properties>
 
 	<dependencyManagement>
 		<dependencies>
@@ -126,15 +123,6 @@
 			<scope>compile</scope>
 		</dependency>
 
-       <!--
-		<dependency>
-			<groupId>jpcap</groupId>
-			<artifactId>jpcap</artifactId>
-			<version>0.1.18-001</version>
-			<scope>compile</scope>
-		</dependency>
-       -->
-
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpclient</artifactId>
@@ -147,8 +135,6 @@
             <artifactId>gson</artifactId>
 			<scope>compile</scope>
         </dependency>
-
-       
 
 
         <dependency>

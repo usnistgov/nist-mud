@@ -1,0 +1,12 @@
+{
+  "topology": {
+   "link" : [
+	  {
+	      "cpe-switch" : "openflow:1",
+              "uplink-interface" : "1:s1-eth6",
+	      "vlan": 772,
+	      "openstack-stack-name" : "vlan-772-stack"
+	  }
+    ]
+  }
+}

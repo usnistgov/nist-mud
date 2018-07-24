@@ -4,7 +4,6 @@
         "openstack-user":"admin",
         "openstack-pass":"projsdn",
         "openstack-domain":"default",
-        "openstack-project":"demo",
-        "openstack-heat-template": "foo"
+        "openstack-project":"demo"
     }
 }

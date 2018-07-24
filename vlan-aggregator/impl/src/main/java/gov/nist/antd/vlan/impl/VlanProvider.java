@@ -6,6 +6,7 @@
  */
 package gov.nist.antd.vlan.impl;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -27,6 +28,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.NistOpenstackService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.OpenstackConfig;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.openstack.rev180715.OpenstackStacksConfig;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -67,6 +69,14 @@ public class VlanProvider {
 
     private OpenstackConfig openstackConfig;
 
+    private String openstackProjectId;
+
+    private String authToken;
+
+    private OpenstackConfigDatastoreListener openstackConfigDatastoreListener;
+
+    private OpenstackStacksConfigDataStoreListener openstackStacksConfigDataStoreListener;
+
     private static InstanceIdentifier<Topology> getTopologyWildCardPath() {
         return InstanceIdentifier.create(Topology.class);
     }
@@ -82,6 +92,10 @@ public class VlanProvider {
     
     private static InstanceIdentifier<OpenstackConfig> getOpenstackConfigWildCardPath() {
         return InstanceIdentifier.create(OpenstackConfig.class);
+    }
+    
+    private static InstanceIdentifier<OpenstackStacksConfig> getOpenstackStacksConfigWildCardPath() {
+        return InstanceIdentifier.create(OpenstackStacksConfig.class);
     }
 
     @SuppressWarnings("ucd")
@@ -131,8 +145,14 @@ public class VlanProvider {
         
         final DataTreeIdentifier<OpenstackConfig> ocDti = new DataTreeIdentifier<OpenstackConfig> (
                 LogicalDatastoreType.CONFIGURATION,getOpenstackConfigWildCardPath());
-        OpenstackConfigDatastoreListener oscDsl = new OpenstackConfigDatastoreListener(this);
-        this.dataBroker.registerDataTreeChangeListener(ocDti, oscDsl);
+        this.openstackConfigDatastoreListener = new OpenstackConfigDatastoreListener(this);
+        this.dataBroker.registerDataTreeChangeListener(ocDti, openstackConfigDatastoreListener);
+
+        
+        final DataTreeIdentifier<OpenstackStacksConfig> osscDti = new DataTreeIdentifier<OpenstackStacksConfig> ( 
+                LogicalDatastoreType.CONFIGURATION, getOpenstackStacksConfigWildCardPath());
+        this.openstackStacksConfigDataStoreListener = new OpenstackStacksConfigDataStoreListener(this);
+        this.dataBroker.registerDataTreeChangeListener(osscDti, openstackStacksConfigDataStoreListener);
 
         this.ifMRpcService = rpcProviderRegistry
                 .getRpcService(OdlInterfaceRpcService.class);
@@ -216,6 +236,11 @@ public class VlanProvider {
         }
         return -1;
     }
+    
+    Collection<Link> getCpeLinks() {
+        if ( this.links == null) return null;
+        else  return this.links.getLink();
+    }
 
     public OdlInterfaceRpcService getInterfaceManagerRpcService() {
         return this.ifMRpcService;
@@ -273,9 +298,30 @@ public class VlanProvider {
     public OpenstackConfig getOpenstackConfig() {
         return this.openstackConfig;
     }
-    
-    public String getHeatTemplate() {
-        return this.openstackConfig.getOpenstackHeatTemplate();
+
+    public String getOpenstackProjectId() {
+        return openstackProjectId;
     }
 
+    public void setOpenstackProjectId(String openstackProjectId) {
+        this.openstackProjectId = openstackProjectId;
+    }
+
+    public String getAuthToken() {
+        return authToken;
+    }
+
+    public void setAuthToken(String authToken) {
+        this.authToken = authToken;
+    }
+    
+    public OpenstackConfigDatastoreListener getOpenstackConfigDataStoreListener() {
+        return this.openstackConfigDatastoreListener;
+    }
+    
+    public OpenstackStacksConfigDataStoreListener getOpenstackStacksConfigDataStoreListener() {
+        return this.openstackStacksConfigDataStoreListener;
+    }
+
+  
 }

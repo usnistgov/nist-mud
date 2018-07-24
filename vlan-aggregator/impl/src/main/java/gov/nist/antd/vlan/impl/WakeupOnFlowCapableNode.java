@@ -1,21 +1,28 @@
 package gov.nist.antd.vlan.impl;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.HttpEntityWrapper;
 import org.apache.http.entity.StringEntity;
@@ -29,6 +36,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.Mod
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.network.topology.rev170915.links.Link;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -42,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.stream.JsonReader;
 
 import gov.nist.antd.baseapp.impl.BaseappConstants;
@@ -58,6 +67,10 @@ class WakeupOnFlowCapableNode
     private HashSet<InstanceIdentifier<FlowCapableNode>> pendingNodes = new HashSet<>();
 
     private String authToken;
+
+    private Object openstackProjectId;
+
+    private String stackRef;
 
     WakeupOnFlowCapableNode(VlanProvider vlanProvider) {
         this.vlanProvider = vlanProvider;
@@ -171,90 +184,15 @@ class WakeupOnFlowCapableNode
         vlanProvider.getFlowCommitWrapper().writeFlow(fb, node);
     }
 
-    public CloseableHttpResponse doPost(String url, String jsonBody) {
-        try {
-            HttpPost httpPost = new HttpPost(url);
-            httpPost.setHeader("Content-Type", "application/json");
-            HttpEntity entity = new StringEntity(jsonBody);
-            httpPost.setEntity(entity);
-            CloseableHttpClient httpclient = HttpClients.createDefault();
-            CloseableHttpResponse response = httpclient.execute(httpPost);
-            LOG.info("doPost : status code = "
-                    + response.getStatusLine().getStatusCode());
-            httpclient.close();
-            return response;
-        } catch (IOException ex) {
-            LOG.error("Exception occured while POSTING", ex);
-            return null;
-        }
-    }
-    public void connectToOpenStack() {
-        OpenstackConfig openstackConfig = vlanProvider.getOpenstackConfig();
-        if (openstackConfig != null) {
-            Uri uri = openstackConfig.getOpenstackUrl();
-            String userName = openstackConfig.getOpenstackUser();
-            String password = openstackConfig.getOpenstackPass();
-            String project = openstackConfig.getOpenstackProject();
-            String domain = openstackConfig.getOpenstackDomain();
-            if (uri == null || userName == null || password == null) {
-                LOG.info("cannot connect to openstack.");
-                return;
-            } else {
-                StringBuilder result = new StringBuilder("");
+   
 
-                String fileName = "login-template.txt";
+   
+    
 
-                // Get file from resources folder
-                ClassLoader classLoader = getClass().getClassLoader();
-                /*
-                 * try {
-                 * 
-                 * Enumeration<URL> en = classLoader
-                 * .getResources("login-template.txt"); while
-                 * (en.hasMoreElements()) { LOG.info("FOUND_IT" +
-                 * en.nextElement().toString()); }
-                 * 
-                 * } catch (Exception ex) {
-                 * LOG.error("Error occured while processing ", ex); }
-                 */
+   
 
-                try {
-                    BufferedReader br = new BufferedReader(
-                            new InputStreamReader(
-                                    classLoader.getResourceAsStream(fileName)));
-                    while (true) {
-                        String line = br.readLine();
-                        if (line == null)
-                            break;
-                        result.append(line);
-                    }
-                    String loginString = String.format(result.toString(),
-                            domain, userName, password, project, domain);
-                    CloseableHttpResponse response = doPost(
-                            uri.getValue() + "/identity/v3/auth/tokens",
-                            loginString);
-                    if ((int) (response.getStatusLine().getStatusCode()
-                            / 200) == 1) {
-
-                        if (response
-                                .getFirstHeader("X-Subject-Token") != null) {
-                            this.authToken = response
-                                    .getFirstHeader("X-Subject-Token")
-                                    .getValue();
-                        }
-                    }
-                    LOG.info("authToken " + authToken);
-
-                } catch (IOException e1) {
-                    // TODO Auto-generated catch block
-                    LOG.error("Exception occured during read ", e1);
-                }
-
-            }
-        } else {
-            LOG.info("openstackConfig is null");
-        }
-    }
+    
+   
 
     private synchronized void onFlowCapableSwitchAppeared(
             InstanceIdentifier<FlowCapableNode> nodePath) {
@@ -269,6 +207,7 @@ class WakeupOnFlowCapableNode
             installInitialFlowsForNpeSwitch(nodePath);
         } else if (this.vlanProvider.isCpeNode(nodeUri)) {
             installInitialFlowsForCpeSwitch(nodePath);
+
         } else {
             this.pendingNodes.add(nodePath);
         }

@@ -71,7 +71,6 @@ module nist-network-topology {
             mandatory true;
         }
         
-        key vlan;
         leaf vlan {
             description
              "The vlan tags to be attached to outbound packets. We will use this
@@ -82,9 +81,16 @@ module nist-network-topology {
 
         leaf cpe-switch {
           description 
-             "ID of the set of CPE switches associated with this NPE switch.";
+             "ID of CPE switch associated with this NPE switch.";
           type inet:uri;
           mandatory true;
+        }
+
+        leaf openstack-stack-name {
+          description 
+            "stack name associated with this CPE -- all parameters are drawn from there except for the VLAN ID.";
+          type string;
+          mandatory false;
         }
       }
   }

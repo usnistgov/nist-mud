@@ -61,11 +61,48 @@ module nist-openstack {
 
         }
     
-        leaf openstack-heat-template {
-            type string;
-            mandatory false;
-            description
-                "The Heat template";
+     }
+
+
+    container openstack-stacks-config {
+
+        list openstack-stacks {
+
+            leaf openstack-stack-name {
+                type string;
+                mandatory true;
+                description
+                    "The Heat stack template name.";
+            }
+
+
+            leaf private-net-cidr {
+                description
+                    "Network prefix of the private net";
+                type string;
+                mandatory true;
+            }
+
+            leaf private-net-pool-start {
+                description
+                    "Private net pool start";
+                type string;
+                mandatory true;
+            }
+
+            leaf private-net-pool-end {
+                description
+                    "Private net pool end";
+                type string;
+                mandatory true;
+            }
+
+            leaf private-net-gateway {
+                description
+                    "Private net gateway";
+                type string;
+                mandatory true;
+            }
         }
      }
 

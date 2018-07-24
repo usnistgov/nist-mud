@@ -44,6 +44,8 @@ class TopologyDataStoreListener implements DataTreeChangeListener<Topology> {
         if (vlanProvider.getWakeupListener() != null && this.vlanProvider.isConfigured() ) {
             this.vlanProvider.getWakeupListener().installInitialFlows();
         }
+        
+        this.vlanProvider.getOpenstackStacksConfigDataStoreListener().setupOpenstackStacks();
     }
 
 }
