@@ -7,4 +7,7 @@ See here on how to create a pull request from a fork:
 
 https://help.github.com/articles/creating-a-pull-request-from-a-fork/
 
+All contributions to this code base will be to the public domain. If you want to hold hold a different copyright, 
+please fork and make your changes there. 
+
 Your contributions will be acknowledged.
