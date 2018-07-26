@@ -65,7 +65,7 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         h3 = hosts[2]
         h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
-	time.sleep(2)
+	time.sleep(5)
         #result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
@@ -265,8 +265,9 @@ def setupTopology(controller_addr):
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
     	#h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
     	#h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	#h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
+    	#h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    	h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
+    	#h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
     
     # Start the IDS on node 8
 

@@ -3,7 +3,7 @@
         "keystore-home": "/home/mranga/jdk1.8.0_102/jre/lib/security/cacerts",
         "key-pass" : "changeit",
         "trust-self-signed-cert" : true,
-        "mfg-id-rule-cache-timeout": 1200,
+        "mfg-id-rule-cache-timeout": 120,
 	"relaxed-acl" : false
   }
 }

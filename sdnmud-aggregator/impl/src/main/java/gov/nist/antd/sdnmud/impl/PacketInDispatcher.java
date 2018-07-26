@@ -348,8 +348,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		long srcMfgId = IdUtils.getManfuacturerId(srcMfg);
 		long dstMfgId = IdUtils.getManfuacturerId(dstMfg);
 		String nodeId = IdUtils.getNodeUri(node);
-		long isSrcIpLocal = this.isLocalAddress(nodeId, srcIp) ? 1 : 0;
-		long isDstIpLocal = this.isLocalAddress(nodeId, destIp) ? 1 : 0;
+		long isSrcIpLocal = srcMudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+				&& this.isLocalAddress(nodeId, srcIp) ? 1 : 0;
+		long isDstIpLocal = dstMudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+				&& this.isLocalAddress(nodeId, destIp) ? 1 : 0;
 
 		BigInteger metadata = BigInteger.valueOf(srcModelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT)
 				.or(BigInteger.valueOf(srcMfgId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
@@ -696,17 +698,23 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-				boolean isLocalAddress = this.isLocalAddress(nodeId, srcIp);
+
+				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+						&& this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
-				isLocalAddress = this.isLocalAddress(nodeId, dstIp);
+
+				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-				boolean isLocalAddress = this.isLocalAddress(nodeId, dstIp);
+				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
 				// transmitPacket(notification);

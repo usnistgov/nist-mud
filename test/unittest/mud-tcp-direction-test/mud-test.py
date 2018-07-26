@@ -121,8 +121,8 @@ class TestAccess(unittest.TestCase) :
         h3 = hosts[2]
         result = None
         for i in range(1,self.ntries):
-           h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 800 &")
-           time.sleep(1)
+           h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 800  &")
+           time.sleep(3)
            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 800 -B ")
            if re.search("OK",result) is not None:
               break
@@ -319,7 +319,7 @@ def setupTopology(controller_addr):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 -T 10000 -C&")
+        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 800 -T 10000 -C&")
     	#h1.cmdPrint("python ../util/tcp-server.py -P 8000 -H 10.0.0.1 -T 10000 -C&")
     	#h4.cmdPrint("python ../util/tcp-server.py -P 80 -H 10.0.0.4 -T 10000 -C&")
     
