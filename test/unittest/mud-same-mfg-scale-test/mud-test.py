@@ -123,7 +123,12 @@ def communicate(avgSleepTime=10, npings=10) :
         lambd = 1.0/avgSleepTime
         sleeptime = random.expovariate(lambd)
         time.sleep(sleeptime)
-        res = _hosts[source].cmdPrint("ping " + destaddr[dest]  + " -c " +str(npings) + " -q >> results/" + str(_topoSize) + "/pingout."  + str(_cacheTimeout) + ".txt &")
+        res = _hosts[source].cmdPrint("ping " + destaddr[dest]  + " -c " +str(npings) + " -q " )
+        print res.split("received, ")[1]
+        
+ 
+        print "Loss = ", res.split("received, ")[1].split("%")[0]
+
         _packetsSent = _packetsSent + npings
 
     sys.exit()

@@ -359,7 +359,9 @@ public class FlowUtils {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
 		ipmatch.setIpProto(IpVersion.Ipv4);
 
-		ipmatch.setIpProtocol(protocol);
+		if (protocol != -1) {
+			ipmatch.setIpProtocol(protocol);
+		}
 
 		matchBuilder.setIpMatch(ipmatch.build());
 

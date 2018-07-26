@@ -22,14 +22,14 @@ if __name__=="__main__":
     parser.add_argument("-T", help="Timeout ", default = "10")
     parser.add_argument("-C", dest="c_flag", help="Continue after one shot", default=False, action='store_true')
     args = parser.parse_args()
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     host = args.H
     port = int(args.P)
     timeout = int(args.T)
     c_flag = args.c_flag
+
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((host, port))
     s.listen(1)
-
     if not c_flag: 
         s.settimeout(timeout)
 

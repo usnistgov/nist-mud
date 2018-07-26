@@ -49,7 +49,7 @@ class TestAccess(unittest.TestCase) :
                             os.kill(int(f.read()),signal.SIGTERM)
                     os.remove(fname)
 
-		time.sleep(3)
+             time.sleep(3)
 
          except OSError:
             pass
@@ -70,18 +70,11 @@ class TestAccess(unittest.TestCase) :
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
-    def testTcpGetExpectFail(self):
-        h1 = hosts[0]
-        h2 = hosts[1]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8010 &")
-        time.sleep(2)
-        result = h2.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8010")
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
     def testUdpManufacturerPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h2 = hosts[1]
-    	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
+        h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
@@ -90,17 +83,24 @@ class TestAccess(unittest.TestCase) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h2 = hosts[1]
         h1 = hosts[0]
-    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
+        h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client --quiet")
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpManufacturerPingExpectFail(self) :
         print "pinging a non-iot device peer -- this should not succeed with MUD"
         h4 = hosts[4]
-    	h4.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
+        h4.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
         self.assertTrue(int(result) == 0, "expect unsuccessful ping")
+
+    def testIcmpPingExpectPass(self):
+        h1 = hosts[0]
+        result = h1.cmdPrint("ping 10.0.0.3 -c 10 -q")
+        self.assertTrue(re.search("100",result) is None, "Expecting a successful ping")
+
+
 
 
 
@@ -263,9 +263,9 @@ def setupTopology(controller_addr):
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-    	h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C&")
+        h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+        h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+        h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C&")
     
     # Start the IDS on node 8
 
@@ -290,12 +290,14 @@ if __name__ == '__main__':
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
     parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
+    parser.add_argument("-f",help="config file",default="sdnmud-config.json")
 
     parser.set_defaults(test=False)
 
     args = parser.parse_args()
     controller_addr = args.c
     test = args.test
+    cfgfile = args.f
 
 
     cmd = ['sudo','mn','-c']
@@ -304,12 +306,12 @@ if __name__ == '__main__':
     
     # Pkill dnsmasq. We will start one up later on h3
     if os.path.exists("/tmp/dnsmasq.pid"):
-    	f = open('/tmp/dnsmasq.pid')
-    	pid = int(f.readline())
-    	try:
-    	   os.kill(pid,signal.SIGTERM)
-	except:
-	   print "Failed to kill dnsmasq check if process is running"
+        f = open('/tmp/dnsmasq.pid')
+        pid = int(f.readline())
+        try:
+           os.kill(pid,signal.SIGTERM)
+        except:
+           print "Failed to kill dnsmasq check if process is running"
 
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
@@ -321,6 +323,7 @@ if __name__ == '__main__':
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("ietfmud.json","ietf-mud:mud")} :
         data = json.load(open(configfile))
         print "configfile", configfile

@@ -473,7 +473,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 
-	public void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
+	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 
 		String manufacturer = IdUtils.getAuthority(mudUri);
@@ -699,6 +699,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				boolean isLocalAddress = this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
+				isLocalAddress = this.isLocalAddress(nodeId, dstIp);
+				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
 				this.mudRelatedPacketInCounter++;
