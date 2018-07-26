@@ -32,7 +32,7 @@ if __name__=="__main__" :
         try:
     	    s.connect((args.H, args.P))
         except:
-	    time.sleep(3)
+	    time.sleep(5)
             print("Failed to connect -- retrying")
             # Try connect again to make sure no race conditions.
     	    s.connect((args.H, args.P))

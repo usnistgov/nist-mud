@@ -2,6 +2,7 @@ import socket
 import argparse
 import sys
 import os
+import time
 
 BUFFER_SIZE = 10*1024  # Normally 1024, but we set to 20 --  we want fast response
 MESSAGE = "Hello, World!" 

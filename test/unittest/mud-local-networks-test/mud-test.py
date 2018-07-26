@@ -65,14 +65,16 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         h3 = hosts[2]
         h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 20 &")
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 80 ")
+	time.sleep(3)
+        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 80  ")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
     def testContactPrinterFromLocalHostExpectPass(self):
         h1 = hosts[0]
         h3 = hosts[2]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 &")
-        result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80 ")
+        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
+	time.sleep(3)
+        result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
 
@@ -234,6 +236,7 @@ def setupTopology(controller_addr):
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
         h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 -T 1000 -C &")
+        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
         #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
     
 

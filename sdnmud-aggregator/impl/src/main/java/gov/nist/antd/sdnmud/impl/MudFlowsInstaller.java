@@ -151,7 +151,7 @@ public class MudFlowsInstaller {
 					+ sourcePort + "/" + destinationPort + "/synFlagCheck");
 			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
 			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
-					metadataMask, sourcePort, destinationPort, BaseappConstants.SDNMUD_RULES_TABLE,
+					metadataMask, destinationPort, sourcePort, BaseappConstants.SDNMUD_RULES_TABLE,
 					BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
 
 			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
