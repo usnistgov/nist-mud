@@ -4,8 +4,8 @@
 	  {
 	      "cpe-switch" : "openflow:1",
               "uplink-interface" : "1:s1-eth6",
-	      "vlan": 772,
-	      "openstack-stack-name" : "vlan-772-stack"
+	      "vlan": 773,
+	      "openstack-stack-name" : "vlan-773-stack"
 	  }
     ]
   }

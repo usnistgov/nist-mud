@@ -23,14 +23,21 @@ import signal
 import random
 import time
 import threading
+import numpy as np
 
 
 
 #########################################################
 
 global _hosts
+global _packet_classification_flow_table_sizes
+global debug
 
 _hosts = []
+_loss = []
+_packet_classification_flow_table_sizes = []
+_l2switch_flow_table_size = []
+debug = False
 
 
 
@@ -105,6 +112,7 @@ def communicate(avgSleepTime=10, npings=10) :
     global _cacheTimeout
     global _packetsSent
     global _topoSize
+    global _loss
 
     destaddr = []
     n_hosts = len(_hosts)
@@ -127,12 +135,27 @@ def communicate(avgSleepTime=10, npings=10) :
         print res.split("received, ")[1]
         
  
-        print "Loss = ", res.split("received, ")[1].split("%")[0]
+        loss =  int(res.split("received, ")[1].split("%")[0])
 
         _packetsSent = _packetsSent + npings
+        _loss.append(loss)
 
     sys.exit()
     os.exit()
+
+
+def mode(data):
+    lst =[]
+    hgh=0
+    for i in range(len(data)):
+        lst.append(data.count(data[i]))
+    m= max(lst)
+    ml = [x for x in data if data.count(x)==m ] #to find most frequent values
+    mode = []
+    for x in ml: #to remove duplicates of mode
+        if x not in mode:
+           mode.append(x)
+    return mode[0] if len(mode) > 0 else None
         
 
 def sampleTableSize() :
@@ -145,6 +168,8 @@ def sampleTableSize() :
     global _doneFlag
     global _cacheTimeout
     global _topoSize
+    global _packet_classification_flow_table_sizes
+    global _l2switch_flow_table_size
 
 
     times = {}
@@ -169,6 +194,8 @@ def sampleTableSize() :
     print "mfg-flows = ",stdout
     times["manufacturer-tag-flows"] =   int(stdout) - 4 if int(stdout) - 4 >= 0  else 0
 
+    _packet_classification_flow_table_sizes.append(times["manufacturer-tag-flows"])
+
     # The l2switch table.
     cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
     proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -178,6 +205,7 @@ def sampleTableSize() :
     proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout,stderr = proc3.communicate()
     times["l2switch-flows"] =   int(stdout)
+    _l2switch_flow_table_size.append(int(stdout))
 
     # Get the number of packets seen at the controller.
     url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:get-packet-count"
@@ -189,13 +217,18 @@ def sampleTableSize() :
     times["packets-sent"] = _packetsSent
     print times
 
-    if not "cache-sizes" in _result:
-        _result["cache-sizes"] = []
+    if debug :
+        if not "cache-sizes" in _result:
+            _result["cache-sizes"] = []
 
-    _result["cache-sizes"].append(times)
+        _result["cache-sizes"].append(times)
+    else:
+        print "iterationCounter = " , _sampleCount
+        print str(times)
+        print "*************************"
 
     # Give it 10 minutes for the cache to settle down.
-    if _sampleCount == 200:
+    if _sampleCount >= 200:
         cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
         proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         cmd = [ "grep", "-e", "table=5" ]
@@ -203,11 +236,24 @@ def sampleTableSize() :
         cmd = [ "wc", "-l" ]
         proc3 = subprocess.Popen(cmd,shell=False, stdin=proc2.stdout, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout,stderr = proc3.communicate()
+        _doneFlag = True
         _result["mud-rules-flow-table-size"] = int(stdout)
+        _result["avg-packet-loss"] = np.mean(_loss)
+        _result["median-packet-loss"] = np.median(_loss)
+        _result["mode-packet-loss"] = mode(_loss)
+        _result["max-packet-loss"] = np.max(_loss)
+        _result["max-packet-classification-flow-table-size"] = np.max(_packet_classification_flow_table_sizes)
+        _result["max-l2-switch-flow-table-size"] = np.max(_l2switch_flow_table_size)
+        _result["avg-sleep-time-between-pings-seconds"] = 10
+        _result["number-of-iot-devices"]  = _topoSize
+        _result["pings-per-burst"] = 10
+
+        if not os.path.exists('results/' + str(_topoSize)):
+            os.mkdir("results/" + str(_topoSize))
+    
         with  open("results/" + str(_topoSize) + "/result."  + str(_cacheTimeout) + ".json","w") as res:
             resultStr = json.dumps(_result, indent=8)
             res.write(resultStr)
-            _doneFlag = True
             sys.exit()
             os.exit()
     else:
@@ -292,6 +338,7 @@ if __name__ == '__main__':
             os.remove("results/" + str(_topoSize) + "/pingout." + str(_cacheTimeout) + ".txt")
         # The src manufacturer tag table.
         _result["cache-timeout"] = _cacheTimeout
+        _result["relaxed-acl"] = config['sdnmud-config']['relaxed-acl']
         _startTime = time.time()
         _packetsSent = 0
         sampleTableSize()

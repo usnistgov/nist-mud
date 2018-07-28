@@ -124,7 +124,9 @@ public class OpenstackConfigDatastoreListener implements DataTreeChangeListener<
                         LOG.info("content-length "
                                 + response.getEntity().getContentLength());
                         InputStream is = response.getEntity().getContent();
-                        byte[] content = new byte[(int) response.getEntity()
+                        
+                        
+                       /* byte[] content = new byte[(int) response.getEntity()
                                 .getContentLength()];
                         is.read(content, 0,
                                 (int) response.getEntity().getContentLength());
@@ -134,11 +136,14 @@ public class OpenstackConfigDatastoreListener implements DataTreeChangeListener<
                         LOG.info(" Content = " + contentString);
 
                         response.close();
+                        */
 
                         Gson gson = new GsonBuilder().create();
 
-                        Map<String, Object> map = gson.fromJson(contentString,
+                        Map<String, Object> map = gson.fromJson( new InputStreamReader(is),
                                 Map.class);
+                        
+                        response.close();
 
                         Map<String, Object> proj = ((Map<String, Object>) ((Map<String, Object>) map
                                 .get("token")).get("project"));

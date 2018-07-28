@@ -205,6 +205,7 @@ public class OpenstackStacksConfigDataStoreListener
         if (this.vlanProvider.getOpenstackConfig() != null) {
             if ( this.vlanProvider.getCpeLinks() == null ) {
                 LOG.info("Cannot set up stacks -- CPE links are not configured");
+                return;
             }
             for (Link link : vlanProvider.getCpeLinks()) {
                 int vlanId = link.getVlan();
