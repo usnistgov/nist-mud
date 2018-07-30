@@ -132,19 +132,27 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			LOG.info("Node not seen -- not installing flow ");
 			return;
 		}
-		BigInteger metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
-				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT);
-		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK;
+		BigInteger metadata = (BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
+				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
+						.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
+								.shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+
+		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
 
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
 		installToDhcpFlow(nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 
-		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNCLASSIFIED))
-				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT);
-		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK;
+		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
+				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
+				.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
+						.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+
+		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
+
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
+
 		installToDhcpFlow(nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 
 	}
@@ -173,9 +181,15 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		// All devices may access DNS and NTP. The DHCP rule bumps the packet up
 		// to the controller.
 		try {
+
 			MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller();
 			mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
 			mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
+			if (sdnmudProvider.getSdnmudConfig() != null && sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+				mudFlowsInstaller.installUnknownDestinationPassThrough(nodePath);
+			} else {
+				LOG.info("sdnmudConfig : isRelaxedAcl is false or sdnmudconfig not found");
+			}
 
 		} catch (RuntimeException ex) {
 			LOG.error("installFlows : Exception installing default flows ", ex);

@@ -66,6 +66,9 @@ interface SdnMudConstants {
 	int DST_NETWORK_FLAGS_SHIFT = "0000000".length() * 4;
 	BigInteger LOCAL_DST_NETWORK_FLAG = new BigInteger("0000000010000000", 16);
 
+	// Classification for UNKNOWN packet ( initial value before lookup )
+	String UNKNOWN = "UNKNOWN";
+
 	// Cookie for unclassified flow rule.
 	String UNCLASSIFIED = "UNCLASSIFIED";
 	// Flow URIs.

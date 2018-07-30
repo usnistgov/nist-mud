@@ -6,7 +6,7 @@ import time
 BUFFER_SIZE = 1024
 MESSAGE = "Hello, World!" 
 
-for i in range(1,100000):
+for i in range(1,1000):
    MESSAGE=MESSAGE+"Hello world"
 
 BUFFER_SIZE = len(MESSAGE) + 1

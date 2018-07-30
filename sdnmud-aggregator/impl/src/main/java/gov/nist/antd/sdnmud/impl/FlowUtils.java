@@ -953,4 +953,35 @@ public class FlowUtils {
 
 	}
 
+	/**
+	 * @param metadataMask
+	 * @param metadataMask2
+	 * @param tableId
+	 * @param flowId
+	 * @param flowCookie
+	 * @return
+	 */
+	public static FlowBuilder createMetadataMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
+			short tableId, FlowId flowId, FlowCookie flowCookie) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetTypeMatch(matchBuilder, 0x800);
+		createMetadataMatch(matchBuilder, metadata, metadataMask);
+
+		short targetTableId = (short) (tableId + 1);
+
+		ArrayList<Instruction> instructions = new ArrayList<>();
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("MetadataMatchGoToNextTableFlow")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
+				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 2).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return flowBuilder;
+	}
+
 }

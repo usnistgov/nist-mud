@@ -265,8 +265,8 @@ def setupTopology(controller_addr):
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
     	#h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
     	#h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	#h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
+    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    	#h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
     	#h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
     
     # Start the IDS on node 8

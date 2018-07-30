@@ -966,6 +966,32 @@ public class MudFlowsInstaller {
 
 	}
 
+	public void installUnknownDestinationPassThrough(InstanceIdentifier<FlowCapableNode> node) {
+		BigInteger metadata = (BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
+				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
+						.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
+								.shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+
+		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
+
+		FlowId flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
+		FlowCookie flowCookie = IdUtils.createFlowCookie("metadata-match-go-to-next");
+		short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
+		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, flowId,
+				flowCookie);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
+		flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
+		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
+				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
+				.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
+						.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
+		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, flowId, flowCookie);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+
+	}
+
 	/**
 	 * Retrieve and install flows for a device of a given MAC address.
 	 *

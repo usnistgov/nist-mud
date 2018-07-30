@@ -235,7 +235,7 @@ def setupTopology(controller_addr):
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 -T 1000 -C &")
+        #h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 -T 1000 -C &")
         h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
         #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
     
@@ -287,11 +287,9 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("../config/sdnmud-config.json", "sdnmud:sdnmud-config"),
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-printer.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
@@ -304,6 +302,8 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
+
+    setupTopology(controller_addr)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         time.sleep(10)
