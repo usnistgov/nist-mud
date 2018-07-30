@@ -1,0 +1,14 @@
+{
+        "max-packet-classification-flow-table-size": 30, 
+        "max-packet-loss": 0, 
+        "mode-packet-loss": 0, 
+        "number-of-iot-devices": 100, 
+        "mud-rules-flow-table-size": 16, 
+        "pings-per-burst": 10, 
+        "cache-timeout": 60, 
+        "avg-sleep-time-between-pings-seconds": 10, 
+        "avg-packet-loss": 0.0, 
+        "max-l2-switch-flow-table-size": 152, 
+        "relaxed-acl": true, 
+        "median-packet-loss": 0.0
+}
