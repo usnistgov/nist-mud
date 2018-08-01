@@ -526,7 +526,8 @@ public class MudFlowsInstaller {
 	}
 
 	private static Direction getDirectionInitiated(Matches matches) {
-		if (matches.getL4() != null && (matches.getL4() instanceof Tcp)) {
+		if (matches.getL4() != null && matches.getL4() instanceof Tcp && 
+			((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class) != null) {
 			return ((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class).getDirectionInitiated();
 		} else {
 			return null;
