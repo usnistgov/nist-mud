@@ -29,7 +29,8 @@
 	 	odl:type="default" />
 
 	<odl:rpc-service id="salFlowService"
-		interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
+    interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
+
 
 	<odl:rpc-service id="packetProcessingService"
 		interface="org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService" />

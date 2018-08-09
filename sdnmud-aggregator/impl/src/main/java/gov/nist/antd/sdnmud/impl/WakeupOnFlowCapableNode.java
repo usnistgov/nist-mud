@@ -53,11 +53,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private SdnmudProvider sdnmudProvider;
 
-	private FlowCommitWrapper dataStoreAccessor;
 
 	public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
 		this.sdnmudProvider = sdnMudProvider;
-		dataStoreAccessor = sdnmudProvider.getFlowCommitWrapper();
 	}
 
 	@Override
@@ -123,7 +121,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowId flowId = IdUtils.createFlowId(nodeId);
 
 		FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(dropPacketTable, flowId, flowCookie);
-		this.dataStoreAccessor.writeFlow(flow, nodePath);
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, nodePath);
 	}
 
 	public void installSendToControllerFlows(String nodeUri) {

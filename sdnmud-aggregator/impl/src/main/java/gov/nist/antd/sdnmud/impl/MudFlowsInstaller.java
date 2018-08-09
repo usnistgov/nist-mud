@@ -140,10 +140,10 @@ public class MudFlowsInstaller {
 
 	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
 			BigInteger metadataMask, int sourcePort, int destinationPort) {
-		if (sdnmudProvider.isOpenflow13Only()) {
-			TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, null, sourcePort, null,
-					destinationPort);
+		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, null, sourcePort, null,
+				destinationPort);
 
+		if (sdnmudProvider.isOpenflow13Only()) {
 			this.tcpSynFlagCheckTable.add(flagCheck);
 		} else {
 			// flag.
@@ -155,15 +155,19 @@ public class MudFlowsInstaller {
 					BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
 
 			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+			// In the case of relaxed ACLs we send the first packet through before classification.
+			if ( sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+				this.tcpSynFlagCheckTable.add(flagCheck);
+			}
 		}
 	}
 
 	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
 			BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress,
 			int destinationPort) {
+		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, sourceAddress, sourcePort,
+				destinationAddress, destinationPort);
 		if (sdnmudProvider.isOpenflow13Only()) {
-			TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, sourceAddress, sourcePort,
-					destinationAddress, destinationPort);
 			this.tcpSynFlagCheckTable.add(flagCheck);
 		} else {
 			// Insert a flow which will drop the packet if it sees a Syn
@@ -175,6 +179,9 @@ public class MudFlowsInstaller {
 					metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
 					BaseappConstants.SDNMUD_RULES_TABLE, BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+			if ( sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+				this.tcpSynFlagCheckTable.add(flagCheck);
+			}
 		}
 
 	}
@@ -1019,8 +1026,6 @@ public class MudFlowsInstaller {
 				LOG.info("installFlows: Found a controllerclass mapping for the switch ");
 			}
 
-			// Get the flow commit wrapper to talk to the switch.
-			FlowCommitWrapper flowCommitWrapper = this.sdnmudProvider.getFlowCommitWrapper();
 
 			// Delete the existing flows corresponding to this profile.
 
@@ -1035,7 +1040,7 @@ public class MudFlowsInstaller {
 
 			// Delete all the flows previously associated with this MUD URI.
 
-			flowCommitWrapper.deleteFlows(node, mudUri.getValue(), BaseappConstants.SDNMUD_RULES_TABLE, null, null);
+			sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(), BaseappConstants.SDNMUD_RULES_TABLE, null, null);
 
 			/*
 			 * Track that we have added a node for this device MAC address for

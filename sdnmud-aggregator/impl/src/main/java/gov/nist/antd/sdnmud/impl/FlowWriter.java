@@ -20,6 +20,7 @@ package gov.nist.antd.sdnmud.impl;
 import java.util.concurrent.ExecutionException;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.Table;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.TableKey;
@@ -28,10 +29,13 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.ta
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.AddFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.FlowTableRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.RemoveFlowInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier.InstanceIdentifierBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,33 +54,62 @@ public class FlowWriter {
 		this.salFlowService = salFlowService;
 	}
 
+	public void writeFlow(FlowBuilder fb, InstanceIdentifier<FlowCapableNode> node) {
+		this.writeFlow(fb.build(), node);
+	}
+
 	public void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> node) {
 		AddFlowInputBuilder afib = new AddFlowInputBuilder();
-		/*
-		 * afib.setTableId(flow.getTableId());
-		 * afib.setPriority(flow.getPriority());
-		 * afib.setBarrier(flow.isBarrier()); afib.setCookie(flow.getCookie());
-		 * afib.setCookieMask(flow.getCookieMask());
-		 * afib.setInstructions(flow.getInstructions());
-		 * afib.setFlowName(flow.getFlowName());
-		 * afib.setHardTimeout(flow.getHardTimeout());
-		 * afib.setIdleTimeout(flow.getIdleTimeout());
-		 * afib.setMatch(flow.getMatch()); afib.setBufferId(flow.getBufferId());
-		 * afib.setFlags(flow.getFlags());
-		 */
 
+		afib.setNode(new NodeRef(IdUtils.getNodePath(node)));
+		afib.setTableId(flow.getTableId());
+		afib.setPriority(flow.getPriority());
+		afib.setBarrier(flow.isBarrier());
+		afib.setCookie(flow.getCookie());
+		afib.setCookieMask(flow.getCookieMask());
+		afib.setInstructions(flow.getInstructions());
+		afib.setFlowName(flow.getFlowName());
+		afib.setHardTimeout(flow.getHardTimeout());
+		afib.setIdleTimeout(flow.getIdleTimeout());
+		afib.setMatch(flow.getMatch());
+		afib.setBufferId(flow.getBufferId());
+		afib.setFlags(flow.getFlags());
+		afib.setBarrier(true);
 		final InstanceIdentifier<Flow> path1 = node.child(Table.class, new TableKey(flow.getTableId()))
 				.child(Flow.class, flow.getKey());
-		afib.setNode(new NodeRef(node));
 		afib.setFlowRef(new FlowRef(path1));
+		afib.setStrict(false);
 		afib.setTransactionUri(new Uri(flow.getId().getValue()));
 
 		try {
-
 			salFlowService.addFlow(afib.build()).get();
 		} catch (InterruptedException | ExecutionException e) {
 			LOG.error("SalFlowService: problem writing the flow to switch ", e);
 		}
+	}
+
+	public void deleteFlows(InstanceIdentifier<FlowCapableNode> node, Flow flow) {
+		RemoveFlowInputBuilder afib = new RemoveFlowInputBuilder();
+
+		afib.setNode(new NodeRef(IdUtils.getNodePath(node)));
+		afib.setTableId(flow.getTableId());
+		afib.setPriority(flow.getPriority());
+		afib.setBarrier(flow.isBarrier());
+		afib.setCookie(flow.getCookie());
+		afib.setCookieMask(flow.getCookieMask());
+		afib.setInstructions(flow.getInstructions());
+		afib.setFlowName(flow.getFlowName());
+		afib.setHardTimeout(flow.getHardTimeout());
+		afib.setIdleTimeout(flow.getIdleTimeout());
+		afib.setMatch(flow.getMatch());
+		afib.setBufferId(flow.getBufferId());
+		afib.setFlags(flow.getFlags());
+		afib.setBarrier(true);
+		final InstanceIdentifier<Flow> path1 = node.child(Table.class, new TableKey(flow.getTableId()))
+				.child(Flow.class, flow.getKey());
+		afib.setFlowRef(new FlowRef(path1));
+
+		salFlowService.removeFlow(afib.build());
 	}
 
 }

@@ -153,8 +153,7 @@ public class SdnmudProvider {
 		this.schemaService = schemaService;
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
 		this.rpcProviderRegistry = rpcProviderRegistry;
-		this.flowService = rpcProviderRegistry.getRpcService(SalFlowService.class);
-
+		this.flowService = flowService;
 	}
 
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {

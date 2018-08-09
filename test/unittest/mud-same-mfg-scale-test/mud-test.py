@@ -170,6 +170,7 @@ def sampleTableSize() :
     global _topoSize
     global _packet_classification_flow_table_sizes
     global _l2switch_flow_table_size
+    global _packetsSent
 
 
     times = {}
@@ -214,7 +215,6 @@ def sampleTableSize() :
     result = r.json()
     times["total-packet-count"] = result["output"]["packet-count"]
     times["mud-packet-count"] = result["output"]["mud-packet-count"]
-    times["packets-sent"] = _packetsSent
     print times
 
     if debug :
@@ -228,7 +228,7 @@ def sampleTableSize() :
         print "*************************"
 
     # Give it 10 minutes for the cache to settle down.
-    if _sampleCount >= 200:
+    if _sampleCount >= 400:
         cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
         proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         cmd = [ "grep", "-e", "table=5" ]
@@ -244,9 +244,11 @@ def sampleTableSize() :
         _result["max-packet-loss"] = np.max(_loss)
         _result["max-packet-classification-flow-table-size"] = np.max(_packet_classification_flow_table_sizes)
         _result["max-l2-switch-flow-table-size"] = np.max(_l2switch_flow_table_size)
-        _result["avg-sleep-time-between-pings-seconds"] = 10
+        _result["avg-sleep-time-between-pings-seconds"] = 5
         _result["number-of-iot-devices"]  = _topoSize
         _result["pings-per-burst"] = 10
+        _result["packets-sent"] = _packetsSent
+        _result["controller_packets_per_packet_sent"] = float(result["output"]["mud-packet-count"]) / float(_packetsSent)
 
         if not os.path.exists('results/' + str(_topoSize)):
             os.mkdir("results/" + str(_topoSize))
@@ -257,12 +259,20 @@ def sampleTableSize() :
             sys.exit()
             os.exit()
     else:
+     	if _sampleCount == 300:
+            # Clear the packet count at 300.
+	    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-packet-count"
+            headers= {"Content-Type":"application/json"}
+            r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+            print "Cleared packet count"
+            _packetsSent = 0
         _sampleCount = _sampleCount + 1
         threading.Timer(5,sampleTableSize).start()
 
 if __name__ == '__main__':
     setLogLevel( 'info' )
     global _topoSize
+    global _packetsSent
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
@@ -330,6 +340,7 @@ if __name__ == '__main__':
         global _sampleCount
         global _packetsSent
 
+        _packetsSent = 0
         _sampleCount = 0
         _doneFlag = False
         _result = {}

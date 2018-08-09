@@ -183,8 +183,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		 * JsonElement, java.lang.reflect.Type,
 		 * com.google.gson.JsonDeserializationContext)
 		 *
-		 * @see
-		 * https://stackoverflow.com/questions/36508323/how-can-i-prevent-gson-
+		 * @see https://stackoverflow.com/questions/36508323/how-can-i-prevent-gson-
 		 * from-converting-integers-to-doubles
 		 */
 
@@ -362,15 +361,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		LOG.info("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
 
-		if (sdnmudProvider.isOpenflow13Only() && this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata,
-				srcIp, sourcePort, destIp, destPort)) {
+		if ((sdnmudProvider.isOpenflow13Only() || sdnmudProvider.getSdnmudConfig().isRelaxedAcl())
+				&& this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata, srcIp, sourcePort, destIp,
+						destPort)) {
 			LOG.info("checkSynFlagMatch returned true -- checking for illegal SYN flag");
 			if (PacketUtils.isSYNFlagOnAndACKFlagOff(rawPacket)) {
 				LOG.info("checkIfTcpSynAllowed: PacketInDispatcher: Got an illegal SYN -- blocking the flow");
 				// Block the TCP flow on the mud rules table.
 				this.installBlockTcpFlow(srcIp, destIp, destPort, metadata, BaseappConstants.DEFAULT_METADATA_MASK,
 						node);
-			} else {
+			} else if (sdnmudProvider.isOpenflow13Only()) {
+				// If this is a Openflow 3 only switch, we want to override sending the packet
+				// to the controller.
 				this.installAllowTcpFlow(srcIp, destIp, destPort, metadata, BaseappConstants.DEFAULT_METADATA_MASK,
 						node);
 			}
@@ -419,7 +421,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			this.flowTable.put(flowIdStr, flow);
 		}
 
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
 	}
 
@@ -435,8 +437,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (flow == null) {
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 			/*
-			 * create a short term pass through flow to allow packet through.
-			 * Give it a short timeout.
+			 * create a short term pass through flow to allow packet through. Give it a
+			 * short timeout.
 			 */
 			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
 
@@ -446,7 +448,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			this.flowTable.put(flowIdStr, flow);
 		}
 
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+		this.sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
 	}
 
@@ -471,7 +473,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			this.flowTable.put(flowIdStr, flow);
 		}
 
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+		this.sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
 	}
 
@@ -512,23 +514,19 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			this.flowTable.put(flowIdStr, flow);
 		}
 
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 	}
 
 	/**
 	 *
 	 */
 	public void clearMfgModelRules() {
-		String uriPrefix1 = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
-		String uriPrefix2 = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
 		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
 			InstanceIdentifier<FlowCapableNode> flowCapableNode = sdnmudProvider.getNode(nodeId);
 			if (flowCapableNode != null) {
-
-				sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix2,
-						BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, null, null);
-				sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix1,
-						BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, null, null);
+				for (Flow f : this.flowTable.values()) {
+					sdnmudProvider.getFlowWriter().deleteFlows(flowCapableNode, f);
+				}
 			}
 		}
 		this.flowTable.clear();
@@ -731,9 +729,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					BigInteger metadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
 					/*
-					 * Note - this could be included in a flow rule in openflow
-					 * 1.5. Check if we have a SYN with NO ACK bit set. This is
-					 * the first packet of a tcp connection establishment.
+					 * Note - this could be included in a flow rule in openflow 1.5. Check if we
+					 * have a SYN with NO ACK bit set. This is the first packet of a tcp connection
+					 * establishment.
 					 */
 
 					if (sdnmudProvider.isOpenflow13Only()) {
@@ -789,8 +787,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 											.create();
 
 									/*
-									 * Set up gson to preserve the order of
-									 * fields
+									 * Set up gson to preserve the order of fields
 									 */
 									Map<?, ?> mudFile = gson.fromJson(mudFileStr,
 											new TypeToken<Map<String, LinkedHashMap>>() {
@@ -799,8 +796,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 									Map<?, ?> ietfMud = (Map<?, Object>) mudFile.get("ietf-mud:mud");
 
 									/*
-									 * The MUD signature points to the signature
-									 * file for this MUD file.
+									 * The MUD signature points to the signature file for this MUD file.
 									 */
 									String mudSignatureUrl = (String) ietfMud.get("mud-signature");
 

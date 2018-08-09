@@ -1,6 +1,7 @@
 {
-        "max-packet-classification-flow-table-size": 46, 
+        "max-packet-classification-flow-table-size": 42, 
         "max-packet-loss": 0, 
+        "controller_packets_per_packet_sent": 0.3763888888888889, 
         "mode-packet-loss": 0, 
         "number-of-iot-devices": 100, 
         "mud-rules-flow-table-size": 16, 

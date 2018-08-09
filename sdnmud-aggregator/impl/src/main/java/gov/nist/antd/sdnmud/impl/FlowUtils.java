@@ -208,8 +208,7 @@ public class FlowUtils {
 	/**
 	 * Create ipv4 prefix from ipv4 address, by appending /32 mask
 	 *
-	 * @param ipv4AddressString
-	 *            the ip address, in string format
+	 * @param ipv4AddressString the ip address, in string format
 	 * @return Ipv4Prefix with ipv4Address and /32 mask
 	 */
 	private static Ipv4Prefix iPv4PrefixFromIPv4Address(String ipv4AddressString) {
@@ -308,8 +307,7 @@ public class FlowUtils {
 	/**
 	 * create and return a goto table instruction.
 	 *
-	 * @param tableId
-	 *            -- target of the goto instruction,
+	 * @param tableId -- target of the goto instruction,
 	 * @return
 	 */
 	private static Instruction createGoToTableInstruction(final Short tableId) {
@@ -586,9 +584,8 @@ public class FlowUtils {
 		createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_CLIENT_PORT, SdnMudConstants.DHCP_SERVER_PORT);
 		/*
 		 * Ipv4Address destinationAddress = new Ipv4Address("255.255.255.255");
-		 * createDestIpv4Match(matchBuilder, destinationAddress); Ipv4Address
-		 * srcAddress = new Ipv4Address("0.0.0.0");
-		 * createSrcIpv4Match(matchBuilder, srcAddress);
+		 * createDestIpv4Match(matchBuilder, destinationAddress); Ipv4Address srcAddress
+		 * = new Ipv4Address("0.0.0.0"); createSrcIpv4Match(matchBuilder, srcAddress);
 		 */
 
 		Match match = matchBuilder.build();
@@ -807,6 +804,9 @@ public class FlowUtils {
 			int port, short protocol, short tableId, short destTableId, BigInteger metadata, BigInteger metadataMask,
 			int timeout, FlowId flowId, FlowCookie flowCookie) {
 
+		LOG.info("createSrcIpAddressPortocolDestIpAddressDestPortMatchGoTo: " + srcIp.getValue() + ":" + port
+				+ " destIp " + dstIp.getValue() + ":" + port + " protocol " + protocol + " tableId " + tableId
+				+ " destTableId " + destTableId);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName("SrcIpAddressProtocolDestMacMatchGoTo").setId(flowId).setKey(new FlowKey(flowId))
 				.setCookie(flowCookie);
@@ -814,13 +814,14 @@ public class FlowUtils {
 		MatchBuilder matchBuilder = new MatchBuilder();
 
 		createEthernetTypeMatch(matchBuilder, 0x800);
+
 		createDstProtocolPortMatch(matchBuilder, protocol, port);
 		createSrcDestIpv4Match(matchBuilder, srcIp, dstIp);
 
 		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(destTableId, metadata, metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
+				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

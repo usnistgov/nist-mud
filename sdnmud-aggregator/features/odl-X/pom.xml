@@ -43,7 +43,7 @@
             <dependency>
                 <groupId>org.opendaylight.controller</groupId>
                 <artifactId>mdsal-artifacts</artifactId>
-                <version>1.6.1</version>
+                <version>${restconf.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -101,6 +101,7 @@
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
+
 
 		<dependency>
 			<groupId>org.opendaylight.genius</groupId>

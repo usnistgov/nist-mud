@@ -1,4 +1,3 @@
-
 ##  Manufacturer Usage Description ##
 
 IOT devices are special purpose devices that implement a dedicated function.
