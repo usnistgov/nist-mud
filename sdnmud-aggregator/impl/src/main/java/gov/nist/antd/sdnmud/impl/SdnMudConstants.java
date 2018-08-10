@@ -47,24 +47,24 @@ interface SdnMudConstants {
 
 	// The mask for Manufacturer and model.
 	BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000", 16);
-	int SRC_MANUFACTURER_SHIFT = "0000000000000".length() * 4;
+	int SRC_MANUFACTURER_SHIFT =                          "0000000000000".length() * 4;
 
-	BigInteger SRC_MODEL_MASK = new BigInteger("000FFFF000000000", 16);
-	int SRC_MODEL_SHIFT = "000000000".length() * 4;
+	BigInteger SRC_MODEL_MASK = new BigInteger      ( "000FFFF000000000", 16);
+	int SRC_MODEL_SHIFT =                                    "000000000".length() * 4;
 
 	BigInteger DST_MANUFACTURER_MASK = new BigInteger("0000000000000FFF", 16);
 	int DST_MANUFACTURER_SHIFT = 0;
 
-	BigInteger DST_MODEL_MASK = new BigInteger("000000000FFFF000", 16);
-	int DST_MODEL_SHIFT = "000".length() * 4;
+	BigInteger DST_MODEL_MASK = new BigInteger       ("000000000FFFF000", 16);
+	int DST_MODEL_SHIFT =                                          "000".length() * 4;
 
-	BigInteger SRC_NETWORK_MASK = new BigInteger("0000000F00000000", 16);
-	int SRC_NETWORK_FLAGS_SHIFT = "00000000".length() * 4;
-	BigInteger LOCAL_SRC_NETWORK_FLAG = new BigInteger("0000000100000000", 16);
+	BigInteger SRC_NETWORK_MASK =      new BigInteger("0000000F00000000", 16);
+	int SRC_NETWORK_FLAGS_SHIFT =                             "00000000".length() * 4;
+	BigInteger LOCAL_SRC_NETWORK_FLAG =  BigInteger.valueOf(1L << SRC_NETWORK_FLAGS_SHIFT);
 
-	BigInteger DST_NETWORK_MASK = new BigInteger("00000000F0000000", 16);
-	int DST_NETWORK_FLAGS_SHIFT = "0000000".length() * 4;
-	BigInteger LOCAL_DST_NETWORK_FLAG = new BigInteger("0000000010000000", 16);
+	BigInteger DST_NETWORK_MASK =   new BigInteger   ("00000000F0000000", 16);
+	int DST_NETWORK_FLAGS_SHIFT =                              "0000000".length() * 4;
+	BigInteger LOCAL_DST_NETWORK_FLAG = BigInteger.valueOf(1L <<DST_NETWORK_FLAGS_SHIFT);
 
 	// Classification for UNKNOWN packet ( initial value before lookup )
 	String UNKNOWN = "UNKNOWN";

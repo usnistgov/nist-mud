@@ -711,7 +711,7 @@ public class MudFlowsInstaller {
 		Short protocol = getProtocol(matches);
 		FlowId flowId = IdUtils.createFlowId(mudUri);
 
-		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT)
+		BigInteger metadata = SdnMudConstants.LOCAL_SRC_NETWORK_FLAG
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 
 		BigInteger mask = SdnMudConstants.DST_MODEL_MASK.or(SdnMudConstants.SRC_NETWORK_MASK);
@@ -721,6 +721,9 @@ public class MudFlowsInstaller {
 
 		boolean sendToController = computeSendToControllerFlag(direction, false);
 
+		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16) 
+		+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort " + destinationPort);
+		
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask,
 				sendToController, flowCookie, flowId, node);
@@ -737,7 +740,7 @@ public class MudFlowsInstaller {
 		FlowId flowId = IdUtils.createFlowId(mudUri);
 		FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
 
-		BigInteger metadata = BigInteger.valueOf(1).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT)
+		BigInteger metadata = SdnMudConstants.LOCAL_DST_NETWORK_FLAG
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
 		BigInteger mask = SdnMudConstants.SRC_MODEL_MASK.or(SdnMudConstants.DST_NETWORK_MASK);
 

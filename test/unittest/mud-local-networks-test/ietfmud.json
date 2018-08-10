@@ -1,16 +1,15 @@
-{
- "ietf-mud:mud": {
+{ "ietf-mud:mud": {
     "mud-version": 1,
     "mud-url": "https://printer.nist.local/4d-printer-v1",
-    "last-update": "2018-06-19T20:14:51+02:00",
+    "last-update": "2018-08-09T17:58:26+02:00",
     "cache-validity": 48,
     "is-supported": true,
-    "systeminfo": "Prints in space and time.",
+    "systeminfo": "The NIST printer",
     "from-device-policy": {
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-23331-v4fr"
+            "name": "mud-60021-v4fr"
           }
         ]
       }
@@ -19,7 +18,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-23331-v4to"
+            "name": "mud-60021-v4to"
           }
         ]
       }

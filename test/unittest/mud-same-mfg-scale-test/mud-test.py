@@ -228,7 +228,7 @@ def sampleTableSize() :
         print "*************************"
 
     # Give it 10 minutes for the cache to settle down.
-    if _sampleCount >= 400:
+    if _sampleCount >= 450:
         cmd = [ "sudo", "ovs-ofctl", "dump-flows", "s1", "-O", "openflow13" ]
         proc1 = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         cmd = [ "grep", "-e", "table=5" ]
@@ -259,7 +259,7 @@ def sampleTableSize() :
             sys.exit()
             os.exit()
     else:
-     	if _sampleCount == 300:
+     	if _sampleCount == 350:
             # Clear the packet count at 300.
 	    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-packet-count"
             headers= {"Content-Type":"application/json"}

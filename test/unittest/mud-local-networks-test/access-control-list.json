@@ -1,11 +1,30 @@
- {
-   "ietf-access-control-list:acls": {
+{
+  "ietf-access-control-list:acls": {
     "acl": [
       {
-        "name": "mud-23331-v4to",
+        "name": "mud-60021-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
+            {
+              "name": "cl0-todev",
+              "matches": {
+                "ipv4": {
+                  "ietf-acldns:src-dnsname": "www.nist.local",
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 800
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
             {
               "name": "loc0-todev",
               "matches": {
@@ -33,10 +52,29 @@
         }
       },
       {
-        "name": "mud-23331-v4fr",
+        "name": "mud-60021-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
+            {
+              "name": "cl0-frdev",
+              "matches": {
+                "ipv4": {
+                  "ietf-acldns:dst-dnsname": "www.nist.local",
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 800
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
             {
               "name": "loc0-frdev",
               "matches": {
@@ -50,7 +88,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                   "source-port": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -65,4 +103,5 @@
       }
     ]
   }
-}
+} 
+

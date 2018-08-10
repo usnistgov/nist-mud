@@ -234,9 +234,12 @@ def setupTopology(controller_addr):
     # Set up our router routes.
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
+
+
     if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        #h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 -T 1000 -C &")
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
+        h1.cmdPrint('python -m SimpleHTTPServer 80&')
+        h9.cmdPrint('python -m SimpleHTTPServer 800&')
+        #h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
         #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
     
 
