@@ -77,6 +77,14 @@ class TestAccess(unittest.TestCase) :
         result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
+    def testContactExternalHostFromPrinterExpectPass(self):
+        h9 = hosts[8]
+        h9.cmdPrint('python -m SimpleHTTPServer 800&')
+	time.sleep(3)
+        h1 = hosts[0]
+        result = h1.cmdPrint("wget http://www.nist.local:800")
+        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+
 
 
 
