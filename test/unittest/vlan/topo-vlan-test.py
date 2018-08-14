@@ -87,8 +87,8 @@ def setupTopology(controller_addr,interface):
 
     c1 = net.addController('c1', ip=controller_addr,port=6653)
     print "addController ", controller_addr
-    net1 = Mininet(controller=RemoteController)
-    c2 = net1.addController('c2', ip="127.0.0.1",port=6673)
+    #net1 = Mininet(controller=RemoteController)
+    #c2 = net1.addController('c2', ip="127.0.0.1",port=6673)
 
 
     # h1: IOT Device.
@@ -115,7 +115,7 @@ def setupTopology(controller_addr,interface):
     # Switch s2 is the "multiplexer".
     s2 = net.addSwitch('s2',dpid="2")
 
-    s3 = net1.addSwitch('s3',dpid="3")
+    s3 = net.addSwitch('s3',dpid="3")
 
 
     # h7 and h9 are on a VLAN
@@ -152,11 +152,10 @@ def setupTopology(controller_addr,interface):
     net.build()
     c1.start()
     s1.start([c1])
-    s2.start([c2])
+    s2.start([c1])
     s3.start([c1])
 
     net.start()
-    net1.start()
      
 
     # Clean up any traces of the previous invocation (for safety)
@@ -250,15 +249,12 @@ if __name__ == '__main__':
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
     parser.add_argument("-i",help="Host interface to route packets out (the second NATTed interface)",default="eth2")
-    parser.add_argument("-r",help="Ryu home (where you have the ryu distro git pulled)", default="/home/odl-developer/host/ryu/")
     #parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="192.168.11.1")
     
-    parser.add_argument("-t",help="Host only adapter address for test server",default = "192.168.56.102")
     args = parser.parse_args()
     controller_addr = args.c
-    host_addr = args.t
     interface = args.i
-    ryu_home = args.r
+    #ryu_home = args.r
 
     cmd = ['sudo','mn','-c']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -276,21 +272,21 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    # start the test server.
-    # startTestServer(host_addr)
-    # setup our topology
 
+    """
     cmd = ['sudo','pkill','ryu-manager']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
 
     RYU_MANAGER = os.path.abspath(find_executable("ryu-manager"))
-    cmd = "/usr/bin/xterm -e \"%s --wsapi-port 9000 --ofp-tcp-listen-port 6673 app/simple_switch_13.py\"" % (RYU_MANAGER)
+    print "ryu-manager " , RYU_MANAGER
+    cmd = "/usr/bin/xterm -e \"%s --wsapi-port 9000 --ofp-tcp-listen-port 6673 app/simple_switch_13.py;bash\"" % (RYU_MANAGER)
     #detach the process and shield it from ctrl-c
 
     proc = subprocess.Popen(cmd,shell=True, cwd=ryu_home + "/ryu", stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True, preexec_fn=os.setpgrp)
 
     time.sleep(5)
+    """
 
 
     headers= {"Content-Type":"application/json"}

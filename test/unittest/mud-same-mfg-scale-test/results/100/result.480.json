@@ -1,14 +1,16 @@
 {
-        "max-packet-classification-flow-table-size": 108, 
-        "max-packet-loss": 0, 
+        "max-packet-classification-flow-table-size": 122, 
+        "max-packet-loss": 10, 
+        "controller_packets_per_packet_sent": 0.2425, 
         "mode-packet-loss": 0, 
         "number-of-iot-devices": 100, 
         "mud-rules-flow-table-size": 16, 
+        "packets-sent": 400, 
         "pings-per-burst": 10, 
         "cache-timeout": 480, 
-        "avg-sleep-time-between-pings-seconds": 10, 
-        "avg-packet-loss": 0.0, 
-        "max-l2-switch-flow-table-size": 150, 
+        "avg-sleep-time-between-pings-seconds": 5, 
+        "avg-packet-loss": 0.058823529411764705, 
+        "max-l2-switch-flow-table-size": 152, 
         "relaxed-acl": true, 
         "median-packet-loss": 0.0
 }
