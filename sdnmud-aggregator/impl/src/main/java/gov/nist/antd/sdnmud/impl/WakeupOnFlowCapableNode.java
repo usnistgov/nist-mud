@@ -53,7 +53,6 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private SdnmudProvider sdnmudProvider;
 
-
 	public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
 		this.sdnmudProvider = sdnMudProvider;
 	}
@@ -169,9 +168,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installUnconditionalGoToTable(nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
 
 		/*
-		 * Install an unconditional packet drop in the DROP_TABLE (this is where
-		 * MUD packets that do not match go. The default action is to drop the
-		 * packet. This is a placeholder for subsequent packet inspection.
+		 * Install an unconditional packet drop in the DROP_TABLE (this is where MUD
+		 * packets that do not match go. The default action is to drop the packet. This
+		 * is a placeholder for subsequent packet inspection.
 		 */
 
 		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
@@ -197,8 +196,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	/**
 	 * This gets invoked when a switch appears and connects.
 	 *
-	 * @param nodePath
-	 *            -- the node path.
+	 * @param nodePath -- the node path.
 	 *
 	 */
 	public synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
@@ -208,13 +206,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("onFlowCapableSwitchAppeared " + nodeUri);
 		// Stash away the URI to node path so we can reference it later.
 		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
+		this.sdnmudProvider.getStateChangeScanner().clearState(nodeUri);
+		this.sdnmudProvider.getStateChangeScanner().clearMudState(nodeUri);
 	}
 
 	/**
 	 * Deal with disconnection of the switch.
 	 *
-	 * @param nodePath
-	 *            - the instance id of the disconnecting switch.
+	 * @param nodePath - the instance id of the disconnecting switch.
 	 */
 
 	public void onFlowCapableSwitchDisappeared(InstanceIdentifier<FlowCapableNode> nodePath) {

@@ -139,6 +139,8 @@ public class SdnmudProvider {
 
 	private FlowWriter flowWriter;
 
+	private StateChangeScanner stateChangeScanner;
+
 	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -257,10 +259,10 @@ public class SdnmudProvider {
 				LogicalDatastoreType.OPERATIONAL, getWildcardPath());
 		this.dataTreeChangeListenerRegistration = this.dataBroker.registerDataTreeChangeListener(dataTreeIdentifier,
 				wakeupListener);
-		TimerTask scannerTask = new StateChangeScanner(this);
+		this.stateChangeScanner = new StateChangeScanner(this);
 
 		// Latency of 10 seconds for the scan.
-		new Timer(true).schedule(scannerTask, 0, 5 * 1000);
+		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
 
 		LOG.info("start() <--");
 
@@ -273,6 +275,10 @@ public class SdnmudProvider {
 		LOG.info("SdnmudProvider Closed");
 		this.dataTreeChangeListenerRegistration.close();
 		this.uriToMudMap.clear();
+	}
+	
+	public StateChangeScanner getStateChangeScanner() {
+		return this.stateChangeScanner;
 	}
 
 	public MudProfileDataStoreListener getMudProfileDataStoreListener() {
@@ -591,5 +597,12 @@ public class SdnmudProvider {
 	public FlowWriter getFlowWriter() {
 		return this.flowWriter;
 	}
+
+	public void clearMudRules() {
+		this.nodeToMudUriMap.clear();
+		this.nameToAcesMap.clear();
+	}
+	
+	
 
 }

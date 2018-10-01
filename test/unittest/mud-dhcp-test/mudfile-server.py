@@ -19,6 +19,7 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         else:
            self.wfile.write(b'Hello, world!')
 
+print "Starting mudfile server on 127.0.0.1"
 httpd = BaseHTTPServer.HTTPServer(('127.0.0.1', 443), MyHTTPRequestHandler)
 httpd.socket = ssl.wrap_socket (httpd.socket, keyfile='./mudsigner.key',  certfile='./mudsigner.crt', server_side=True)
 httpd.serve_forever()

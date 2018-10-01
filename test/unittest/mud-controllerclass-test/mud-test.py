@@ -267,6 +267,12 @@ def setupTopology(controller_addr):
 
     #net.stop()
 
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
 def startTestServer(host):
     """
     Start a test server to add to the allow access rules.
@@ -311,13 +317,15 @@ if __name__ == '__main__':
 
 
     setupTopology(controller_addr)
+    clean_mud_rules(controller_addr)
+
+
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("ietfmud.json","ietf-mud:mud") }:
+        (cfgfile, "sdnmud:sdnmud-config")}:
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -325,9 +333,18 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    
+    configfile = "ietfmud.json"
+    url = "http://" + controller_addr + ":8181/restconf/config/ietf-mud:mud"
+    data = json.load(open(configfile))
+    r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+    print "uploaded mud rules ", str(r)
+    time.sleep(10)
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
 	time.sleep(10)
         unittest.main()
+        clean_mud_rules(controller_addr)
     else:
         cli()
 

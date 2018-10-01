@@ -31,6 +31,7 @@ import javax.annotation.Nonnull;
 
 import org.opendaylight.controller.md.sal.binding.api.ClusteredDataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
+import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
  * @author mranga
  *
  */
-public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListener<Mud> {
+public class MudProfileDataStoreListener implements DataTreeChangeListener<Mud> {
 	private DataBroker dataBroker;
 	private static final Logger LOG = LoggerFactory.getLogger(MudProfileDataStoreListener.class);
 	private SdnmudProvider sdnmudProvider;
@@ -55,7 +56,7 @@ public class MudProfileDataStoreListener implements ClusteredDataTreeChangeListe
 
 	@Override
 	public void onDataTreeChanged(@Nonnull Collection<DataTreeModification<Mud>> changes) {
-		LOG.info("onDataTreeChanged ");
+		LOG.info("MudProfileDataStoreListener: onDataTreeChanged ");
 		for (DataTreeModification<Mud> change : changes) {
 			Mud mud = change.getRootNode().getDataAfter();
 

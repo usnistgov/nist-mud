@@ -1,5 +1,8 @@
 This tests whether the mud server fetches and installs a MUD file from the MUD profile server.
 
+Edit ../config/sdnmudconfig.json and check the prefix to the java keystore. This must be set
+to the location where you have java installed.
+
 Make sure your /etc/hosts has the following entries on the CONTROLLER (OpenDaylight) host:
 
     203.0.113.13    www.nist.local
@@ -19,9 +22,10 @@ The previous step does the following:
 * Sign the mudfile:
 * Verify the signature.
     
-Start the mud profile web server on the Controller host as follows:
+Start the mud profile web server on the *Controller* host (i.e. host where
+you have opendaylight running) as follows:
 
-    sudo python mudfile-server.py
+    sudo -E python mudfile-server.py
 
 Test to see if your configuration is working (this should succeed):
 
@@ -33,7 +37,7 @@ Delete the previously cached rules if any :
    rm snapshot/\*
    rm journal/\*
 
-You are now ready to run this test :
+You are now ready to run this test from the emulation host :
 
     sudo -E UNITTEST=1 python mud-test.py
 

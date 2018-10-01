@@ -77,7 +77,8 @@ class TestAccess(unittest.TestCase) :
         result = h3.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
         h5 = hosts[4]
-        result = self.runAndReturnOutput(h5, "python udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
+        print "Ping a localhost on port 8000 -- should succeed wit MUD"
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
 
@@ -272,6 +273,13 @@ def startTestServer(host):
     proc = subprocess.Popen(cmd,shell=True, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  
     print "test server started"
 
+    
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
 if __name__ == '__main__':
     setLogLevel( 'info' )
     parser = argparse.ArgumentParser()
@@ -305,9 +313,8 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-
-
     setupTopology(controller_addr)
+    clean_mud_rules(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 
         ("../config/sdnmud-config.json", "sdnmud:sdnmud-config"),

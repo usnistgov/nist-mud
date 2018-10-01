@@ -116,4 +116,17 @@ module sdnmud {
     }
   }
 
+  rpc clear-mud-rules {
+    output {
+        leaf success {
+            description 
+                "Clear the mud rules table. This is for testing purposes. Return OK if the call succeeded. 
+                 This is for test and measurement purposes.
+                ";
+            type boolean;
+        }
+    }
+
+  }
+
 }

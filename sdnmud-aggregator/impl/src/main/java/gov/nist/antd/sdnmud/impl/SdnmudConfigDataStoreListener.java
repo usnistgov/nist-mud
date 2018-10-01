@@ -47,7 +47,7 @@ public class SdnmudConfigDataStoreListener implements ClusteredDataTreeChangeLis
 	@Override
 	public void onDataTreeChanged(Collection<DataTreeModification<SdnmudConfig>> changes) {
 
-		LOG.info("onDataTreeChanged");
+		LOG.info("sdnmudConfigDataStoreListener: onDataTreeChanged");
 
 		for (DataTreeModification<SdnmudConfig> change : changes) {
 			SdnmudConfig sdnmudConfig = change.getRootNode().getDataAfter();

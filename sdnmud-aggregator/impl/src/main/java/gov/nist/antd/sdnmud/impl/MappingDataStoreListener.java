@@ -117,5 +117,10 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			return new Uri(SdnMudConstants.UNCLASSIFIED);
 		}
 	}
+	
+	public void clearState() {
+		this.macAddressToMappingMap.clear();
+		this.uriToMacs.clear();
+	}
 
 }

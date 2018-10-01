@@ -147,7 +147,7 @@ public class MudFlowsInstaller {
 			this.tcpSynFlagCheckTable.add(flagCheck);
 		} else {
 			// flag.
-			FlowId fid = new FlowId(mudUri + "/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/"
+			FlowId fid = new FlowId(mudUri + "/sdnmud/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/"
 					+ sourcePort + "/" + destinationPort + "/synFlagCheck");
 			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
 			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
@@ -155,8 +155,9 @@ public class MudFlowsInstaller {
 					BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
 
 			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-			// In the case of relaxed ACLs we send the first packet through before classification.
-			if ( sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+			// In the case of relaxed ACLs we send the first packet through before
+			// classification.
+			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
 				this.tcpSynFlagCheckTable.add(flagCheck);
 			}
 		}
@@ -173,13 +174,13 @@ public class MudFlowsInstaller {
 			// Insert a flow which will drop the packet if it sees a Syn
 			// flag.
 			FlowId fid = new FlowId(
-					mudUri + "/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/synFlagCheck");
+					mudUri + "/sdnmud/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/synFlagCheck");
 			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
 			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
 					metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
 					BaseappConstants.SDNMUD_RULES_TABLE, BaseappConstants.DROP_TABLE, fid, flowCookie, 0);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-			if ( sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
 				this.tcpSynFlagCheckTable.add(flagCheck);
 			}
 		}
@@ -370,8 +371,7 @@ public class MudFlowsInstaller {
 	 * Resolve the addresses for a Match clause.
 	 *
 	 *
-	 * @param matches
-	 *            - the matches clause.
+	 * @param matches - the matches clause.
 	 * @return - a list of addresses that match.
 	 *
 	 */
@@ -533,8 +533,8 @@ public class MudFlowsInstaller {
 	}
 
 	private static Direction getDirectionInitiated(Matches matches) {
-		if (matches.getL4() != null && matches.getL4() instanceof Tcp && 
-			((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class) != null) {
+		if (matches.getL4() != null && matches.getL4() instanceof Tcp
+				&& ((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class) != null) {
 			return ((Tcp) matches.getL4()).getTcp().getAugmentation(Tcp1.class).getDirectionInitiated();
 		} else {
 			return null;
@@ -578,8 +578,8 @@ public class MudFlowsInstaller {
 				LOG.info("MudFlowsInstaller: direction is null ");
 			}
 			/*
-			 * We want to make sure that the first packet from device does not
-			 * contain a Syn in case the direction is ToDevice
+			 * We want to make sure that the first packet from device does not contain a Syn
+			 * in case the direction is ToDevice
 			 */
 			boolean sendToController = computeSendToControllerFlag(direction, true);
 			FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
@@ -661,8 +661,7 @@ public class MudFlowsInstaller {
 		Short protocol = getProtocol(matches);
 
 		/*
-		 * For TCP send a packet to the controller to enforce direction
-		 * initiated
+		 * For TCP send a packet to the controller to enforce direction initiated
 		 */
 		boolean sendToController = computeSendToControllerFlag(direction, true);
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
@@ -721,9 +720,10 @@ public class MudFlowsInstaller {
 
 		boolean sendToController = computeSendToControllerFlag(direction, false);
 
-		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16) 
-		+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort " + destinationPort);
-		
+		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
+				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
+				+ destinationPort);
+
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, BaseappConstants.SDNMUD_RULES_TABLE, newMetadata, newMetadataMask,
 				sendToController, flowCookie, flowId, node);
@@ -835,11 +835,10 @@ public class MudFlowsInstaller {
 	/**
 	 *
 	 * @param nodeConnectorUri
-	 * @param mudUri
-	 *            -- the mud URI
+	 * @param mudUri              -- the mud URI
 	 *
-	 * @param controllerUriString
-	 *            -- The URI string for the controller class we want.
+	 * @param controllerUriString -- The URI string for the controller class we
+	 *                            want.
 	 * @return
 	 */
 	private List<IpAddress> getControllerAddresses(String nodeConnectorUri, String controllerUriString) {
@@ -1006,16 +1005,12 @@ public class MudFlowsInstaller {
 	/**
 	 * Retrieve and install flows for a device of a given MAC address.
 	 *
-	 * @param sdnmudProvider
-	 *            -- our provider.
+	 * @param sdnmudProvider   -- our provider.
 	 *
-	 * @param deviceMacAddress
-	 *            -- the mac address of the device.
+	 * @param deviceMacAddress -- the mac address of the device.
 	 *
-	 * @param node
-	 *            -- the node on which the packet was received.
-	 * @param nodeUri
-	 *            -- the URI of the node.
+	 * @param node             -- the node on which the packet was received.
+	 * @param nodeUri          -- the URI of the node.
 	 */
 	public synchronized boolean tryInstallFlows(Mud mud, String cpeNodeId) {
 		try {
@@ -1028,7 +1023,6 @@ public class MudFlowsInstaller {
 			} else {
 				LOG.info("installFlows: Found a controllerclass mapping for the switch ");
 			}
-
 
 			// Delete the existing flows corresponding to this profile.
 
@@ -1043,12 +1037,12 @@ public class MudFlowsInstaller {
 
 			// Delete all the flows previously associated with this MUD URI.
 
-			sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(), BaseappConstants.SDNMUD_RULES_TABLE, null, null);
+			sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
+					BaseappConstants.SDNMUD_RULES_TABLE, null, null);
 
 			/*
-			 * Track that we have added a node for this device MAC address for
-			 * this node. i.e. we store MUD rules for this device on the given
-			 * node.
+			 * Track that we have added a node for this device MAC address for this node.
+			 * i.e. we store MUD rules for this device on the given node.
 			 */
 
 			LOG.info("installFlows : authority (manufacturer) = " + "[" + authority + "]");
@@ -1059,16 +1053,14 @@ public class MudFlowsInstaller {
 			this.sdnmudProvider.addMudUri(cpeNodeId, mudUri);
 
 			/*
-			 * Drop table is where all the unsuccessful matches land up. Push
-			 * default drop packet flows that will drop the packet if a MUD rule
-			 * does not match.
+			 * Drop table is where all the unsuccessful matches land up. Push default drop
+			 * packet flows that will drop the packet if a MUD rule does not match.
 			 */
 			this.installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
 			this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node);
 
 			/*
-			 * Fetch and install the MUD ACLs. First install the "from-device"
-			 * rules.
+			 * Fetch and install the MUD ACLs. First install the "from-device" rules.
 			 */
 			FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
 			if (fromDevicePolicy != null) {
@@ -1190,6 +1182,8 @@ public class MudFlowsInstaller {
 					}
 
 				}
+				// Clear the cache so can be re-poplulated after packets come in again.
+				this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
 			}
 
 		} catch (Exception ex) {
@@ -1198,6 +1192,29 @@ public class MudFlowsInstaller {
 		}
 		return true;
 
+	}
+
+	/**
+	 * Clear out all the mud rules from all nodes that we know about. This is used
+	 * for testing purposes.
+	 */
+	public void clearMudRules() {
+		LOG.info("clearMudRules: clearing the mud rules table");
+		if (sdnmudProvider.getCpeCollections() != null
+				&& this.sdnmudProvider.getCpeCollections().getCpeSwitches() != null) {
+			for (Uri uri : this.sdnmudProvider.getCpeCollections().getCpeSwitches()) {
+				InstanceIdentifier<FlowCapableNode> flowCapableNode = this.sdnmudProvider.getNode(uri.getValue());
+				if (flowCapableNode != null) {
+					for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
+						String uriPrefix = mud.getMudUrl().getValue() + "/sdnmud";
+						short table = BaseappConstants.SDNMUD_RULES_TABLE;
+						this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
+								null);
+					}
+				}
+			}
+		}
+		LOG.info("clearMudRules: done cleaning mud rules");
 	}
 
 }

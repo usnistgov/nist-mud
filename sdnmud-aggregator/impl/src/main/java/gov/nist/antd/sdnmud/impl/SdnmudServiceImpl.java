@@ -24,6 +24,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearMudRulesOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearMudRulesOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearPacketCountOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearPacketCountOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetPacketCountOutput;
@@ -127,5 +129,20 @@ public class SdnmudServiceImpl implements SdnmudService {
 		RpcResult<ClearCacheOutput> result = RpcResultBuilder.success(cpcob).build();
 		return new CompletedFuture<RpcResult<ClearCacheOutput>>(result);
 	}
+
+	@Override
+	public Future<RpcResult<ClearMudRulesOutput>> clearMudRules() {
+		ClearMudRulesOutputBuilder cmrob = new ClearMudRulesOutputBuilder();
+		sdnmudProvider.clearMudRules();
+		sdnmudProvider.getMudFlowsInstaller().clearMudRules();
+		sdnmudProvider.getStateChangeScanner().clearState();
+		sdnmudProvider.getMappingDataStoreListener().clearState();
+	
+		cmrob.setSuccess(true);
+		RpcResult<ClearMudRulesOutput> result = RpcResultBuilder.success(cmrob).build();
+		return new CompletedFuture<RpcResult<ClearMudRulesOutput>>(result);
+	}
+	
+	
 
 }

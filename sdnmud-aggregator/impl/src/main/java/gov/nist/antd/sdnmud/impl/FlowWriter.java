@@ -48,7 +48,7 @@ import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
 public class FlowWriter {
 
 	private SalFlowService salFlowService;
-	private static final Logger LOG = LoggerFactory.getLogger(SalFlowService.class);
+	private static final Logger LOG = LoggerFactory.getLogger(FlowWriter.class);
 
 	public FlowWriter(SalFlowService salFlowService) {
 		this.salFlowService = salFlowService;

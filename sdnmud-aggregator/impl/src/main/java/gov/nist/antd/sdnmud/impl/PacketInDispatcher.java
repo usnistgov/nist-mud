@@ -822,6 +822,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 										LOG.debug("keystore = " + keystore);
 										keystore.load(is, keyPass.toCharArray());
 										Certificate cert = keystore.getCertificate(manufacturer);
+										if ( cert == null ) {
+											LOG.error("Certificate not found in keystore -- not installing mud profile");
+										    return;
+										}
 										PublicKey publicKey = cert.getPublicKey();
 										String algorithm = publicKey.getAlgorithm();
 										Signature sig = Signature.getInstance("SHA256withRSA");

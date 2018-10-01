@@ -20,6 +20,7 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.TimerTask;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
@@ -50,7 +51,7 @@ public class StateChangeScanner extends TimerTask {
 	 * @see java.util.TimerTask#run()
 	 */
 	@Override
-	public void run() {
+	public synchronized void run() {
 
 		if (sdnmudProvider.getCpeCollections() == null || !sdnmudProvider.isControllerMapped()) {
 			LOG.info("StateChangeScanner: Topology not found");
@@ -96,6 +97,25 @@ public class StateChangeScanner extends TimerTask {
 
 		}
 
+	}
+	
+	public synchronized void clearState(String switchUrl) {
+		this.clearMudState(switchUrl);
+		this.initialFlowsInstalled.remove(switchUrl);
+	}
+	
+	public void clearMudState(String switchUrl) {
+		for (Iterator<String> keyIterator = this.installTime.keySet().iterator(); keyIterator.hasNext(); ) {
+			String key = keyIterator.next();
+			if (key.endsWith(switchUrl)) {
+				keyIterator.remove();
+			} 
+		}
+	}
+	
+	public synchronized void clearState() {
+		this.installTime.clear();
+		this.initialFlowsInstalled.clear();
 	}
 
 }
