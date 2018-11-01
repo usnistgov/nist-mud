@@ -70,5 +70,11 @@ module nist-mud-controllerclass-mapping {
           "Network address prefix for local networks.";
        type string; 
     }
+    
+    leaf-list local-networks-excluded-hosts {
+       description
+          "Network address that are excluded from the local networks classification";
+       type string; 
+    }
   }
 }

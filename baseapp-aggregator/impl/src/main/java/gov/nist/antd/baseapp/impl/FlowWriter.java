@@ -15,7 +15,7 @@
  * notice that they have been modified."
  */
 
-package gov.nist.antd.sdnmud.impl;
+package gov.nist.antd.baseapp.impl;
 
 import java.util.concurrent.ExecutionException;
 
@@ -57,11 +57,16 @@ public class FlowWriter {
 	public void writeFlow(FlowBuilder fb, InstanceIdentifier<FlowCapableNode> node) {
 		this.writeFlow(fb.build(), node);
 	}
+	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
+
+		return nodeChild.firstIdentifierOf(Node.class);
+	}
+
 
 	public void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> node) {
 		AddFlowInputBuilder afib = new AddFlowInputBuilder();
 
-		afib.setNode(new NodeRef(IdUtils.getNodePath(node)));
+		afib.setNode(new NodeRef(getNodePath(node)));
 		afib.setTableId(flow.getTableId());
 		afib.setPriority(flow.getPriority());
 		afib.setBarrier(flow.isBarrier());
@@ -91,7 +96,7 @@ public class FlowWriter {
 	public void deleteFlows(InstanceIdentifier<FlowCapableNode> node, Flow flow) {
 		RemoveFlowInputBuilder afib = new RemoveFlowInputBuilder();
 
-		afib.setNode(new NodeRef(IdUtils.getNodePath(node)));
+		afib.setNode(new NodeRef(getNodePath(node)));
 		afib.setTableId(flow.getTableId());
 		afib.setPriority(flow.getPriority());
 		afib.setBarrier(flow.isBarrier());

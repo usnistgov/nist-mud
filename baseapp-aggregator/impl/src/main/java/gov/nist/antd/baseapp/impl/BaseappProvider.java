@@ -31,6 +31,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -45,25 +46,33 @@ public class BaseappProvider {
 	private final DataBroker dataBroker;
 
 	private FlowCommitWrapper flowCommitWrapper;
+	
 
 	private WakeupOnFlowCapableNode wakeupListener;
 
 	private ListenerRegistration<WakeupOnFlowCapableNode> wakeupOnFlowCapableNodeRegistration;
+
+	private FlowWriter flowWriter;
 
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
 		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
 	}
 
 
-	public BaseappProvider(final DataBroker dataBroker ) {
+	public BaseappProvider(final DataBroker dataBroker , SalFlowService salFlowService) {
 		LOG.info("Baseapp provider created");
 		this.dataBroker = dataBroker;
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
+		this.flowWriter = new FlowWriter(salFlowService);
 	}
 	
 	public FlowCommitWrapper getFlowCommitWrapper() {
 		return this.flowCommitWrapper;
 		
+	}
+	
+	public FlowWriter getFlowWriter() {
+		return this.flowWriter;
 	}
 
 	/**

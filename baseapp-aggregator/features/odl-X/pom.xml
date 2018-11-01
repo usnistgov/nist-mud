@@ -25,7 +25,7 @@
 		<yangtools.version>1.2.1</yangtools.version>
 		<dlux.version>0.6.1</dlux.version>
 		<dluxapps.version>0.6.1</dluxapps.version>
-		<l2switch.version>0.6.1</l2switch.version>
+		<!-- l2switch.version>0.6.1</l2switch.version -->
 		<genius.version>0.3.1</genius.version>
 		<openflowplugin.version>0.5.1</openflowplugin.version>
 		<configfile.directory>etc/opendaylight/karaf</configfile.directory>
@@ -78,6 +78,7 @@
             <classifier>config-arphandler</classifier>
         </dependency>
 
+        <!-- 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>baseapp-impl</artifactId>
@@ -85,6 +86,7 @@
             <type>xml</type>
             <classifier>config-l2switch</classifier>
         </dependency>
+        -->
 
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -122,6 +124,7 @@
 			<classifier>features</classifier>
 		</dependency>
 
+        <!--
 		<dependency>
 			<groupId>org.opendaylight.l2switch</groupId>
 			<artifactId>odl-l2switch-all</artifactId>
@@ -129,6 +132,7 @@
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+        -->
     </dependencies>
 
 </project>

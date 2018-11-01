@@ -63,6 +63,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
+import gov.nist.antd.baseapp.impl.FlowWriter;
 
 public class SdnmudProvider {
 
@@ -110,6 +111,8 @@ public class SdnmudProvider {
 	private HashMap<String, HashMap<String, List<IpAddress>>> controllerMap = new HashMap<>();
 
 	private HashMap<String, List<String>> localNetworks = new HashMap<>();
+	
+	private HashMap<String,List<String>> localNetworksExcludedHosts = new HashMap<>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
@@ -536,6 +539,10 @@ public class SdnmudProvider {
 		if (controllerMapping.getLocalNetworks() != null) {
 			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
 		}
+		
+		if ( localNetworksExcludedHosts != null ) {
+			this.localNetworksExcludedHosts.put(nodeId, controllerMapping.getLocalNetworksExcludedHosts());
+		}
 
 		this.configStateChanged++;
 
@@ -551,6 +558,10 @@ public class SdnmudProvider {
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
 		return localNetworks.get(nodeUri);
+	}
+	
+	public Collection<String> getLocalNetworksExclude(String nodeUri) {
+		return this.localNetworksExcludedHosts.get(nodeUri);
 	}
 
 	public boolean isControllerMapped() {

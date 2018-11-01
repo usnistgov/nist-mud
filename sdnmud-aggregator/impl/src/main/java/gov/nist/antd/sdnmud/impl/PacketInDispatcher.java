@@ -295,12 +295,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private boolean isLocalAddress(String nodeId, String ipAddress) {
+		if ( sdnmudProvider.getLocalNetworksExclude(nodeId) != null) {
+			for ( String host: sdnmudProvider.getLocalNetworksExclude(nodeId)) {
+				if (host.equals(ipAddress)) 
+					return false;
+			}
+		}
 		boolean isLocalAddress = false;
 		if (sdnmudProvider.getLocalNetworks(nodeId) != null) {
 			for (String localNetworkStr : sdnmudProvider.getLocalNetworks(nodeId)) {
 				LOG.debug("localNetworkStr = " + localNetworkStr);
 				String[] pieces = localNetworkStr.split("/");
-				int prefixLength = new Integer(pieces[1]) / 8;
+				int prefixLength = Integer.valueOf(pieces[1]) / 8;
 
 				String[] pieces1 = pieces[0].split("\\.");
 				String prefix = "";
@@ -359,7 +365,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				.or(BigInteger.valueOf(dstMfgId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT))
 				.or(BigInteger.valueOf(isDstIpLocal).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT));
 
-		LOG.info("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
+		LOG.debug("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
 
 		if ((sdnmudProvider.isOpenflow13Only() || sdnmudProvider.getSdnmudConfig().isRelaxedAcl())
 				&& this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata, srcIp, sourcePort, destIp,
@@ -377,7 +383,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						node);
 			}
 		} else {
-			LOG.info("checkSynFlagMatch returned false OR openflow 1.5 support assumed.");
+			LOG.debug("checkSynFlagMatch returned false OR openflow 1.5 support assumed.");
 		}
 
 	}

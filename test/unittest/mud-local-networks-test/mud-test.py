@@ -77,12 +77,22 @@ class TestAccess(unittest.TestCase) :
         result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
+    def testContactPrinterFromRouterHostExpectFail(self):
+        h1 = hosts[0]
+        h3 = hosts[2]
+        h8 = hosts[7]
+        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
+	time.sleep(3)
+        result = h8.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
+        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+
     def testContactExternalHostFromPrinterExpectPass(self):
         h9 = hosts[8]
         h9.cmdPrint('python -m SimpleHTTPServer 800&')
 	time.sleep(3)
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local:800")
+        result = h1.cmdPrint("wget  http://www.nist.local:800")
+        print ("result " + str(result))
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
 
@@ -117,7 +127,6 @@ def setupTopology(controller_addr):
 
     # h1: IOT Device.
     # h2 : StatciDHCPD
-    # h3 : router / NAT
     # h4 : Non IOT device.
 
     h1 = net.addHost('h1')
@@ -265,6 +274,12 @@ def startTestServer(host):
     proc = subprocess.Popen(cmd,shell=True, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  
     print "test server started"
 
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
 if __name__ == '__main__':
     setLogLevel( 'info' )
     parser = argparse.ArgumentParser()
@@ -298,6 +313,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
+    #clean_mud_rules(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),

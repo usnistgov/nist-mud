@@ -27,6 +27,12 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.opendaylight.openflowplugin.api.OFConstants;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
@@ -34,13 +40,20 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowModFlags;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.InstructionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.flow.MatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.ApplyActionsCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.GoToTableCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.WriteMetadataCaseBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.apply.actions._case.ApplyActionsBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.go.to.table._case.GoToTableBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.instruction.write.metadata._case.WriteMetadataBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.Instruction;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.instruction.list.InstructionKey;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.l2.types.rev130827.EtherType;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatch;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.common.types.rev130731.ActionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,7 +107,30 @@ abstract class FlowUtils {
 				.setKey(new InstructionKey(getInstructionKey())).setOrder(0).build();
 
 	}
-	
+
+	private static Instruction createNormalInstruction( ) {
+		
+		ApplyActionsBuilder aab = new ApplyActionsBuilder();
+		ActionBuilder ab = new ActionBuilder();
+		ab.setKey(new ActionKey(0));
+		ab.setOrder(0);
+		OutputActionBuilder oob = new OutputActionBuilder();
+		oob.setOutputNodeConnector(new Uri("NORMAL"));
+		oob.setMaxLength(60);
+		ab.setAction(new  OutputActionCaseBuilder().setOutputAction(oob.build()).build());
+		List<Action> actionList = new ArrayList<Action>();
+		actionList.add(ab.build());
+		aab.setAction(actionList);
+		InstructionBuilder ib = new InstructionBuilder();
+		ib.setOrder(0);
+		ib.setKey(new InstructionKey(getInstructionKey()));
+		ApplyActionsCaseBuilder aacb = new ApplyActionsCaseBuilder();
+
+		aacb.setApplyActions(aab.build());
+        ib.setInstruction(aacb.build());
+        return ib.build();
+
+	}
 	
 
 	
@@ -115,6 +151,23 @@ abstract class FlowUtils {
 
 		return flowBuilder;
 
+	}
+	
+	public static FlowBuilder createNormalFlow(short table, FlowId flowId, FlowCookie flowCookie) {
+
+		Instruction normal = FlowUtils.createNormalInstruction();
+		InstructionsBuilder insb = new InstructionsBuilder();
+		List<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(normal);
+		insb.setInstruction(instructions);
+		
+		MatchBuilder matchBuilder = new MatchBuilder();
+		
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("normalFlow").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build()).setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+		.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		return flowBuilder;
 	}
 
 	

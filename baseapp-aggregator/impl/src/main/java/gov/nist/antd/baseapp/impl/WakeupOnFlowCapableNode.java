@@ -53,9 +53,15 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(BaseappConstants.UNCONDITIONAL_GOTO);
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
 				flowId, flowCookie);
-		baseappProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
+		baseappProvider.getFlowWriter().writeFlow(unconditionalGoToNextFlow, node);
 	}
 	
+	private synchronized void installNormalFlow(InstanceIdentifier<FlowCapableNode> node) {
+		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
+		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("NORMAL");
+		FlowBuilder fb = FlowUtils.createNormalFlow(BaseappConstants.MAX_TID, flowId, flowCookie);
+		baseappProvider.getFlowWriter().writeFlow(fb, node);
+	}
 	
 
 	/**
@@ -72,6 +78,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		for ( int i = 0; i < BaseappConstants.MAX_TID; i++) {
 			installUnconditionalGoToTable(nodePath,(short)i);
 		}
+		installNormalFlow(nodePath);
 
 
 	}

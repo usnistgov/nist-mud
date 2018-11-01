@@ -140,7 +140,7 @@ public class IdUtils {
 			manufacturers.add(manufacturer);
 			index = manufacturers.size() - 1;
 		}
-		LOG.info("getManifacturerId [" + manufacturer + "] manufacturerId " + index);
+		LOG.debug("getManifacturerId [" + manufacturer + "] manufacturerId " + index);
 		return index;
 	}
 
@@ -158,7 +158,7 @@ public class IdUtils {
 			index = models.size() - 1;
 		}
 
-		LOG.info("getModelId : model [" + model + "] modelId " + index);
+		LOG.debug("getModelId : model [" + model + "] modelId " + index);
 		return index;
 	}
 

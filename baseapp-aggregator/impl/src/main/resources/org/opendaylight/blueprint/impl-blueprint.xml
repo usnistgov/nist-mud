@@ -15,11 +15,14 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
     odl:type="default" />
 
+   <odl:rpc-service id="salFlowService"
+       interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
 
   <bean id="provider"
     class="gov.nist.antd.baseapp.impl.BaseappProvider"
     init-method="init" destroy-method="close">
     <argument ref="dataBroker" />
+    <argument ref="salFlowService" />
   </bean>
 
 </blueprint>

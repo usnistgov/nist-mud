@@ -97,17 +97,16 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 * @param metadata
 	 * @param metadataMask
 	 */
-	private void installToDhcpFlow(InstanceIdentifier<FlowCapableNode> nodePath, Short tableId, BigInteger metadata,
+	private void installToDhcpFlow(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath, Short tableId, BigInteger metadata,
 			BigInteger metadataMask) {
-		String nodeUri = IdUtils.getNodeUri(nodePath);
 		FlowId flowId = IdUtils.createFlowId(nodeUri + ":bypassDhcp");
 		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
 		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, flowCookie, flowId, false);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
 	}
 
-	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
-		FlowId flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
+	private void installUnconditionalGoToTable(String nodeUri, InstanceIdentifier<FlowCapableNode> node, short table) {
+		FlowId flowId = IdUtils.createFlowId(nodeUri);
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
 				flowCookie);
@@ -138,7 +137,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
-		installToDhcpFlow(nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 
 		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
@@ -150,7 +149,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
 				metadata, metadataMask);
 
-		installToDhcpFlow(nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
 
 	}
 
@@ -165,7 +164,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendToControllerFlows(nodeUri);
 
-		installUnconditionalGoToTable(nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
+		installUnconditionalGoToTable(nodeUri, nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
 
 		/*
 		 * Install an unconditional packet drop in the DROP_TABLE (this is where MUD
