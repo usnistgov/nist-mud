@@ -2,6 +2,7 @@ package gov.nist.antd.baseapp.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Timer;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
@@ -16,13 +17,25 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapableNode> {
 	private static final Logger LOG = LoggerFactory.getLogger(WakeupOnFlowCapableNode.class);
 
 	private BaseappProvider baseappProvider;
 
-	private ArrayList<InstanceIdentifier<FlowCapableNode>> pendingNodes = new ArrayList<>();
+	class MyTimer extends java.util.TimerTask {
+
+		private InstanceIdentifier<FlowCapableNode> node;
+
+		MyTimer(InstanceIdentifier<FlowCapableNode> node) {
+			this.node = node;
+		}
+
+		@Override
+		public void run() {
+			installFlows(node);
+		}
+
+	}
 
 	public WakeupOnFlowCapableNode(BaseappProvider baseappProvider) {
 		this.baseappProvider = baseappProvider;
@@ -47,22 +60,31 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 
 	}
-	
+
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
 		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie(BaseappConstants.UNCONDITIONAL_GOTO);
-		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table,
-				flowId, flowCookie);
+		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
+				flowCookie);
 		baseappProvider.getFlowWriter().writeFlow(unconditionalGoToNextFlow, node);
 	}
-	
+
 	private synchronized void installNormalFlow(InstanceIdentifier<FlowCapableNode> node) {
+		LOG.info("install normal flow");
 		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("NORMAL");
 		FlowBuilder fb = FlowUtils.createNormalFlow(BaseappConstants.MAX_TID, flowId, flowCookie);
 		baseappProvider.getFlowWriter().writeFlow(fb, node);
 	}
-	
+
+	private synchronized void installFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
+
+		for (int i = 0; i < BaseappConstants.MAX_TID; i++) {
+			installUnconditionalGoToTable(nodePath, (short) i);
+		}
+		installNormalFlow(nodePath);
+
+	}
 
 	/**
 	 * This gets invoked when a switch appears and connects.
@@ -72,15 +94,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 *
 	 */
 	private synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
-		
-		// Just create a cascade of gotos at min flow priority.
-		
-		for ( int i = 0; i < BaseappConstants.MAX_TID; i++) {
-			installUnconditionalGoToTable(nodePath,(short)i);
-		}
-		installNormalFlow(nodePath);
-
-
+		new Timer().schedule(new MyTimer(nodePath), 2000);
 	}
 
 	/**

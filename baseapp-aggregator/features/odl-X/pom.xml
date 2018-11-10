@@ -70,6 +70,7 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- 
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>baseapp-impl</artifactId>
@@ -77,6 +78,7 @@
             <type>xml</type>
             <classifier>config-arphandler</classifier>
         </dependency>
+        -->
 
         <!-- 
         <dependency>
