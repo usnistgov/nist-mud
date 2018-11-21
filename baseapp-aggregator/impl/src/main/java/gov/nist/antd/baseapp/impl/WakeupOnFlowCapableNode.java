@@ -2,6 +2,7 @@ package gov.nist.antd.baseapp.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Timer;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
@@ -22,18 +23,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private BaseappProvider baseappProvider;
 
-	class MyTimer extends java.util.TimerTask {
-
-		private InstanceIdentifier<FlowCapableNode> node;
-
-		MyTimer(InstanceIdentifier<FlowCapableNode> node) {
-			this.node = node;
-		}
-
-		@Override
-		public void run() {
-			installFlows(node);
-		}
+	private HashSet<String> switches = new HashSet<String> ();
+	
+	private static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
+		return node.firstKeyOf(Node.class).getId().getValue();
 
 	}
 
@@ -94,7 +87,13 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 *
 	 */
 	private synchronized void onFlowCapableSwitchAppeared(InstanceIdentifier<FlowCapableNode> nodePath) {
-		new Timer().schedule(new MyTimer(nodePath), 2000);
+		LOG.info("onFlowCapableSwitchAppeared : " + nodePath + " myId " + this);
+		if (this.switches.contains(getNodeUri(nodePath))) {
+			LOG.info("Already installed flow");
+			return;
+		}
+		this.switches.add(getNodeUri(nodePath));
+		installFlows(nodePath);
 	}
 
 	/**
@@ -105,7 +104,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 */
 
 	private synchronized void onFlowCapableSwitchDisappeared(InstanceIdentifier<FlowCapableNode> nodePath) {
-		String nodeUri = nodePath.firstKeyOf(Node.class).getId().getValue();
+		String nodeUri = getNodeUri(nodePath);
+		this.switches.remove(nodeUri);
 		LOG.info("onFlowCapableSwitchDisappeared");
 		// The URI identifies the node instance.
 		LOG.info("node URI " + nodeUri);
