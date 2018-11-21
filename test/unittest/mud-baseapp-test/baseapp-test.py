@@ -190,6 +190,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     controller_addr = args.c
+
+    if controller_addr is None:
+       print "Please specify controller addr using -c or environment variable."
+       sys.exit()
+
     test = args.test
 
 
