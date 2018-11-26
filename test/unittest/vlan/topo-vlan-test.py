@@ -99,15 +99,10 @@ def setupTopology(controller_addr,interface):
     h1,h2,h3,h4,h5= net.addHost('h1'),net.addHost('h2'),net.addHost('h3'),net.addHost('h4'),net.addHost('h5')
 
     s1 = net.addSwitch('s1',dpid="1")
-    # The host for dhclient
     s1.linkTo(h1)
-    # The IOT device
     s1.linkTo(h2)
-    # The MUD controller
     s1.linkTo(h3)
-    # The MUD server runs here.
     s1.linkTo(h4)
-    # The non-iot client runs here
     s1.linkTo(h5)
 
     h6 = net.addHost('h6')

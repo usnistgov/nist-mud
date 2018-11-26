@@ -22,7 +22,6 @@ package gov.nist.antd.vlan.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import org.opendaylight.controller.liblldp.BitBufferHelper;
 import org.opendaylight.controller.liblldp.BufferException;
@@ -30,13 +29,7 @@ import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.HexEncode;
 import org.opendaylight.controller.liblldp.LLDP;
 import org.opendaylight.controller.liblldp.NetUtils;
-import org.opendaylight.openflowplugin.api.OFConstants;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -59,7 +52,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.ethernet.rev140528.e
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.ethernet.rev140528.ethernet.packet.received.packet.chain.packet.EthernetPacketBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -229,24 +221,6 @@ public class PacketProcessingListenerImpl implements PacketProcessingListener {
      */
     public PacketProcessingListenerImpl(VlanProvider vlanProvider) {
         this.vlanProvider = vlanProvider;
-    }
-
-    private void transmitPacket(byte[] payload, String outputPortUri) {
-        TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder()
-                .setPayload(payload).setBufferId(OFConstants.OFP_NO_BUFFER);
-        OutputActionBuilder output = new OutputActionBuilder();
-        output.setMaxLength(Integer.valueOf(0xffff));
-
-        output.setOutputNodeConnector(new Uri(outputPortUri));
-        ActionBuilder ab = new ActionBuilder();
-        ab.setAction(new OutputActionCaseBuilder()
-                .setOutputAction(output.build()).build());
-        ab.setOrder(1);
-
-        List<Action> actionList = new ArrayList<Action>();
-        actionList.add(ab.build());
-        tpib.setAction(actionList);
-        vlanProvider.getPacketProcessingService().transmitPacket(tpib.build());
     }
 
     private void installInputPortVlanMatchSendToOutputPortFlowRule(

@@ -105,7 +105,7 @@
 
 		<dependency>
 			<groupId>org.opendaylight.l2switch</groupId>
-			<artifactId>odl-l2switch-all</artifactId>
+			<artifactId>odl-l2switch-packethandler</artifactId>
 		    <version>0.6.1</version>
 			<type>xml</type>
 			<classifier>features</classifier>
