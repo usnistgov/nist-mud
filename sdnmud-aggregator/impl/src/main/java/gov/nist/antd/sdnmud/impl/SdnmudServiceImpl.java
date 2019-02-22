@@ -21,6 +21,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.ArrayList;
 
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutputBuilder;
@@ -30,6 +31,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearPacketCountOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetPacketCountOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetPacketCountOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
@@ -142,6 +145,15 @@ public class SdnmudServiceImpl implements SdnmudService {
 		RpcResult<ClearMudRulesOutput> result = RpcResultBuilder.success(cmrob).build();
 		return new CompletedFuture<RpcResult<ClearMudRulesOutput>>(result);
 	}
+
+    @Override
+    public Future<RpcResult<GetMudUnmappedAddressesOutput>> getMudUnmappedAddresses() {
+        GetMudUnmappedAddressesOutputBuilder guaob = new GetMudUnmappedAddressesOutputBuilder();
+        ArrayList addrList = new ArrayList(sdnmudProvider.getPacketInDispatcher().getUnclassifiedMacAddresses());
+        guaob.setUnmappedDeviceAddresses(addrList);
+		RpcResult<GetMudUnmappedAddressesOutput> result = RpcResultBuilder.success(guaob).build();
+        return new CompletedFuture<RpcResult<GetMudUnmappedAddressesOutput>>(result);
+    }
 	
 	
 

@@ -50,6 +50,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collection;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -173,6 +175,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private int packetInCounter = 0;
 
+    private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
+
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
 		 * (non-Javadoc)
@@ -238,6 +242,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
 	}
+
+    public Collection<String> getUnclassifiedMacAddresses() {
+            return this.unclassifiedMacAddresses;
+    }
+
 
 	public int getMudPacketInCount(boolean clearFlag) {
 		int retval = this.mudRelatedPacketInCounter;
@@ -706,12 +715,22 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
+                if (isLocalAddress) {
+                        this.unclassifiedMacAddresses.add(srcMac.getValue());
+                } else {
+                        this.unclassifiedMacAddresses.remove(srcMac.getValue());
+                }
 				this.checkIfTcpSynAllowed(node, rawPacket);
 
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+                if (isLocalAddress) {
+                        this.unclassifiedMacAddresses.add(dstMac.getValue());
+                } else {
+                        this.unclassifiedMacAddresses.remove(dstMac.getValue());
+                }
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
@@ -721,6 +740,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
+                 if (isLocalAddress) {
+                        this.unclassifiedMacAddresses.add(dstMac.getValue());
+                } else {
+                        this.unclassifiedMacAddresses.remove(dstMac.getValue());
+                }
+
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
 				this.mudRelatedPacketInCounter++;

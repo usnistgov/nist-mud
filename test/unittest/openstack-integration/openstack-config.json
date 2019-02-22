@@ -1,9 +1,0 @@
-{
-    "nist-openstack:openstack-config" : {
-        "openstack-url" : "http://10.0.42.10",
-        "openstack-user":"admin",
-        "openstack-pass":"projsdn",
-        "openstack-domain":"default",
-        "openstack-project":"demo"
-    }
-}

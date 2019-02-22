@@ -12,12 +12,11 @@
     </parent>
 
     <groupId>gov.nist.antd</groupId>
-    <artifactId>odl-vlan</artifactId>
+    <artifactId>odl-flowtagger</artifactId>
     <version>0.1.0</version>
     <packaging>feature</packaging>
 
-    <name>OpenDaylight :: vlan :: Impl [Karaf Feature]</name>
-
+    <name>OpenDaylight :: flowtagger :: Impl [Karaf Feature]</name>
 	<properties>
 		<mdsal.model.version>0.11.1</mdsal.model.version>
 		<mdsal.version>1.6.1</mdsal.version>
@@ -29,7 +28,6 @@
 		<openflowplugin.version>0.5.1</openflowplugin.version>
 		<configfile.directory>etc/opendaylight/karaf</configfile.directory>
 	</properties>
-
 
     <dependencyManagement>
         <dependencies>
@@ -67,17 +65,22 @@
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>vlan-impl</artifactId>
+            <artifactId>flowtagger-impl</artifactId>
             <version>${project.version}</version>
         </dependency>
 
 
         <dependency>
             <groupId>${project.groupId}</groupId>
-            <artifactId>vlan-api</artifactId>
+            <artifactId>flowtagger-api</artifactId>
             <version>${project.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>vlan-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
 		<dependency>
 			<groupId>${project.groupId}</groupId>
@@ -114,6 +117,7 @@
 			<type>xml</type>
 			<classifier>features</classifier>
 		</dependency>
+
 
     </dependencies>
 

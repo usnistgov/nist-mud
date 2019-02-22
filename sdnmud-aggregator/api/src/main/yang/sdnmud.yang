@@ -116,6 +116,19 @@ module sdnmud {
     }
   }
 
+  rpc get-mud-unmapped-addresses {
+    output {
+      leaf-list unmapped-device-addresses {
+            description
+                "returns a list of unmanaged devices - i.e. MAC addresses that are marked UNCLASSIFIED";
+      type string;
+      
+    }
+
+   }
+
+  }
+
   rpc clear-mud-rules {
     output {
         leaf success {
@@ -126,7 +139,6 @@ module sdnmud {
             type boolean;
         }
     }
-
   }
 
 }
