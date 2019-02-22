@@ -16,63 +16,19 @@ This repository publishes a public domain scalable implementation of
 the  IETF MUD standard.  MUD is implemented on SDN capable switches
 using OpenDaylight as the SDN controller.
 
-## Deployment Assumptions ##
-
-The assumed deployment scenario is an enterprise network. There are several
-(CPE) switches that are assigned to departments. These are managed centrally.
-The central office (IT shop) provides a VNF platform such as OpenStack which
-can host Virtual Network functions.
-
-This project implements the following functions :
-
-- SDN-MUD : implements MUD ACLs on SDN Switches.
-  Note that this is not a full ACL implementation.  We only implement the
-  necessary ACLs to implement the MUD profiles as described in the RFC.
-- VLAN Manager : VLAN tag management for switches. Each CPE switch is assigned a unique VLAN tag.
-  Packets outbound from the CPE switch on the uplink interface are tagged with the 
-  VLAN tag. These packets are routed to the appropriate VNF router in the OpenStack cloud.
-
-
-
 
 ## Implementation Highlights ##
 
+* SDN-MUD : implements MUD ACLs on SDN Switches. 
+  Implements the full set of MUD-defined ACLs (including Manufacturer, Controller, Model classes).
 * Model Driven design : Works directly with the IETF published YANG models.
 * Implements DHCP or Directly administered MUD profiles. DHCP support is transparent - does not depend on modifications to the
   DHCP server. DHCP interactions are handled in the SDN controller.
 * Scalable - *O(N)* flow rules for *N* distinct MAC addresses at a switch.
-* Implements the full set of MUD-defined ACLs (including Manufacturer, Controller, Model classes).
 
+## Read a short paper about it ##
 
-The following diagram shows the implementation architecture on OpenDaylight
-
-![alt tag](docs/arch/SDNMUD-SW-ARCH.png)
-
-
-## Integration with cloud resident IDS (Planned)  ##
-
-**This section describes work in progress.**
-
-The following diagrams shows the network architecture of the system.
-
-![alt tag](docs/arch/NetworkArch.png)
-
-The NPE switch routes packets to a cloud-resident virtual network
-function VNF switch. MUD flow rules are installed only at CPE switches.
-Packets that leave the CPE switch and are sent to the NPE switch are
-tagged with a VLAN tag at the CPE switch that identifies the CPE switch
-from which they originated.  At the NPE switch the VLAN tag is used to
-direct packets to a corresponding VNF switch. This arrangement extends the
-CPE (department) LAN to the enterprise cloud. We propose to host scalable
-Intrusion Detection platforms in the enterprise cloud to complement the
-functionality of MUD.
-
-![alt tag](docs/arch/ARCHITECTURE.png)
-
-
-The NPE switch acts as a Multiplexer to forward packets from several CPE switches to its uplink interface towards the Cloud where 
-Virtual network functions for the CPE reside. The uplink is provided via VPN encapsulation. 
-
+[A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn-2019-r3.pdf)
 
 ## OpendDaylight Components ##
 
@@ -81,10 +37,7 @@ This project consists of the following features:
 
 * features-sdnmud is the scalable MUD implementation.  This application manages the mud-specific flow rules on the CPE switches.
 This component can be used independently of the others.
-* features-vlan this application installs flow rules on both the CPE switch and the NPE switch.
-Packets sent from the IOT devices on the CPE switch are assigned a CPE-specific VLAN tag when they are sent to the uplink interface.
-Packets sent to the CPE switch via the Uplink interface have their VLAN tags stripped for consumption by the devices attached to the switch.
-It installs rules on the NPE switch to multiplex traffic based on the VLAN tag to the uplink interface.
+* features-baseapp lays out the tables and provides some common utility functions (this is included in features-sdnmud). Some table space is reserved for future expansion.
 
 
 ## Building ##
@@ -102,6 +55,7 @@ Run maven
 
 This will download the necessary dependencies and build the subprojects. Note that we have disabled 
 unit tests and javadoc creation. This will change after the project is in a final state.
+
 
 ## Try it out  ##
 

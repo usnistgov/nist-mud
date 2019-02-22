@@ -32,8 +32,6 @@
 	<modules>
 		<module>baseapp-aggregator</module>
 		<module>sdnmud-aggregator</module>
-		<module>vlan-aggregator</module>
-		<!-- module>flowmon-aggregator</module -->
 		<!-- <module>it</module> -->
 	</modules>
 
