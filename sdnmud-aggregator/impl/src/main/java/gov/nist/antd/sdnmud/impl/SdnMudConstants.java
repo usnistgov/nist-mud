@@ -40,6 +40,7 @@ interface SdnMudConstants {
 	short TCP_PROTOCOL = 6;
 	short UDP_PROTOCOL = 17;
 	int ETHERTYPE_IPV4 = 0x0800;
+	int ETHERTYPE_CUSTOMER_VLAN = 0x08100;
 
 	// Well known classes.
 	String DNS_SERVER_URI = "urn:ietf:params:mud:dns";

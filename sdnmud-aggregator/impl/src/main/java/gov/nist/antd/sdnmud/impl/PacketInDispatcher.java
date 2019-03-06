@@ -58,6 +58,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Timer;
 import java.util.Collection;
 
 import javax.net.ssl.HostnameVerifier;
@@ -121,6 +122,8 @@ import org.opendaylight.yangtools.yang.model.repo.api.SchemaSourceException;
 import org.opendaylight.yangtools.yang.model.util.SchemaContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -175,7 +178,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private int packetInCounter = 0;
 
-    private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
+	private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
+
+	private Timer timer = new Timer();
 
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
@@ -237,16 +242,29 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 	}
 
+	private class UnclassifiedMacAddressTimerTask extends TimerTask {
+		String unclassifiedMacAddress;
+
+		public UnclassifiedMacAddressTimerTask(String macAddress) {
+			this.unclassifiedMacAddress = macAddress;
+		}
+
+		@Override
+		public void run() {
+			LOG.info("removing mac address " + unclassifiedMacAddress);
+			unclassifiedMacAddresses.remove(unclassifiedMacAddress);
+		}
+	}
+
 	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
 	}
 
-    public Collection<String> getUnclassifiedMacAddresses() {
-            return this.unclassifiedMacAddresses;
-    }
-
+	public Collection<String> getUnclassifiedMacAddresses() {
+		return this.unclassifiedMacAddresses;
+	}
 
 	public int getMudPacketInCount(boolean clearFlag) {
 		int retval = this.mudRelatedPacketInCounter;
@@ -281,6 +299,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return mac;
 	}
 
+	private void addUclassifiedAddresses(String addr) {
+		LOG.info("addUnclassifiedAddress : " + addr);
+		if (!this.unclassifiedMacAddresses.contains(addr)) {
+			this.unclassifiedMacAddresses.add(addr);
+			timer.schedule(new UnclassifiedMacAddressTimerTask(addr),
+					2 * sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() * 1000);
+		}
+	}
+
+	private void removeUnclassifiedAddress(String addr) {
+		LOG.info("removeUnclassifiedAddress : " + addr);
+		this.unclassifiedMacAddresses.remove(addr);
+	}
+
 	private void transmitPacket(PacketReceived notification) {
 
 		TransmitPacketInputBuilder tpib = new TransmitPacketInputBuilder().setPayload(notification.getPayload())
@@ -303,10 +335,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
 	}
 
+	private boolean isMacAddressExcluded(String macAddress) {
+		return this.sdnmudProvider.getRouterMacAddresses().contains(macAddress);
+	}
+
 	private boolean isLocalAddress(String nodeId, String ipAddress) {
-		if ( sdnmudProvider.getLocalNetworksExclude(nodeId) != null) {
-			for ( String host: sdnmudProvider.getLocalNetworksExclude(nodeId)) {
-				if (host.equals(ipAddress)) 
+		if (sdnmudProvider.getLocalNetworksExclude(nodeId) != null) {
+			for (String host : sdnmudProvider.getLocalNetworksExclude(nodeId)) {
+				if (host.equals(ipAddress))
 					return false;
 			}
 		}
@@ -376,7 +412,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		LOG.debug("checkIfTcpSynAllowed: metadata = " + metadata.toString(16));
 
-		if ((sdnmudProvider.isOpenflow13Only() || sdnmudProvider.getSdnmudConfig().isRelaxedAcl())
+		if ((sdnmudProvider.isOpenflow13Only()
+				|| (sdnmudProvider.getSdnmudConfig() != null && sdnmudProvider.getSdnmudConfig().isRelaxedAcl()))
 				&& this.sdnmudProvider.getMudFlowsInstaller().checkSynFlagMatch(metadata, srcIp, sourcePort, destIp,
 						destPort)) {
 			LOG.info("checkSynFlagMatch returned true -- checking for illegal SYN flag");
@@ -688,7 +725,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		InstanceIdentifier<FlowCapableNode> node = this.sdnmudProvider.getNode(nodeId);
 
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
-				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue());
+				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue() + "etherType = " + etherType);
 
 		this.packetInCounter++;
 
@@ -697,7 +734,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			return;
 		}
 
-		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) {
+		if (etherType == SdnMudConstants.ETHERTYPE_IPV4 || etherType == SdnMudConstants.ETHERTYPE_CUSTOMER_VLAN) {
 			String srcIp = PacketUtils.extractSrcIpStr(notification.getPayload());
 			String dstIp = PacketUtils.extractDstIpStr(notification.getPayload());
 			LOG.debug("Source IP  " + srcIp + " dest IP  " + dstIp);
@@ -715,22 +752,22 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, srcIp);
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
-                if (isLocalAddress) {
-                        this.unclassifiedMacAddresses.add(srcMac.getValue());
-                } else {
-                        this.unclassifiedMacAddresses.remove(srcMac.getValue());
-                }
+				if (isLocalAddress && !this.isMacAddressExcluded(srcMac.getValue())) {
+					this.addUclassifiedAddresses(srcMac.getValue());
+				} else {
+					this.removeUnclassifiedAddress(srcMac.getValue());
+				}
 				this.checkIfTcpSynAllowed(node, rawPacket);
 
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-                if (isLocalAddress) {
-                        this.unclassifiedMacAddresses.add(dstMac.getValue());
-                } else {
-                        this.unclassifiedMacAddresses.remove(dstMac.getValue());
-                }
+				if (isLocalAddress && !this.isMacAddressExcluded(dstMac.getValue())) {
+					this.addUclassifiedAddresses(dstMac.getValue());
+				} else {
+					this.removeUnclassifiedAddress(dstMac.getValue());
+				}
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
@@ -740,11 +777,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
-                 if (isLocalAddress) {
-                        this.unclassifiedMacAddresses.add(dstMac.getValue());
-                } else {
-                        this.unclassifiedMacAddresses.remove(dstMac.getValue());
-                }
+				if (isLocalAddress && !this.isMacAddressExcluded(dstMac.getValue())) {
+					this.addUclassifiedAddresses(dstMac.getValue());
+				} else {
+					this.removeUnclassifiedAddress(dstMac.getValue());
+				}
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
@@ -853,9 +890,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 										LOG.debug("keystore = " + keystore);
 										keystore.load(is, keyPass.toCharArray());
 										Certificate cert = keystore.getCertificate(manufacturer);
-										if ( cert == null ) {
-											LOG.error("Certificate not found in keystore -- not installing mud profile");
-										    return;
+										if (cert == null) {
+											LOG.error(
+													"Certificate not found in keystore -- not installing mud profile");
+											return;
 										}
 										PublicKey publicKey = cert.getPublicKey();
 										String algorithm = publicKey.getAlgorithm();

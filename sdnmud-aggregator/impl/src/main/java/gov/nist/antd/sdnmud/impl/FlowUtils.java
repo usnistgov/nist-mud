@@ -727,8 +727,9 @@ public class FlowUtils {
 		fb.setBarrier(true);
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}
@@ -746,8 +747,9 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("destMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}

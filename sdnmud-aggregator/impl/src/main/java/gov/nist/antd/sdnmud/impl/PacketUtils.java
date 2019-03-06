@@ -33,6 +33,7 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -80,11 +81,6 @@ public abstract class PacketUtils {
 	private static final int ETHER_TYPE_END_POSITION = 14;
 
 	private static final int PACKET_OFFSET_IP = 14;
-	private static final int PACKET_OFFSET_IP_PROTO = PACKET_OFFSET_IP + 9;
-	private static final int PACKET_OFFSET_IP_SRC = PACKET_OFFSET_IP + 12;
-	private static final int PACKET_OFFSET_IP_DST = PACKET_OFFSET_IP + 16;
-	private static final int PACKET_OFFSET_TCP_SRC_PORT = PACKET_OFFSET_IP + 20;
-	private static final int PACKET_OFFSET_TCP_DST_PORT = PACKET_OFFSET_TCP_SRC_PORT + 2;
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketUtils.class);
 
@@ -130,8 +126,13 @@ public abstract class PacketUtils {
 	 * @param payload
 	 * @return the ethertype.
 	 */
-	public static byte[] extractEtherType(final byte[] payload) {
-		return Arrays.copyOfRange(payload, ETHER_TYPE_START_POSITION, ETHER_TYPE_END_POSITION);
+	private static int extractEtherType(final byte[] payload) {
+		byte[] buffer =  Arrays.copyOfRange(payload, ETHER_TYPE_START_POSITION, ETHER_TYPE_END_POSITION);
+		ByteBuffer wrapped = ByteBuffer.wrap(buffer); // big-endian by default
+		short retval =  wrapped.asShortBuffer().get();
+		int etherType = retval < 0 ? 0xffff + retval + 1 : retval;
+		LOG.debug("etherType = :" + etherType);
+		return  etherType;
 	}
 
 	/**
@@ -172,7 +173,9 @@ public abstract class PacketUtils {
 	 * @return srcIp String
 	 */
 	public static String extractSrcIpStr(final byte[] rawPacket) {
-		final byte[] ipSrcBytes = Arrays.copyOfRange(rawPacket, PACKET_OFFSET_IP_SRC, PACKET_OFFSET_IP_SRC + 4);
+		int etherTYpe = extractEtherType(rawPacket);
+		int offset = getPacketOffsetIpSrc(etherTYpe);
+		final byte[] ipSrcBytes = Arrays.copyOfRange(rawPacket, offset, offset + 4);
 		String pktSrcIpStr = null;
 		try {
 			pktSrcIpStr = InetAddress.getByAddress(ipSrcBytes).getHostAddress();
@@ -190,7 +193,9 @@ public abstract class PacketUtils {
 	 * @return dstIp String
 	 */
 	public static String extractDstIpStr(final byte[] rawPacket) {
-		final byte[] ipDstBytes = Arrays.copyOfRange(rawPacket, PACKET_OFFSET_IP_DST, PACKET_OFFSET_IP_DST + 4);
+		int etherType = extractEtherType(rawPacket);
+		int offset = getPacketOffsetIpDst(etherType);
+		final byte[] ipDstBytes = Arrays.copyOfRange(rawPacket,offset ,  offset + 4);
 		String pktDstIpStr = null;
 		try {
 			pktDstIpStr = InetAddress.getByAddress(ipDstBytes).getHostAddress();
@@ -201,21 +206,26 @@ public abstract class PacketUtils {
 	}
 
 	public static boolean isSYNFlagOnAndACKFlagOff(final byte[] rawPacket) {
-
-		byte flags = (byte) (rawPacket[PACKET_OFFSET_TCP_SRC_PORT + 13] & 63);
+        int etherType = extractEtherType(rawPacket);
+        int offset = getPacketOffsetTcpSrcPort(etherType);
+		byte flags = (byte) (rawPacket[offset + 13] & 63);
 		boolean synFlag = (flags & 2) == 2;
 		boolean ackFlag = (flags & 0x10) == 0x010;
 		return synFlag && !ackFlag;
 	}
 
-	public static int getSourcePort(final byte[] baseHeader) {
-		return (((baseHeader[PACKET_OFFSET_TCP_SRC_PORT] << 8) & 65280)
-				| (baseHeader[PACKET_OFFSET_TCP_SRC_PORT + 1] & 255));
+	public static int getSourcePort(final byte[] rawPacket) {
+		int etherType = extractEtherType(rawPacket);
+	    int offset = getPacketOffsetTcpSrcPort(etherType);	
+		return (((rawPacket[offset] << 8) & 65280)
+				| (rawPacket[offset + 1] & 255));
 	}
 
 	public static int getDestinationPort(final byte[] baseHeader) {
-		return (((baseHeader[PACKET_OFFSET_TCP_DST_PORT] << 8) & 65280)
-				| (baseHeader[PACKET_OFFSET_TCP_DST_PORT + 1] & 255));
+		int etherType = extractEtherType(baseHeader);
+		int offset = getPacketOffsetTcpDstPort(etherType);
+		return (((baseHeader[offset] << 8) & 65280)
+				| (baseHeader[offset + 1] & 255));
 
 	}
 
@@ -224,8 +234,39 @@ public abstract class PacketUtils {
 	 * @return
 	 */
 	public static byte extractIpProtocol(byte[] rawPacket) {
-		final byte[] ipProto = Arrays.copyOfRange(rawPacket, PACKET_OFFSET_IP_PROTO, PACKET_OFFSET_IP_PROTO + 1);
+		int etherType = extractEtherType(rawPacket);
+		int protoOffset = getPacketOffsetIpProto(etherType);
+		final byte[] ipProto = Arrays.copyOfRange(rawPacket, protoOffset, protoOffset + 1);
 		return ipProto[0];
+	}
+
+	private static int getPacketOffsetIp(int etherType) {
+		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) return PACKET_OFFSET_IP;
+		else if (etherType == SdnMudConstants.ETHERTYPE_CUSTOMER_VLAN) return PACKET_OFFSET_IP + 4;
+		else {
+			LOG.error("Unsupported ethertype ");
+			throw new RuntimeException("Unsupported etherType " + etherType);
+		}
+	}
+
+	private static int getPacketOffsetIpProto(int etherType) {
+		return getPacketOffsetIp(etherType) + 9;
+	}
+
+	private static int getPacketOffsetIpSrc(int etherType) {
+		return getPacketOffsetIp(etherType) + 12;
+	}
+
+	private static int getPacketOffsetIpDst(int etherType) {
+		return getPacketOffsetIp(etherType) + 16;
+	}
+
+	private static int getPacketOffsetTcpSrcPort(int etherType) {
+		return  getPacketOffsetIp(etherType) + 20;
+	}
+
+	private static int getPacketOffsetTcpDstPort(int etherType) {
+		return  getPacketOffsetTcpSrcPort(etherType) + 2;
 	}
 
 }

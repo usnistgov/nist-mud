@@ -111,8 +111,10 @@ public class SdnmudProvider {
 	private HashMap<String, HashMap<String, List<IpAddress>>> controllerMap = new HashMap<>();
 
 	private HashMap<String, List<String>> localNetworks = new HashMap<>();
-	
-	private HashMap<String,List<String>> localNetworksExcludedHosts = new HashMap<>();
+
+	private HashMap<String, List<String>> localNetworksExcludedHosts = new HashMap<>();
+
+	private HashSet<String> routerMacAddresses = new HashSet<String>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
@@ -228,8 +230,8 @@ public class SdnmudProvider {
 		this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
 
 		/*
-		 * Register a data tree change listener for MAC to MUD URL mapping. The
-		 * MAC to URL mapping is provided by the system admin.
+		 * Register a data tree change listener for MAC to MUD URL mapping. The MAC to
+		 * URL mapping is provided by the system admin.
 		 */
 		final InstanceIdentifier<Mapping> mappingWildCardPath = getMappingWildCardPath();
 		final DataTreeIdentifier<Mapping> mappingTreeId = new DataTreeIdentifier<Mapping>(
@@ -244,8 +246,8 @@ public class SdnmudProvider {
 
 		/*
 		 * Register a data tree change listener for Controller Class mapping. A
-		 * controller class mapping maps a controller class URI to a list of
-		 * internet addresses
+		 * controller class mapping maps a controller class URI to a list of internet
+		 * addresses
 		 */
 		final InstanceIdentifier<ControllerclassMapping> controllerClassMappingWildCardPath = getControllerClassMappingWildCardPath();
 		this.controllerClassMappingDataStoreListener = new ControllerclassMappingDataStoreListener(this);
@@ -279,7 +281,7 @@ public class SdnmudProvider {
 		this.dataTreeChangeListenerRegistration.close();
 		this.uriToMudMap.clear();
 	}
-	
+
 	public StateChangeScanner getStateChangeScanner() {
 		return this.stateChangeScanner;
 	}
@@ -333,10 +335,8 @@ public class SdnmudProvider {
 	/**
 	 * Put in the node to URI map.
 	 *
-	 * @param nodeUri
-	 *            -- the node Uri.
-	 * @param nodePath
-	 *            -- the flow capable node Instance Identifier.
+	 * @param nodeUri  -- the node Uri.
+	 * @param nodePath -- the flow capable node Instance Identifier.
 	 */
 	synchronized void putInUriToNodeMap(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath) {
 		this.uriToNodeMap.put(nodeUri, nodePath);
@@ -346,8 +346,7 @@ public class SdnmudProvider {
 	/**
 	 * Get the flow capable node id from the node uri.
 	 *
-	 * @param nodeUri
-	 *            -- the node URI
+	 * @param nodeUri -- the node URI
 	 * @return -- the flow capable node.
 	 */
 	synchronized InstanceIdentifier<FlowCapableNode> getNode(String nodeUri) {
@@ -390,11 +389,9 @@ public class SdnmudProvider {
 	/**
 	 * Add a MUD node for this device MAC address.
 	 *
-	 * @param deviceMacAddress
-	 *            -- mac address of device.
+	 * @param deviceMacAddress -- mac address of device.
 	 *
-	 * @param node
-	 *            -- the node to add.
+	 * @param node             -- the node to add.
 	 */
 	public void addMudNode(String manufacturerId, InstanceIdentifier<FlowCapableNode> node) {
 
@@ -409,9 +406,8 @@ public class SdnmudProvider {
 	/**
 	 * Get the MUD nodes where flow rules were installed.
 	 *
-	 * @param deviceMacAddress
-	 *            -- the mac address for which we want the flow capable node
-	 *            set.
+	 * @param deviceMacAddress -- the mac address for which we want the flow capable
+	 *                         node set.
 	 */
 	public Collection<InstanceIdentifier<FlowCapableNode>> getMudNodes(String manufacturer) {
 		return this.mudNodesMap.get(manufacturer);
@@ -491,14 +487,11 @@ public class SdnmudProvider {
 	/**
 	 * Add Aces for a given acl name scoped to a MUD URI.
 	 *
-	 * @param mudUri
-	 *            -- the mudUri for wich to add the aces.
+	 * @param mudUri  -- the mudUri for wich to add the aces.
 	 *
-	 * @param aclName
-	 *            -- the acl name for which we want to add aces.
+	 * @param aclName -- the acl name for which we want to add aces.
 	 *
-	 * @param aces
-	 *            -- the ACE entries to add.
+	 * @param aces    -- the ACE entries to add.
 	 */
 	public void addAces(String aclName, Aces aces) {
 		LOG.info("adding ACEs aclName =  {} ", aclName);
@@ -509,8 +502,7 @@ public class SdnmudProvider {
 	/**
 	 * Get the aces for a given acl name.
 	 *
-	 * @param aclName
-	 *            -- acl name
+	 * @param aclName -- acl name
 	 * @return -- Aces list for the acl name
 	 */
 	public Aces getAces(String aclName) {
@@ -539,9 +531,15 @@ public class SdnmudProvider {
 		if (controllerMapping.getLocalNetworks() != null) {
 			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
 		}
-		
-		if ( localNetworksExcludedHosts != null ) {
+
+		if (localNetworksExcludedHosts != null) {
 			this.localNetworksExcludedHosts.put(nodeId, controllerMapping.getLocalNetworksExcludedHosts());
+		}
+
+		if (controllerMapping.getRouterMacAddresses() != null) {
+			for (MacAddress macAddress : controllerMapping.getRouterMacAddresses()) {
+				this.routerMacAddresses.add(macAddress.getValue());
+			}
 		}
 
 		this.configStateChanged++;
@@ -559,7 +557,7 @@ public class SdnmudProvider {
 	public Collection<String> getLocalNetworks(String nodeUri) {
 		return localNetworks.get(nodeUri);
 	}
-	
+
 	public Collection<String> getLocalNetworksExclude(String nodeUri) {
 		return this.localNetworksExcludedHosts.get(nodeUri);
 	}
@@ -613,7 +611,9 @@ public class SdnmudProvider {
 		this.nodeToMudUriMap.clear();
 		this.nameToAcesMap.clear();
 	}
-	
-	
+
+	public HashSet<String> getRouterMacAddresses() {
+		return this.routerMacAddresses;
+	}
 
 }

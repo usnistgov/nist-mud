@@ -54,7 +54,12 @@ public class StateChangeScanner extends TimerTask {
 	public synchronized void run() {
 
 		if (sdnmudProvider.getCpeCollections() == null || !sdnmudProvider.isControllerMapped()) {
-			LOG.info("StateChangeScanner: Topology not found");
+			if (sdnmudProvider.getCpeCollections() == null) {
+				LOG.info("StateChangeScanner : Configuration incomplete -- cpeCollections not found");
+			} 
+			if (!sdnmudProvider.isControllerMapped()) {
+				LOG.info("StateChangeScanner: controller class mapping not provided");
+			}
 			return;
 		}
 
@@ -89,8 +94,9 @@ public class StateChangeScanner extends TimerTask {
 				}
 			}
 
-			if (!failed)
+			if (!failed) {
 				sdnmudProvider.clearConfigStateChanged();
+			}
 
 		} catch (RuntimeException ex) {
 			LOG.error("Exception caught when processing state change : ", ex);

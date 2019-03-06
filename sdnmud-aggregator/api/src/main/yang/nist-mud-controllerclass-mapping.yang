@@ -76,5 +76,11 @@ module nist-mud-controllerclass-mapping {
           "Network address that are excluded from the local networks classification";
        type string; 
     }
+
+    leaf-list router-mac-addresses {
+       description
+          "Router MAC addresses. Exclude these from accounting table when classifying packets as belonging to Non-IOT hosts.";
+       type yang:mac-address;
+    }
   }
 }
