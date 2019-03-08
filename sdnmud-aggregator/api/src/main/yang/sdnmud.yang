@@ -70,7 +70,13 @@ module sdnmud {
                for continued operation when controller is not connected. Warn operator if ACL violated.";
       }
 
-
+      leaf notification-port {
+             type    uint32;
+             default "30001";
+             description
+                    "The port through which state change notification (i.e. unsecured MAC address notifications) are sent out.
+                     clients connect here and get notified of vulnerable MAC addresses.";
+      }
 
   }
 
@@ -120,13 +126,10 @@ module sdnmud {
     output {
       leaf-list unmapped-device-addresses {
             description
-                "returns a list of unmanaged devices - i.e. MAC addresses that are marked UNCLASSIFIED";
+                "returns a list of unmanaged devices - i.e. MAC addresses that do not have MUD profiles";
       type string;
-      
     }
-
    }
-
   }
 
   rpc clear-mud-rules {

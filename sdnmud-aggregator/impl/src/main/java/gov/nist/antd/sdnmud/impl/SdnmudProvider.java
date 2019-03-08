@@ -87,7 +87,7 @@ public class SdnmudProvider {
 
 	private ControllerclassMappingDataStoreListener controllerClassMappingDataStoreListener;
 
-	private Map<Uri, Mud> uriToMudMap = new HashMap<Uri, Mud>();
+	private Map<String, Mud> uriToMudMap = new HashMap<String, Mud>();
 
 	// Stores a set of NodeIds for a given mac address (identifies the switches
 	// that have seen the mac addr).
@@ -461,8 +461,12 @@ public class SdnmudProvider {
 	}
 
 	public void addMudProfile(Mud mud) {
-		this.uriToMudMap.put(mud.getMudUrl(), mud);
+		this.uriToMudMap.put(mud.getMudUrl().getValue(), mud);
 		this.configStateChanged++;
+	}
+	
+	public boolean hasMudProfile(String mudUrl) {
+		return this.uriToMudMap.containsKey(mudUrl);
 	}
 
 	public boolean isCpeNode(String nodeId) {

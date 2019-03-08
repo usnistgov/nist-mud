@@ -42,8 +42,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.CharBuffer;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -182,6 +187,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private Timer timer = new Timer();
 
+	private ArrayList<Socket> listeners;
+
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
 		 * (non-Javadoc)
@@ -256,10 +263,37 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 	}
 
+	private class UnclassifiedMacAddressNotificationServer implements Runnable {
+		ServerSocket listener;
+		int port;
+		private UnclassifiedMacAddressNotificationServer(int port) {
+			this.port = port;
+			try {
+				listener = new ServerSocket(port);
+			} catch (IOException e) {
+				LOG.error("Cannot open server socket ", e);
+			}
+		}
+
+		public void run() {
+			try {
+				while (true) {
+					Socket clientSock = listener.accept();
+					listeners.add(clientSock);
+				}
+			} catch (IOException ex) {
+				LOG.error("Cannot open server socket ", ex);
+			}
+		}
+
+	}
+
 	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
+		int notificationPort =  sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
+		new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort)).start();
 	}
 
 	public Collection<String> getUnclassifiedMacAddresses() {
@@ -298,19 +332,63 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 		return mac;
 	}
+	
+	
+	private void broadcastStateChange() {
+		ArrayList<Socket> deadSockets = new ArrayList<Socket>();
+		for (Socket s : listeners) {
+			try {
+				PrintWriter pw = new PrintWriter(s.getOutputStream());
+				for (String macAddr : this.unclassifiedMacAddresses ) {
+					pw.println(macAddr);
+				}
+			} catch (IOException e) {
+				try {
+					deadSockets.add(s);
+					s.close();
+				} catch (IOException e1) {
+					LOG.error("Error writing to listener socket -- closing",e1);
+				}
+			}	
+		}
+		
+		// Remove the dead sockets from our list of listeners.
+		for ( Socket d: deadSockets) {
+			this.listeners.remove(d);
+		}
+	}
+	
 
 	private void addUclassifiedAddresses(String addr) {
 		LOG.info("addUnclassifiedAddress : " + addr);
 		if (!this.unclassifiedMacAddresses.contains(addr)) {
 			this.unclassifiedMacAddresses.add(addr);
+			// Clears out the table in the timeout time.
 			timer.schedule(new UnclassifiedMacAddressTimerTask(addr),
 					2 * sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() * 1000);
+			
+			this.broadcastStateChange();
+		}
+	}
+
+	private void classifyAddress(MacAddress macAddress, boolean hasMudProfile, boolean isLocalAddress) {
+		if (isLocalAddress || !hasMudProfile) {
+			if (!this.isMacAddressExcluded(macAddress.getValue())) {
+				this.addUclassifiedAddresses(macAddress.getValue());
+			} else {
+				this.removeUnclassifiedAddress(macAddress.getValue());
+			}
+		} else {
+			this.removeUnclassifiedAddress(macAddress.getValue());
 		}
 	}
 
 	private void removeUnclassifiedAddress(String addr) {
 		LOG.info("removeUnclassifiedAddress : " + addr);
-		this.unclassifiedMacAddresses.remove(addr);
+		if ( this.unclassifiedMacAddresses.contains(addr)) {
+			this.unclassifiedMacAddresses.remove(addr);
+			this.broadcastStateChange();
+		}
 	}
 
 	private void transmitPacket(PacketReceived notification) {
@@ -651,7 +729,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 
-	private void importDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
+	private void writeToDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
 			ReadFailedException, SchemaSourceException, YangSyntaxErrorException {
 		// create StringBuffer object
 
@@ -663,6 +741,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		final NormalizedNodeContainerBuilder<?, ?, ?, ?> builder = ImmutableContainerNodeBuilder.create()
 				.withNodeIdentifier(new YangInstanceIdentifier.NodeIdentifier(qname));
 
+		// Create a writer from the builder.
 		try (NormalizedNodeStreamWriter writer = ImmutableNormalizedNodeStreamWriter.from(builder)) {
 
 			SchemaPath schemaPath = SchemaPath.create(true, qname);
@@ -674,10 +753,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 			LOG.debug("parentNode " + parentNode);
 
+			// Create a jsonParser from the writer.
 			try (JsonParserStream jsonParser = JsonParserStream.create(writer, schemaService.getGlobalContext(),
 					parentNode)) {
 				try (JsonReader reader = new JsonReader(new InputStreamReader(is))) {
 					reader.setLenient(true);
+					// The side effect of this parse is a write to the builder.
 					jsonParser.parse(reader);
 					DOMDataReadWriteTransaction rwTrx = domDataBroker.newReadWriteTransaction();
 					importFromNormalizedNode(rwTrx, LogicalDatastoreType.CONFIGURATION, builder.build());
@@ -748,26 +829,24 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+				boolean hasMudProfile = this.sdnmudProvider.hasMudProfile(mudUri.getValue());
 
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, srcIp);
+
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
-				if (isLocalAddress && !this.isMacAddressExcluded(srcMac.getValue())) {
-					this.addUclassifiedAddresses(srcMac.getValue());
-				} else {
-					this.removeUnclassifiedAddress(srcMac.getValue());
-				}
+
+				this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
+
 				this.checkIfTcpSynAllowed(node, rawPacket);
 
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
+
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-				if (isLocalAddress && !this.isMacAddressExcluded(dstMac.getValue())) {
-					this.addUclassifiedAddresses(dstMac.getValue());
-				} else {
-					this.removeUnclassifiedAddress(dstMac.getValue());
-				}
+
+				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
@@ -777,11 +856,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						&& this.isLocalAddress(nodeId, dstIp);
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
-				if (isLocalAddress && !this.isMacAddressExcluded(dstMac.getValue())) {
-					this.addUclassifiedAddresses(dstMac.getValue());
-				} else {
-					this.removeUnclassifiedAddress(dstMac.getValue());
-				}
+				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
 			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
@@ -913,11 +988,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 									String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));
 
-									this.importDatastore(mudStr, Mud.QNAME);
+									// Writing to the datastore will invoke the listener.
+									this.writeToDatastore(mudStr, Mud.QNAME);
 
 									String aclStr = gson.toJson(mudFile.get("ietf-access-control-list:acls"));
 
-									this.importDatastore(aclStr, Acls.QNAME);
+									this.writeToDatastore(aclStr, Acls.QNAME);
 
 									MappingBuilder mb = new MappingBuilder();
 									ArrayList<MacAddress> macAddresses = new ArrayList<>();
