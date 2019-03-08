@@ -265,9 +265,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private class UnclassifiedMacAddressNotificationServer implements Runnable {
 		ServerSocket listener;
-		int port;
 		private UnclassifiedMacAddressNotificationServer(int port) {
-			this.port = port;
 			try {
 				listener = new ServerSocket(port);
 			} catch (IOException e) {
@@ -293,6 +291,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
 		int notificationPort =  sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
+		LOG.info("start thread on notification port " + notificationPort);
 		new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort)).start();
 	}
 
