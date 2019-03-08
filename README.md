@@ -1,13 +1,13 @@
 ##  Manufacturer Usage Description ##
 
-IOT devices are special purpose devices that implement a dedicated function.
+IOT devices (AKA "Things") are special purpose devices that implement a dedicated function.
 Such devices have communication patterns that are known a-priori to the manufacturer.
 
-The goal of the MUD (Manufacturer Usage Description) specification is to provide a
-means for manufacturers of Things to indicate what sort of access and
-network functionality they require for the Thing to properly function.
-A manufacturer associates a MUD file with a device which specifies an
-ACL for the device to within deployment specific parameters.
+The goal of the MUD (Manufacturer Usage Description) specification is
+to provide a means for manufacturers of Things to indicate what sort of
+access and network functionality they require for the Thing to properly
+function.  A manufacturer associates a MUD file with a device which
+specifies an ACL for the device to within deployment specific parameters.
 
 [The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-25.txt)
 
