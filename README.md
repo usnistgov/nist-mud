@@ -3,8 +3,7 @@
 IOT devices are special purpose devices that implement a dedicated function.
 Such devices have communication patterns that are known a-priori to the manufacturer.
 
-
-The goal of MUD (Manufacturer Usage Description) is to provide a
+The goal of the MUD (Manufacturer Usage Description) specification is to provide a
 means for manufacturers of Things to indicate what sort of access and
 network functionality they require for the Thing to properly function.
 A manufacturer associates a MUD file with a device which specifies an
@@ -44,7 +43,7 @@ This component can be used independently of the others.
 
 On the Controller host:
 
-* Install JDK 1.8x and maven 3.5 or above.
+* Install JDK 1.8x. (There are some compile issues with higher versions)
 * Install maven 3.5 or higher.
 * Eclipse -- highly recommended if you want to look at code.
 
@@ -54,7 +53,7 @@ Run maven
       mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
 This will download the necessary dependencies and build the subprojects. Note that we have disabled 
-unit tests and javadoc creation. This will change after the project is in a final state.
+unit tests and javadoc creation. This will change after the project is in a final state. 
 
 
 ## Try it out  ##
