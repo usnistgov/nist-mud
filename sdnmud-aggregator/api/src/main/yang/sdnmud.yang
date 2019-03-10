@@ -23,18 +23,19 @@ module sdnmud {
        settings for the application.";
   }
 
+
   container sdnmud-config {
 
       leaf keystore-home {
             type string;
-            mandatory true;
+            default "jre/lib/security/cacerts";
             description
                 "Java keystore home for manufacturer certificates.";
       }
 
       leaf key-pass {
             type string;
-            mandatory true;
+            default "changeit";
             description
                 "Key store password.";
       }
@@ -48,14 +49,14 @@ module sdnmud {
 
       leaf mfg-id-rule-cache-timeout {
             type uint32;
-            default "120";
+            default "60";
             description
                 "Time (in seconds) for timeout of flow rule that classifies packets by manufacturer.";
       }
 
       leaf trust-self-signed-cert {
            type boolean;
-           default "false";
+           default "true";
            description
                 "Whether or not to trust MUD profiles that are self signed. This is for DEBUGGING ONLY 
                 self signed Certs should not be trusted under normal circumstances";
@@ -64,7 +65,7 @@ module sdnmud {
 
       leaf relaxed-acl {
            type boolean;
-           default "false";
+           default "true";
            description
               "Fowrard packet before installing classification rules - this reduces the packet drop and allows
                for continued operation when controller is not connected. Warn operator if ACL violated.";

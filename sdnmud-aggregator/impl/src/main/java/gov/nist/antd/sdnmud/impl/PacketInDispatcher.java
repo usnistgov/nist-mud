@@ -285,14 +285,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 
 	}
+	
+	public void startNotificationThread() {
+		int notificationPort =  sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
+		LOG.info("start thread on notification port " + notificationPort);
+		new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort)).start();
+	}
 
 	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
-		int notificationPort =  sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
-		LOG.info("start thread on notification port " + notificationPort);
-		new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort)).start();
+		this.startNotificationThread();
 	}
 
 	public Collection<String> getUnclassifiedMacAddresses() {

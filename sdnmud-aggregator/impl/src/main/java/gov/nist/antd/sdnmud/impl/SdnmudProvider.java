@@ -146,7 +146,7 @@ public class SdnmudProvider {
 
 	private StateChangeScanner stateChangeScanner;
 
-	public SdnmudProvider(final DataBroker dataBroker, SalFlowService flowService,
+	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
 			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer, RpcProviderRegistry rpcProviderRegistry) {
@@ -161,6 +161,8 @@ public class SdnmudProvider {
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
 		this.rpcProviderRegistry = rpcProviderRegistry;
 		this.flowService = flowService;
+		LOG.info("SdnMudProvider : sdnmudConfig = " + sdnmudConfig);
+		this.sdnmudConfig = sdnmudConfig;
 	}
 
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
@@ -464,7 +466,7 @@ public class SdnmudProvider {
 		this.uriToMudMap.put(mud.getMudUrl().getValue(), mud);
 		this.configStateChanged++;
 	}
-	
+
 	public boolean hasMudProfile(String mudUrl) {
 		return this.uriToMudMap.containsKey(mudUrl);
 	}
