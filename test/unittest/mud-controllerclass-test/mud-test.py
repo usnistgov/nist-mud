@@ -324,8 +324,9 @@ if __name__ == '__main__':
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config")}:
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
+        , (cfgfile, "sdnmud:sdnmud-config")
+	}:
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix

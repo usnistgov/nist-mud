@@ -1,6 +1,6 @@
 {
  "sdnmud-config" : {
-        "ca-certs": "jre/lib/security/cacerts",
+        "ca-certs": "lib/security/cacerts",
         "key-pass" : "changeit",
         "trust-self-signed-cert" : true,
         "mfg-id-rule-cache-timeout":600,

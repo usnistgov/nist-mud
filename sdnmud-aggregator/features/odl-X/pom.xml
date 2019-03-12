@@ -116,7 +116,13 @@
             <type>xml</type>
             <classifier>sdnmud-config</classifier>
         </dependency>
-
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>sdnmud-impl</artifactId>
+            <version>${project.version}</version>
+            <type>xml</type>
+            <classifier>baseapp-config</classifier>
+        </dependency>
 
     </dependencies>
 

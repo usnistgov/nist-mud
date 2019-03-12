@@ -20,11 +20,11 @@
         <!-- Table start - the start location where we place the application 
              - which takes up three consequitive table entries and an entry in the drop-rule-table -->
         <table-start>
-                3
+                0
         </table-start>
         <!-- The table where a drop rule is installed - unsuccessful MUD packets go here -->
         <drop-rule-table>
-                10
+                4
         </drop-rule-table>
         <!-- A flag that indicates whether or not the ACL enforcement is "relaxed" -->
         <relaxed-acl>
