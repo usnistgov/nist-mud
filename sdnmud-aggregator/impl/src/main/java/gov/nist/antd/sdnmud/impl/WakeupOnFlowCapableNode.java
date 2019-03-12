@@ -174,10 +174,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller();
 			mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
 			mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
-			if (sdnmudProvider.getSdnmudConfig() != null && sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
+			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
 				mudFlowsInstaller.installUnknownDestinationPassThrough(nodePath);
 			} else {
-				LOG.info("sdnmudConfig : isRelaxedAcl is false or sdnmudconfig not found");
+				LOG.info("sdnmudConfig : isRelaxedAcl is false");
 			}
 
 		} catch (RuntimeException ex) {

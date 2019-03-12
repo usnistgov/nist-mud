@@ -33,4 +33,16 @@
 		<nature>org.eclipse.m2e.core.maven2Nature</nature>
 		<nature>edu.umd.cs.findbugs.plugin.eclipse.findbugsNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>mdsal-binding</name>
+			<type>2</type>
+			<location>/home/mranga/opendaylight-hacking/nist-mud/baseapp-aggregator/api/target/generated-sources/mdsal-binding</location>
+		</link>
+		<link>
+			<name>org</name>
+			<type>2</type>
+			<location>/home/mranga/opendaylight-hacking/nist-mud/baseapp-aggregator/api/target/generated-sources/mdsal-binding/org</location>
+		</link>
+	</linkedResources>
 </projectDescription>

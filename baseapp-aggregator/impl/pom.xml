@@ -152,7 +152,6 @@
 			</plugin>
 
 
-            <!--
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>build-helper-maven-plugin</artifactId>
@@ -166,22 +165,15 @@
 						<configuration>
 							<artifacts>
 								<artifact>
-									<file>${project.build.directory}/classes/initial/arp-handler-config_arp-handler-config.xml</file>
+									<file>${project.build.directory}/classes/initial/baseapp-config.xml</file>
 									<type>xml</type>
-									<classifier>config-arphandler</classifier>
-								</artifact>
-								<artifact>
-									<file>${project.build.directory}/classes/initial/l2switch-config_l2switch-config.xml</file>
-									<type>xml</type>
-									<classifier>config-l2switch</classifier>
+									<classifier>baseapp-config</classifier>
 								</artifact>
 							</artifacts>
 						</configuration>
 					</execution>
 				</executions>
 			</plugin>
-            -->
-
 		</plugins>
 	</build>
 </project>

@@ -22,7 +22,6 @@
  * usefulness of this software.
  */
 
-
 package gov.nist.antd.baseapp.impl;
 
 import java.util.HashMap;
@@ -34,6 +33,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.baseapp.rev170915.BaseappConfig;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -46,7 +46,6 @@ public class BaseappProvider {
 	private final DataBroker dataBroker;
 
 	private FlowCommitWrapper flowCommitWrapper;
-	
 
 	private WakeupOnFlowCapableNode wakeupListener;
 
@@ -54,23 +53,31 @@ public class BaseappProvider {
 
 	private FlowWriter flowWriter;
 
+	private BaseappConfig baseappConfig;
+
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
 		return InstanceIdentifier.create(Nodes.class).child(Node.class).augmentation(FlowCapableNode.class);
 	}
 
-
-	public BaseappProvider(final DataBroker dataBroker , SalFlowService salFlowService) {
+	public BaseappProvider(final DataBroker dataBroker, BaseappConfig baseappConfig, SalFlowService salFlowService) {
 		LOG.info("Baseapp provider created");
 		this.dataBroker = dataBroker;
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 		this.flowWriter = new FlowWriter(salFlowService);
+		this.baseappConfig = baseappConfig;
+		LOG.info("baseappProvider : " + baseappConfig);
 	}
+
 	
+	public short getNormalRuleTable() {
+		return this.baseappConfig.getNormalRuleTable().shortValue();
+	}
+
 	public FlowCommitWrapper getFlowCommitWrapper() {
 		return this.flowCommitWrapper;
-		
+
 	}
-	
+
 	public FlowWriter getFlowWriter() {
 		return this.flowWriter;
 	}

@@ -23,8 +23,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private BaseappProvider baseappProvider;
 
-	private HashSet<String> switches = new HashSet<String> ();
-	
+	private HashSet<String> switches = new HashSet<String>();
+
 	private static final String getNodeUri(InstanceIdentifier<FlowCapableNode> node) {
 		return node.firstKeyOf(Node.class).getId().getValue();
 
@@ -66,13 +66,14 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("install normal flow");
 		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("NORMAL");
-		FlowBuilder fb = FlowUtils.createNormalFlow(BaseappConstants.MAX_TID, flowId, flowCookie);
+		FlowBuilder fb = FlowUtils.createNormalFlow(
+				baseappProvider.getNormalRuleTable(), flowId, flowCookie);
 		baseappProvider.getFlowWriter().writeFlow(fb, node);
 	}
 
 	private synchronized void installFlows(InstanceIdentifier<FlowCapableNode> nodePath) {
 
-		for (int i = 0; i < BaseappConstants.MAX_TID; i++) {
+		for (int i = 0; i < baseappProvider.getNormalRuleTable(); i++) {
 			installUnconditionalGoToTable(nodePath, (short) i);
 		}
 		installNormalFlow(nodePath);

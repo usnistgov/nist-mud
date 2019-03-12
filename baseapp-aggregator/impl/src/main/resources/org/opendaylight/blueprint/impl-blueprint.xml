@@ -11,9 +11,13 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
   xmlns:odl="http://opendaylight.org/xmlns/blueprint/v1.0.0"
   odl:use-default-for-reference-types="true">
 
-  <reference id="dataBroker"
+   <reference id="dataBroker"
     interface="org.opendaylight.controller.md.sal.binding.api.DataBroker"
     odl:type="default" />
+
+    <odl:clustered-app-config id="baseappConfig"
+        binding-class="org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.baseapp.rev170915.BaseappConfig">
+    </odl:clustered-app-config>
 
    <odl:rpc-service id="salFlowService"
        interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
@@ -22,6 +26,7 @@ and is available at http://www.eclipse.org/legal/epl-v10.html
     class="gov.nist.antd.baseapp.impl.BaseappProvider"
     init-method="init" destroy-method="close">
     <argument ref="dataBroker" />
+    <argument ref="baseappConfig" />
     <argument ref="salFlowService" />
   </bean>
 
