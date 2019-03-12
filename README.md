@@ -47,13 +47,14 @@ On the Controller host:
 * Install maven 3.5 or higher.
 * Eclipse -- highly recommended if you want to look at code.
 
-Copy maven/settings.xml to ~/.m2
+Copy maven/settings.xml to $HOME/.m2
 
 Run maven
       mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
 This will download the necessary dependencies and build the subprojects. Note that we have disabled 
 unit tests and javadoc creation. This will change after the project is in a final state. 
+
 
 
 ## Try it out  ##
@@ -63,8 +64,11 @@ how to exercise the MUD feature.
 
 #### Configure the emulation VM ####
 
+You will need an emulation Linux Virtual machine that runs mininet.
+
 In order for DNS to work on mininet hosts you should not be using local caching. 
 Edit /etc/NetworkManager/NetworkManager.conf and comment out. 
+
 We will start our own dnsmasq for testing.
 
         #dns=dnsmasq
@@ -116,6 +120,10 @@ Add the following to /etc/hosts on your controller host so that the java library
 
 [See the instructions in the test/demo directory](test/demo/README.md)
 
+
+### SYSTEM CONFIGURATION DETAIL ###
+
+[See the instructions in the doc/config directory](docs/config/README.md)
 
 ### Tests ###
 

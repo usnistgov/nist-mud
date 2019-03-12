@@ -11,7 +11,8 @@ Make sure your /etc/hosts has the following entries on the CONTROLLER (OpenDayli
 
 Edit the file sign-and-import.sh to point at your keystore (if not using the default location).
 
-Generate cert and sign the mud file :
+
+Generate cert and sign the mud file on the *Controller* host :
    
     sh sign-and-import.sh 
 

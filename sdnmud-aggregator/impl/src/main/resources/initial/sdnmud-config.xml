@@ -1,19 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sdnmud-config xmlns="urn:opendaylight:params:xml:ns:yang:sdnmud">
-        <keystore-home> 
-              jre/lib/security/cacerts
-        </keystore-home> 
+        <!-- The default location of the certificate store relative to $JAVA_HOME/jre
+             If an absolute path is used here then JAVA_HOME is not prepended to the path.  -->
+        <ca-certs> 
+              lib/security/cacerts
+        </ca-certs> 
+        <!-- The key password for the certificates in the store -->
         <key-pass> 
                changeit
         </key-pass>
+        <!-- Whether or not to trust self-signed certificates -->
         <trust-self-signed-cert> 
                 true
         </trust-self-signed-cert> 
+        <!-- The cache timeout for rules that associate manufactuerer with MAC address -->
         <mfg-id-rule-cache-timeout>
-                600
+                60
         </mfg-id-rule-cache-timeout>
+        <!-- Table start - the start location where we place the application 
+             - which takes up three consequitive table entries and an entry in the drop-rule-table -->
+        <table-start>
+                3
+        </table-start>
+        <!-- The table where a drop rule is installed - unsuccessful MUD packets go here -->
+        <drop-rule-table>
+                10
+        </drop-rule-table>
+        <!-- A flag that indicates whether or not the ACL enforcement is "relaxed" -->
         <relaxed-acl>
                 true
         </relaxed-acl>
+        <!-- The port for mapping notifications - this is for IDS integration. Notification listeners
+             are informed of MAC addresses that do not have MUD profiles via TCP on this port. -->
+        <notification-port>
+                30001
+        </notification-port>
 </sdnmud-config>
 

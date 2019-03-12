@@ -313,7 +313,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    #clean_mud_rules(controller_addr)
+    clean_mud_rules(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),

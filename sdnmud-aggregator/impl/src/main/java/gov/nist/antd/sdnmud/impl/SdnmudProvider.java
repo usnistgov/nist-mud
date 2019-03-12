@@ -62,9 +62,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
-import gov.nist.antd.baseapp.impl.FlowWriter;
-
 public class SdnmudProvider {
 
 	private static final Logger LOG = LoggerFactory.getLogger(SdnmudProvider.class);
@@ -163,6 +160,10 @@ public class SdnmudProvider {
 		this.flowService = flowService;
 		LOG.info("SdnMudProvider : sdnmudConfig = " + sdnmudConfig);
 		this.sdnmudConfig = sdnmudConfig;
+		if ( sdnmudConfig.getDropRuleTable() <  sdnmudConfig.getTableStart() + 4) {
+			LOG.error("Drop rule table is incorrectly specified");
+			throw new RuntimeException("Error in config file -- please check defaults. Drop rule table is too small.");
+		}
 	}
 
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
@@ -274,6 +275,23 @@ public class SdnmudProvider {
 		LOG.info("start() <--");
 
 	}
+	
+	public short getSrcDeviceManufacturerStampTable() {
+		return this.sdnmudConfig.getTableStart().shortValue();
+	}
+	
+	public short getDstDeviceManufacturerStampTable() {
+		return (short)(this.sdnmudConfig.getTableStart().shortValue() + 1);
+	}
+	
+	public short getSdnmudRulesTable() {
+		return (short)(this.sdnmudConfig.getTableStart() + 2);
+	}
+	
+	
+	public short getDropTable() {
+		return (short)(this.sdnmudConfig.getDropRuleTable().shortValue());
+	}
 
 	/**
 	 * Method called when the blueprint container is destroyed.
@@ -282,6 +300,8 @@ public class SdnmudProvider {
 		LOG.info("SdnmudProvider Closed");
 		this.dataTreeChangeListenerRegistration.close();
 		this.uriToMudMap.clear();
+		this.packetInDispatcher.close();
+		this.stateChangeScanner.cancel();
 	}
 
 	public StateChangeScanner getStateChangeScanner() {

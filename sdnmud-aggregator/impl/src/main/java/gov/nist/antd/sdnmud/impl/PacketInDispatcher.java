@@ -36,35 +36,38 @@
  */
 package gov.nist.antd.sdnmud.impl;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.io.Writer;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.CharBuffer;
+import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
-import java.util.Collection;
+import java.util.TimerTask;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
@@ -86,7 +89,6 @@ import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataReadWriteTransaction;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
-import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
 import org.opendaylight.mdsal.common.api.TransactionCommitFailedException;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
@@ -94,7 +96,6 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
@@ -109,7 +110,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketReceived;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.TransmitPacketInputBuilder;
-import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.QName;
 import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
@@ -127,8 +127,6 @@ import org.opendaylight.yangtools.yang.model.repo.api.SchemaSourceException;
 import org.opendaylight.yangtools.yang.model.util.SchemaContextUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.Timer;
-import java.util.TimerTask;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -139,26 +137,11 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
-import com.google.gson.JsonSerializationContext;
-import com.google.gson.JsonSerializer;
 import com.google.gson.reflect.TypeToken;
 import com.google.gson.stream.JsonReader;
 
-import gov.nist.antd.baseapp.impl.BaseappConstants;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpRequestPacket;
-
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.security.KeyFactory;
-import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.security.spec.X509EncodedKeySpec;
 
 /**
  * Packet in dispatcher that gets invoked on flow table miss when a packet is
@@ -187,7 +170,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private Timer timer = new Timer();
 
-	private ArrayList<Socket> listeners;
+	private ArrayList<Socket> listeners  = new ArrayList<Socket> ();
+	
+	private ServerSocket listenerSock;
+
 
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
@@ -263,11 +249,23 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 	}
 
+	public void close() {
+		try {
+			this.listenerSock.close();
+			for (Socket s : this.listeners) {
+				s.close();
+			}
+		} catch (IOException e) {
+			LOG.error("Error closing socket");
+		}
+		
+	}
+	
 	private class UnclassifiedMacAddressNotificationServer implements Runnable {
-		ServerSocket listener;
+
 		private UnclassifiedMacAddressNotificationServer(int port) {
 			try {
-				listener = new ServerSocket(port);
+				listenerSock = new ServerSocket(port);
 			} catch (IOException e) {
 				LOG.error("Cannot open server socket ", e);
 			}
@@ -276,20 +274,24 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		public void run() {
 			try {
 				while (true) {
-					Socket clientSock = listener.accept();
+					Socket clientSock = listenerSock.accept();
 					listeners.add(clientSock);
 				}
 			} catch (IOException ex) {
-				LOG.error("Cannot open server socket ", ex);
+				LOG.error("Cannot open server socket -- exiting thread.", ex);
+				return;
 			}
 		}
 
 	}
+
 	
 	public void startNotificationThread() {
-		int notificationPort =  sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
+		int notificationPort = sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
 		LOG.info("start thread on notification port " + notificationPort);
-		new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort)).start();
+		Thread notifier =  new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
+		notifier.setDaemon(true);
+		notifier.start();
 	}
 
 	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
@@ -335,14 +337,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 		return mac;
 	}
-	
-	
+
 	private void broadcastStateChange() {
 		ArrayList<Socket> deadSockets = new ArrayList<Socket>();
 		for (Socket s : listeners) {
 			try {
 				PrintWriter pw = new PrintWriter(s.getOutputStream());
-				for (String macAddr : this.unclassifiedMacAddresses ) {
+				for (String macAddr : this.unclassifiedMacAddresses) {
 					pw.println(macAddr);
 				}
 			} catch (IOException e) {
@@ -350,17 +351,16 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					deadSockets.add(s);
 					s.close();
 				} catch (IOException e1) {
-					LOG.error("Error writing to listener socket -- closing",e1);
+					LOG.error("Error writing to listener socket -- closing", e1);
 				}
-			}	
+			}
 		}
-		
+
 		// Remove the dead sockets from our list of listeners.
-		for ( Socket d: deadSockets) {
+		for (Socket d : deadSockets) {
 			this.listeners.remove(d);
 		}
 	}
-	
 
 	private void addUclassifiedAddresses(String addr) {
 		LOG.info("addUnclassifiedAddress : " + addr);
@@ -369,7 +369,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			// Clears out the table in the timeout time.
 			timer.schedule(new UnclassifiedMacAddressTimerTask(addr),
 					2 * sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() * 1000);
-			
+
 			this.broadcastStateChange();
 		}
 	}
@@ -388,7 +388,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private void removeUnclassifiedAddress(String addr) {
 		LOG.info("removeUnclassifiedAddress : " + addr);
-		if ( this.unclassifiedMacAddresses.contains(addr)) {
+		if (this.unclassifiedMacAddresses.contains(addr)) {
 			this.unclassifiedMacAddresses.remove(addr);
 			this.broadcastStateChange();
 		}
@@ -501,12 +501,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (PacketUtils.isSYNFlagOnAndACKFlagOff(rawPacket)) {
 				LOG.info("checkIfTcpSynAllowed: PacketInDispatcher: Got an illegal SYN -- blocking the flow");
 				// Block the TCP flow on the mud rules table.
-				this.installBlockTcpFlow(srcIp, destIp, destPort, metadata, BaseappConstants.DEFAULT_METADATA_MASK,
+				this.installBlockTcpFlow(srcIp, destIp, destPort, metadata, SdnMudConstants.DEFAULT_METADATA_MASK,
 						node);
 			} else if (sdnmudProvider.isOpenflow13Only()) {
 				// If this is a Openflow 3 only switch, we want to override sending the packet
 				// to the controller.
-				this.installAllowTcpFlow(srcIp, destIp, destPort, metadata, BaseappConstants.DEFAULT_METADATA_MASK,
+				this.installAllowTcpFlow(srcIp, destIp, destPort, metadata, SdnMudConstants.DEFAULT_METADATA_MASK,
 						node);
 			}
 		} else {
@@ -537,9 +537,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
-		int timeout = this.sdnmudProvider.getSdnmudConfig() != null
-				? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
-				: BaseappConstants.CACHE_TIMEOUT;
+		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 
 		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
 				+ srcMac.getValue() + "/" + metadata.toString(16);
@@ -550,7 +548,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			FlowId flowId = new FlowId(flowIdStr);
 
 			flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-					BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
+					sdnmudProvider.getSrcDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
 		}
 
@@ -573,7 +571,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			 * create a short term pass through flow to allow packet through. Give it a
 			 * short timeout.
 			 */
-			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
+			short tableId = sdnmudProvider.getSdnmudRulesTable();
 
 			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
 					new Ipv4Address(dstIp), port, SdnMudConstants.TCP_PROTOCOL, tableId, (short) (tableId + 1),
@@ -599,9 +597,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (flow == null) {
 			int timeout = new Long(sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue();
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-			short tableId = BaseappConstants.SDNMUD_RULES_TABLE;
+			short tableId = sdnmudProvider.getSdnmudRulesTable();
 			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
-					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId, BaseappConstants.DROP_TABLE,
+					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId, sdnmudProvider.getDropTable(),
 					metadata, metadataMask, timeout, flowId, flowCookie).build();
 			this.flowTable.put(flowIdStr, flow);
 		}
@@ -627,10 +625,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
-		int timeout = this.sdnmudProvider.getSdnmudConfig() != null
-				? new Long(this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue()
-				: BaseappConstants.CACHE_TIMEOUT;
-
+		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
 				.or(SdnMudConstants.DST_NETWORK_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
@@ -643,7 +638,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (flow == null) {
 			FlowId flowId = new FlowId(flowIdStr);
 			flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-					BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, flowId, flowCookie, timeout).build();
+					sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 			this.flowTable.put(flowIdStr, flow);
 		}
 
@@ -828,7 +823,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			}
 			byte[] rawPacket = notification.getPayload();
 
-			if (tableId == BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			if (tableId == sdnmudProvider.getSrcDeviceManufacturerStampTable()) {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
@@ -852,7 +847,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
-			} else if (tableId == BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE) {
+			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
@@ -862,7 +857,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
-			} else if (tableId == BaseappConstants.SDNMUD_RULES_TABLE) {
+			} else if (tableId ==sdnmudProvider.getSdnmudRulesTable()) {
 				this.mudRelatedPacketInCounter++;
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
@@ -959,9 +954,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 											LOG.error("Configuration file not found -- not installing MUD profile");
 											return;
 										}
-										String keystoreHome = sdnmudProvider.getSdnmudConfig().getKeystoreHome();
-										LOG.debug("keystoreHome = " + keystoreHome);
-										FileInputStream is = new FileInputStream(keystoreHome);
+										String cacertHome = sdnmudProvider.getSdnmudConfig().getCaCerts();
+										if (!cacertHome.startsWith("/")) {
+											cacertHome = System.getProperty("java.home") + "/" + cacertHome;
+										}
+										LOG.debug("cacertHome = " + cacertHome);
+										FileInputStream is = new FileInputStream(cacertHome);
 										String keyPass = sdnmudProvider.getSdnmudConfig().getKeyPass();
 										LOG.debug("keyPass = " + keyPass);
 										KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());

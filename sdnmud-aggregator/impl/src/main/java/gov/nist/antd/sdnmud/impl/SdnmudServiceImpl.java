@@ -33,6 +33,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetPacketCountOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetNotificationPortOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetNotificationPortOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
@@ -154,6 +156,17 @@ public class SdnmudServiceImpl implements SdnmudService {
 		RpcResult<GetMudUnmappedAddressesOutput> result = RpcResultBuilder.success(guaob).build();
         return new CompletedFuture<RpcResult<GetMudUnmappedAddressesOutput>>(result);
     }
+
+	@Override
+	public Future<RpcResult<GetNotificationPortOutput>> getNotificationPort() {
+		GetNotificationPortOutputBuilder gnpob = new GetNotificationPortOutputBuilder();
+		gnpob.setNotificationPort(sdnmudProvider.getSdnmudConfig().getNotificationPort());
+		RpcResult<GetNotificationPortOutput> result = RpcResultBuilder.success(gnpob).build();
+		return new CompletedFuture<RpcResult<GetNotificationPortOutput>>(result);
+		
+	}
+    
+  
 	
 	
 

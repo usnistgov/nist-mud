@@ -20,15 +20,11 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
@@ -37,9 +33,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import gov.nist.antd.baseapp.impl.BaseappConstants;
-import gov.nist.antd.baseapp.impl.FlowCommitWrapper;
 
 /**
  * Class that gets invoked when a switch connects.
@@ -135,9 +128,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
 
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
+		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getSrcDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
-		installToDhcpFlow(nodeUri, nodePath, BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getSrcDeviceManufacturerStampTable(), metadata, metadataMask);
 
 		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
@@ -146,10 +139,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
 
-		installSendIpPacketToControllerFlow(nodeUri, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, nodePath,
+		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getDstDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
 
-		installToDhcpFlow(nodeUri, nodePath, BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getDstDeviceManufacturerStampTable(), metadata, metadataMask);
 
 	}
 
@@ -164,7 +157,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendToControllerFlows(nodeUri);
 
-		installUnconditionalGoToTable(nodeUri, nodePath, BaseappConstants.SDNMUD_RULES_TABLE);
+		installUnconditionalGoToTable(nodeUri, nodePath,sdnmudProvider.getSdnmudRulesTable());
 
 		/*
 		 * Install an unconditional packet drop in the DROP_TABLE (this is where MUD
@@ -172,7 +165,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		 * is a placeholder for subsequent packet inspection.
 		 */
 
-		installUnditionalDropPacket(nodeUri, nodePath, BaseappConstants.DROP_TABLE);
+		installUnditionalDropPacket(nodeUri, nodePath, sdnmudProvider.getDropTable());
 
 		// All devices may access DNS and NTP. The DHCP rule bumps the packet up
 		// to the controller.

@@ -1,9 +1,9 @@
 {
  "sdnmud-config" : {
-        "keystore-home": "/home/mranga/jdk1.8.0_102/jre/lib/security/cacerts",
+        "ca-certs": "jre/lib/security/cacerts",
         "key-pass" : "changeit",
         "trust-self-signed-cert" : true,
         "mfg-id-rule-cache-timeout": 0,
-	"relaxed-acl":true
+	    "relaxed-acl":true
   }
 }

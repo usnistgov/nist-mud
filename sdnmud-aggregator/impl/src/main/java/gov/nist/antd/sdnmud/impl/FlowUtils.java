@@ -77,8 +77,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import gov.nist.antd.baseapp.impl.BaseappConstants;
-
 public class FlowUtils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
@@ -468,7 +466,7 @@ public class FlowUtils {
 		FlowBuilder flowBuilder = new FlowBuilder();
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build()).setTableId(table).setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie)
-				.setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 
@@ -493,7 +491,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchGoToTable").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -516,7 +514,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = new InstructionsBuilder().setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -541,7 +539,7 @@ public class FlowUtils {
 				.setCookie(flowCookie);
 
 		sendToControllerFlow.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return sendToControllerFlow;
@@ -565,7 +563,7 @@ public class FlowUtils {
 				.setCookie(flowCookie);
 
 		sendToControllerFlow.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return sendToControllerFlow;
@@ -599,7 +597,7 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 
 		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -620,7 +618,7 @@ public class FlowUtils {
 		short destinationTableId = (short) (tableId + 1);
 		InstructionsBuilder isb = createGoToNextTableInstruction(destinationTableId);
 		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -650,7 +648,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataDestIpAndPortMatchGoTo")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
@@ -680,7 +678,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataSrcIpAndPortMatchGoTo").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
@@ -710,7 +708,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("MetadaProtocolAndSrcPortMatchGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
@@ -727,7 +725,7 @@ public class FlowUtils {
 		fb.setBarrier(true);
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -747,7 +745,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("destMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -772,7 +770,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
 		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -796,7 +794,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
 		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -823,7 +821,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(destTableId, metadata, metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -847,7 +845,7 @@ public class FlowUtils {
 				metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
+				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -871,7 +869,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = FlowUtils.createGoToNextTableInstruction(targetTableId, metadata, metadataMask);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
+				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -893,7 +891,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
+				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -907,7 +905,7 @@ public class FlowUtils {
 
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		FlowUtils.createSrcDestIpv4Match(matchBuilder, srcIp, dstIp);
-		FlowUtils.createSrcDstProtocolPortMatch(matchBuilder, BaseappConstants.TCP_PROTOCOL, sourcePort, dstPort);
+		FlowUtils.createSrcDstProtocolPortMatch(matchBuilder, SdnMudConstants.TCP_PROTOCOL, sourcePort, dstPort);
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
@@ -921,7 +919,7 @@ public class FlowUtils {
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -948,7 +946,7 @@ public class FlowUtils {
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -981,7 +979,7 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.MATCHED_GOTO_FLOW_PRIORITY + 2).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 2).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

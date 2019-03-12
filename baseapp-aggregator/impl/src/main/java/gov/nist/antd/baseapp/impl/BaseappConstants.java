@@ -44,19 +44,8 @@ public interface BaseappConstants {
 	public static final Short L2SWITCH_TABLE = (short) (FIRST_TABLE + 9);
 	public static final Short MAX_TID = L2SWITCH_TABLE;
 	public static final Short DROP_TABLE = (short) (MAX_TID + 1);
-
-	// Flow table priorities.
-	public static final Integer BASE_PRIORITY = 30;
-	public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
-
-	// Flow entry for dropping flows on a match.
-	public static final Integer MAX_PRIORITY = BASE_PRIORITY + 20;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH = BASE_PRIORITY + 15;
-	public static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
-	public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
-	public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
-	public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
-
+	public static final Integer UNCONDITIONAL_GOTO_PRIORITY = 30;
+	
 
 	public static final String NONE = "NONE";
 	public static final String MUD_FLOW_MISS = "drop";
@@ -65,8 +54,6 @@ public interface BaseappConstants {
 
 	public static final String PASSTHRU = "PASSTHRU";
 
-	// Default cache timeout.
-	public static final Integer CACHE_TIMEOUT = 120;
 
 	public static final short TCP_PROTOCOL = 6;
 	public static final short UDP_PROTOCOL = 17;

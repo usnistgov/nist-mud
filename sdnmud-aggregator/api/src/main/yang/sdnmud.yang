@@ -26,11 +26,11 @@ module sdnmud {
 
   container sdnmud-config {
 
-      leaf keystore-home {
+      leaf ca-certs {
             type string;
-            default "jre/lib/security/cacerts";
+            default "lib/security/cacerts";
             description
-                "Java keystore home for manufacturer certificates.";
+                "Certification authority (CA) certificates for verifying MUD profile.";
       }
 
       leaf key-pass {
@@ -42,9 +42,16 @@ module sdnmud {
 
       leaf table-start {
             type uint32;
-            default "0";
+            default "3";
             description
                 "Start of tables in rules table space. Not yet implemented";
+      }
+
+      leaf drop-rule-table {
+            type uint32;
+            default "10";
+            description 
+               "Table location for the Packet Drop rule"; 
       }
 
       leaf mfg-id-rule-cache-timeout {
@@ -81,6 +88,15 @@ module sdnmud {
 
   }
 
+  rpc get-notification-port {
+     output {
+         leaf notification-port {
+            description
+                "Return the notification port where external clients can listen for notification of vulnerable addresses (IDS support)";
+            type uint32;
+         }
+    }
+  }
 
   rpc clear-packet-count {
     output {

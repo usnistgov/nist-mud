@@ -112,5 +112,18 @@ interface SdnMudConstants {
 	String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
 
 	boolean IMPLEMENT_MODEL_ACLS = false;
+	
+	// Flow table priorities.
+		public static final Integer BASE_PRIORITY = 30;
+		public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
+
+		// Flow entry for dropping flows on a match.
+		public static final Integer MAX_PRIORITY = BASE_PRIORITY + 20;
+		public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY_HIGH = BASE_PRIORITY + 15;
+		public static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
+		public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
+		public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
+		public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
+
 
 }

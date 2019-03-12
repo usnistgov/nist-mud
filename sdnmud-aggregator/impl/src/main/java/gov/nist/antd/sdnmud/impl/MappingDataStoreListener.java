@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
@@ -37,8 +38,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.Fl
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import gov.nist.antd.baseapp.impl.BaseappConstants;
 
 /**
  * Data Store listener for MappingData store (Mapping of MAC addresses to MUD
@@ -95,10 +94,10 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 					if (sdnmudProvider.isCpeNode(IdUtils.getNodeUri(node))) {
 						String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
 						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
-								BaseappConstants.DST_DEVICE_MANUFACTURER_STAMP_TABLE, null, mac);
+								sdnmudProvider.getDstDeviceManufacturerStampTable(), null, mac);
 						flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
 						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
-								BaseappConstants.SRC_DEVICE_MANUFACTURER_STAMP_TABLE, mac, null);
+								sdnmudProvider.getSrcDeviceManufacturerStampTable(), mac, null);
 					}
 				}
 
