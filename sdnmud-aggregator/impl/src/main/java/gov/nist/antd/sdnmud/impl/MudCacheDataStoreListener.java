@@ -128,7 +128,9 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 					jsonObject.put("retrieval-time", entry.getRetrivalTime() );
 					jsonObject.put("cache-timeout", entry.getCacheTimeout());
 					jsonObject.put("cached-mudfile-name", entry.getCachedMudfileName());
-					cacheEntries.add(jsonObject);
+					HashMap cacheEntry = new HashMap<String,Object>();
+					cacheEntry.put("mud-cache-entry", jsonObject);
+					cacheEntries.add(cacheEntry);
 				}
 			}
 			HashMap entry = new HashMap();
@@ -136,7 +138,9 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 			entry.put("retrieval-time",Long.valueOf(System.currentTimeMillis()));
 			entry.put("cache-timeout",cacheTimeout);
 			entry.put("cached-mudfile-name",fileName);
-			cacheEntries.add(entry);
+			HashMap cacheEntry = new HashMap<String,Object>();
+			cacheEntry.put("mud-cache-entry", entry);
+			cacheEntries.add(cacheEntry);
 			
 			HashMap<String, Object> mudCacheEntries = new HashMap<>();
 			mudCacheEntries.put("mud-cache-entries", cacheEntries);
@@ -147,7 +151,7 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 			sdnmudProvider.getDatastoreUpdater().writeToDatastore(jsonString, MudCache.QNAME);
 			
 		} catch (Exception ex) {
-			LOG.error("Error updating the cache " + mudUrl);
+			LOG.error("Error updating the cache " + mudUrl,ex);
 
 		}
 
