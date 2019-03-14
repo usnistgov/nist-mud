@@ -5,7 +5,7 @@
 
   <feature name='odl-baseapp' version="${project.version}">
     <configfile
-      finalname="etc/opendaylight/datastore/initial/config/baseapp_baseapp-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/config-baseapp</configfile>
+      finalname="etc/opendaylight/datastore/initial/config/baseapp_baseapp-config.xml">mvn:gov.nist.antd/baseapp-impl/${project.version}/xml/baseapp-config</configfile>
   </feature>
 
 </features>
