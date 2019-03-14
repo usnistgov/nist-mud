@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<features name="odl-sdnmud-${project.version}" xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://karaf.apache.org/xmlns/features/v1.2.0 http://karaf.apache.org/xmlns/features/v1.2.0">
+  <feature name='odl-sdnmud' version="${project.version}">
+          <configfile 
+                  finalname="etc/opendaylight/datastore/initial/config/sdnmud_sdnmud-config.xml">mvn:gov.nist.antd/sdnmud-impl/${project.version}/xml/sdnmud-config</configfile>
+          <configfile 
+                  finalname="etc/opendaylight/datastore/initial/config/baseapp_baseapp-config.xml">mvn:gov.nist.antd/sdnmud-impl/${project.version}/xml/baseapp-config</configfile>
+          <configfile 
+                  finalname="etc/mudprofiles/README.md">mvn:gov.nist.antd/sdnmud-impl/${project.version}/txt/testing-readme</configfile>
+  </feature>
+</features>
