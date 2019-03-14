@@ -326,6 +326,9 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
+        if suffix == "sdnmud:sdnmud-config":
+	    print("Wait for container restart")
+	    time.sleep(15)
 
     time.sleep(10)
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :

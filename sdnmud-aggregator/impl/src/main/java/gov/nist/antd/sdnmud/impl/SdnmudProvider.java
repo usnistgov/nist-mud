@@ -150,6 +150,20 @@ public class SdnmudProvider {
 
 	private MudCacheDataStoreListener mudCacheDatastoreListener;
 
+	private ListenerRegistration<SdnmudConfigDataStoreListener> configRegistration;
+
+	private ListenerRegistration<CpeCollectionsDataStoreListener> topRegistration;
+
+	private ListenerRegistration<MudProfileDataStoreListener> mudProfileRegistration;
+
+	private ListenerRegistration<AclDataStoreListener> aclRegistration;
+
+	private ListenerRegistration<MappingDataStoreListener> mappingRegistration;
+
+	private ListenerRegistration<MudCacheDataStoreListener> mudCacheRegistration;
+
+	private ListenerRegistration<PacketInDispatcher> packetInDispatcherRegistration;
+
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -221,28 +235,28 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<SdnmudConfig> configId = new DataTreeIdentifier<SdnmudConfig>(
 				LogicalDatastoreType.CONFIGURATION, configWildCardPath);
 		SdnmudConfigDataStoreListener configDataStoreListener = new SdnmudConfigDataStoreListener(this);
-		this.dataBroker.registerDataTreeChangeListener(configId, configDataStoreListener);
+		this.configRegistration = this.dataBroker.registerDataTreeChangeListener(configId, configDataStoreListener);
 
 		/* Register data tree change listener for Topology change */
 		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
 		final DataTreeIdentifier<CpeCollections> topoId = new DataTreeIdentifier<CpeCollections>(
 				LogicalDatastoreType.CONFIGURATION, topoWildCardPath);
 		this.topoDataStoreListener = new CpeCollectionsDataStoreListener(this);
-		this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
+		this.topRegistration = this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
 
 		/* Register a data tree change listener for MUD profiles */
 		InstanceIdentifier<Mud> mudWildCardPath = getMudWildCardPath();
 		final DataTreeIdentifier<Mud> treeId = new DataTreeIdentifier<Mud>(LogicalDatastoreType.CONFIGURATION,
 				mudWildCardPath);
 		this.mudProfileDataStoreListener = new MudProfileDataStoreListener(dataBroker, this);
-		this.dataBroker.registerDataTreeChangeListener(treeId, mudProfileDataStoreListener);
+		this.mudProfileRegistration = this.dataBroker.registerDataTreeChangeListener(treeId, mudProfileDataStoreListener);
 
 		/* Register a data tree change listener for ACL profiles */
 		final InstanceIdentifier<Acls> aclWildCardPath = getAclWildCardPath();
 		final DataTreeIdentifier<Acls> aclTreeId = new DataTreeIdentifier<Acls>(LogicalDatastoreType.CONFIGURATION,
 				aclWildCardPath);
 		this.aclDataStoreListener = new AclDataStoreListener(dataBroker, this);
-		this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
+		this.aclRegistration = this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
 
 		/*
 		 * Register a data tree change listener for MAC to MUD URL mapping. The MAC to
@@ -252,7 +266,7 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<Mapping> mappingTreeId = new DataTreeIdentifier<Mapping>(
 				LogicalDatastoreType.CONFIGURATION, mappingWildCardPath);
 		this.mappingDataStoreListener = new MappingDataStoreListener(this);
-		this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
+		this.mappingRegistration = this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
 
 		/*
 		 * Mud cache manager.
@@ -261,7 +275,7 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<MudCache> mudCacheTreeId = new DataTreeIdentifier<MudCache>(
 				LogicalDatastoreType.CONFIGURATION, mudCacheWildCardPath);
 		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
-		this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
+		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
 
 		/*
 		 * Instance of mud file fetcher.
@@ -270,7 +284,7 @@ public class SdnmudProvider {
 
 		/* Listener for flow miss packets sent to the controller */
 		this.packetInDispatcher = new PacketInDispatcher(this);
-		ListenerRegistration<PacketInDispatcher> registration = this.getNotificationService()
+		this.packetInDispatcherRegistration = this.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 
 		/*
@@ -328,6 +342,12 @@ public class SdnmudProvider {
 	public void close() {
 		LOG.info("SdnmudProvider Closed");
 		this.dataTreeChangeListenerRegistration.close();
+		this.aclRegistration.close();
+		this.configRegistration.close();
+		this.topRegistration.close();
+		this.mudCacheRegistration.close();
+		this.mappingRegistration.close();
+		this.packetInDispatcherRegistration.close();
 		this.uriToMudMap.clear();
 		this.packetInDispatcher.close();
 		this.stateChangeScanner.cancel();

@@ -29,7 +29,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,6 +57,7 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 
 	@Override
 	public void onDataTreeChanged(Collection<DataTreeModification<MudCache>> changes) {
+		LOG.info("MudCache : onDataTreeChanged");
 		this.mudCache.clear();
 		for (DataTreeModification<MudCache> change : changes) {
 			MudCache cache = change.getRootNode().getDataAfter();
@@ -133,14 +133,17 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 			}
 			HashMap entry = new HashMap();
 			entry.put("mud-url", mudUrl);
-			entry.put("retrieval-time",BigInteger.valueOf(System.currentTimeMillis()));
+			entry.put("retrieval-time",Long.valueOf(System.currentTimeMillis()));
 			entry.put("cache-timeout",cacheTimeout);
 			entry.put("cached-mudfile-name",fileName);
 			cacheEntries.add(entry);
 			
-			HashMap<String, Object> mudCache = new HashMap<>();
-			mudCache.put("mud-cache", cacheEntries);
-			String jsonString = new Gson().toJson(mudCache);
+			HashMap<String, Object> mudCacheEntries = new HashMap<>();
+			mudCacheEntries.put("mud-cache-entries", cacheEntries);
+			// HashMap<String,Object> mudCacheMap = new HashMap<>();
+			// mudCacheMap.put("mud-cache", mudCacheEntries);
+			String jsonString = new Gson().toJson(mudCacheEntries);
+			LOG.info("Writing MUD Cache " + jsonString);
 			sdnmudProvider.getDatastoreUpdater().writeToDatastore(jsonString, MudCache.QNAME);
 			
 		} catch (Exception ex) {

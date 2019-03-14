@@ -342,7 +342,7 @@ public class MudFileFetcher {
 
 			    if (toCache) {
 			    	LOG.info("Write to Cache here ");
-				// 	this.mudCacheDatastoreListener.putMudProfileInCache(mudUrl, cacheTimeout, mudFileStr);
+				    this.mudCacheDatastoreListener.putMudProfileInCache(mudUrl, cacheTimeout, mudFileStr);
 				}
 
 				String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));

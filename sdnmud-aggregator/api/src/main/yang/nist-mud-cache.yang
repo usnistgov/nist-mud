@@ -35,7 +35,7 @@ module nist-nmud-cache {
      }
 
      leaf retrival-time {
-        type uint64;
+        type uint32;
         description "System time when the MUD profile was fetched";
 
      }
