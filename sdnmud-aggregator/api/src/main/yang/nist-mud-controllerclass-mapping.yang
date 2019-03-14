@@ -79,7 +79,8 @@ module nist-mud-controllerclass-mapping {
 
     leaf-list router-mac-addresses {
        description
-          "Router MAC addresses. Exclude these from accounting table when classifying packets as belonging to Non-IOT hosts.";
+          "Router MAC addresses. Exclude these from accounting table when classifying packets as belonging to Non-IOT hosts. 
+           This is for IDS support (experimental)";
        type yang:mac-address;
     }
   }

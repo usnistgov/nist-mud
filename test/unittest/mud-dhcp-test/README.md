@@ -34,7 +34,7 @@ Test to see if your configuration is working (this should succeed):
 
 Delete the previously cached rules if any :
 
-   rm $PROJECT\_HOME/sdnmud-aggregator/karaf/target/assembly
+   cd $PROJECT\_HOME/sdnmud-aggregator/karaf/target/assembly
    rm snapshot/\*
    rm journal/\*
 

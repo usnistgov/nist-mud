@@ -50,19 +50,20 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 
 	private SdnmudProvider sdnmudProvider;
 
-	private Map<String, Mapping> macAddressToMappingMap = new HashMap<String, Mapping>();
+	private Map<String, Uri> macToUri = new HashMap<String, Uri>();
 
 	private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(MappingDataStoreListener.class);
+	
 
 	private void removeMacAddress(MacAddress macAddress) {
-		Mapping mapping = this.macAddressToMappingMap.remove(macAddress.getValue());
-		if (mapping != null) {
-			HashSet<MacAddress> macs = this.uriToMacs.get(mapping.getMudUrl());
+		Uri mudUrl = this.macToUri.remove(macAddress.getValue());
+		if (mudUrl != null) {
+			HashSet<MacAddress> macs = this.uriToMacs.get(mudUrl);
 			macs.remove(macAddress);
 			if (macs.size() == 0) {
-				this.uriToMacs.remove(mapping.getMudUrl());
+				this.uriToMacs.remove(mudUrl);
 			}
 		}
 	}
@@ -77,13 +78,23 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 		for (DataTreeModification<Mapping> change : collection) {
 			Mapping mapping = change.getRootNode().getDataAfter();
 			List<MacAddress> macAddresses = mapping.getDeviceId();
+			// For testing purposes we support file: URIs so this may not actually
+			// be the same as the URI in the mud profile.
 			Uri uri = mapping.getMudUrl();
 			LOG.info("mudUri = " + uri.getValue());
+			String uriStr = sdnmudProvider.getMudFileFetcher().fetchAndInstallMudFile(uri.getValue());
+			if ( uriStr  == null) {
+				LOG.error("FAILED to get the MUD file from the manufacturer. ");
+				return;
+			}
+			
+			uri = new Uri(uriStr);
+
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {
 				this.removeMacAddress(mac);
 				LOG.info("Put MAC address mapping " + mac.getValue() + " uri " + uri.getValue());
-				this.macAddressToMappingMap.put(mac.getValue().toUpperCase(), mapping);
+				this.macToUri.put(mac.getValue().toUpperCase(), uri);
 				HashSet<MacAddress> macs = this.uriToMacs.get(uri);
 				if (macs == null) {
 					macs = new HashSet<MacAddress>();
@@ -100,15 +111,16 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 								sdnmudProvider.getSrcDeviceManufacturerStampTable(), mac, null);
 					}
 				}
-
+				
 				macs.add(mac);
 			}
+			
 		}
 	}
 
 	public Uri getMudUri(MacAddress macAddress) {
-		if (this.macAddressToMappingMap.containsKey(macAddress.getValue().toUpperCase())) {
-			Uri retval = this.macAddressToMappingMap.get(macAddress.getValue().toUpperCase()).getMudUrl();
+		if (this.macToUri.containsKey(macAddress.getValue().toUpperCase())) {
+			Uri retval = new Uri(this.macToUri.get(macAddress.getValue().toUpperCase()));
 			LOG.debug("getMudUri " + macAddress.getValue() + " uri  " + retval.getValue());
 			return retval;
 		} else {
@@ -118,7 +130,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	}
 	
 	public void clearState() {
-		this.macAddressToMappingMap.clear();
+		this.macToUri.clear();
 		this.uriToMacs.clear();
 	}
 

@@ -216,6 +216,12 @@
 									<type>xml</type>
 									<classifier>baseapp-config</classifier>
 								</artifact>
+								<artifact>
+                                    <!-- The default sdnmud-config that can be changed -->
+                                    <file>${project.build.directory}/classes/initial/README.md</file>
+									<type>txt</type>
+									<classifier>testing-readme</classifier>
+								</artifact>
 							</artifacts>
 						</configuration>
 					</execution>

@@ -55,6 +55,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalF
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.mud.file.cache.rev170915.MudCache;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
@@ -143,6 +144,12 @@ public class SdnmudProvider {
 
 	private StateChangeScanner stateChangeScanner;
 
+	private MudFileFetcher mudFileFetcher;
+
+	private DatastoreUpdater datastoreUpdater;
+
+	private MudCacheDataStoreListener mudCacheDatastoreListener;
+
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -160,7 +167,7 @@ public class SdnmudProvider {
 		this.flowService = flowService;
 		LOG.info("SdnMudProvider : sdnmudConfig = " + sdnmudConfig);
 		this.sdnmudConfig = sdnmudConfig;
-		if ( sdnmudConfig.getDropRuleTable() <  sdnmudConfig.getTableStart() + 4) {
+		if (sdnmudConfig.getDropRuleTable() < sdnmudConfig.getTableStart() + 4) {
 			LOG.error("Drop rule table is incorrectly specified");
 			throw new RuntimeException("Error in config file -- please check defaults. Drop rule table is too small.");
 		}
@@ -194,6 +201,10 @@ public class SdnmudProvider {
 		return InstanceIdentifier.create(SdnmudConfig.class);
 	}
 
+	private static InstanceIdentifier<MudCache> getMudCacheWildCardPath() {
+		return InstanceIdentifier.create(MudCache.class);
+	}
+
 	/**
 	 * Method called when the blueprint container is created.
 	 */
@@ -203,6 +214,7 @@ public class SdnmudProvider {
 		this.flowCommitWrapper = new FlowCommitWrapper(dataBroker);
 		this.flowWriter = new FlowWriter(this.flowService);
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
+		this.datastoreUpdater = new DatastoreUpdater(this);
 
 		/* Register listener for configuration state change */
 		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
@@ -242,6 +254,20 @@ public class SdnmudProvider {
 		this.mappingDataStoreListener = new MappingDataStoreListener(this);
 		this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
 
+		/*
+		 * Mud cache manager.
+		 */
+		final InstanceIdentifier<MudCache> mudCacheWildCardPath = getMudCacheWildCardPath();
+		final DataTreeIdentifier<MudCache> mudCacheTreeId = new DataTreeIdentifier<MudCache>(
+				LogicalDatastoreType.CONFIGURATION, mudCacheWildCardPath);
+		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
+		this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
+
+		/*
+		 * Instance of mud file fetcher.
+		 */
+		this.mudFileFetcher = new MudFileFetcher(this);
+
 		/* Listener for flow miss packets sent to the controller */
 		this.packetInDispatcher = new PacketInDispatcher(this);
 		ListenerRegistration<PacketInDispatcher> registration = this.getNotificationService()
@@ -276,21 +302,24 @@ public class SdnmudProvider {
 
 	}
 	
+	public MudCacheDataStoreListener getMudCacheDatastoreListener() {
+		return this.mudCacheDatastoreListener;
+	}
+
 	public short getSrcDeviceManufacturerStampTable() {
 		return this.sdnmudConfig.getTableStart().shortValue();
 	}
-	
+
 	public short getDstDeviceManufacturerStampTable() {
-		return (short)(this.sdnmudConfig.getTableStart().shortValue() + 1);
+		return (short) (this.sdnmudConfig.getTableStart().shortValue() + 1);
 	}
-	
+
 	public short getSdnmudRulesTable() {
-		return (short)(this.sdnmudConfig.getTableStart() + 2);
+		return (short) (this.sdnmudConfig.getTableStart() + 2);
 	}
-	
-	
+
 	public short getDropTable() {
-		return (short)(this.sdnmudConfig.getDropRuleTable().shortValue());
+		return (short) (this.sdnmudConfig.getDropRuleTable().shortValue());
 	}
 
 	/**
@@ -437,6 +466,10 @@ public class SdnmudProvider {
 
 	public MudFlowsInstaller getMudFlowsInstaller() {
 		return this.mudFlowsInstaller;
+	}
+
+	public DatastoreUpdater getDatastoreUpdater() {
+		return this.datastoreUpdater;
 	}
 
 	public SalFlowService getFlowService() {
@@ -640,6 +673,10 @@ public class SdnmudProvider {
 
 	public HashSet<String> getRouterMacAddresses() {
 		return this.routerMacAddresses;
+	}
+
+	public MudFileFetcher getMudFileFetcher() {
+		return mudFileFetcher;
 	}
 
 }

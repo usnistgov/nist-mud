@@ -170,70 +170,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private Timer timer = new Timer();
 
-	private ArrayList<Socket> listeners  = new ArrayList<Socket> ();
-	
+	private ArrayList<Socket> listeners = new ArrayList<Socket>();
+
 	private ServerSocket listenerSock;
-
-
-	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
-		/*
-		 * (non-Javadoc)
-		 *
-		 * Bug fix for JSON serialization in Gson.
-		 *
-		 * @see com.google.gson.JsonDeserializer#deserialize(com.google.gson.
-		 * JsonElement, java.lang.reflect.Type,
-		 * com.google.gson.JsonDeserializationContext)
-		 *
-		 * @see https://stackoverflow.com/questions/36508323/how-can-i-prevent-gson-
-		 * from-converting-integers-to-doubles
-		 */
-
-		@Override
-		@SuppressWarnings("unchecked")
-		public LinkedHashMap<String, Object> deserialize(JsonElement json, Type typeOfT,
-				JsonDeserializationContext context) throws JsonParseException {
-			return (LinkedHashMap<String, Object>) read(json);
-		}
-
-		public Object read(JsonElement in) {
-
-			if (in.isJsonArray()) {
-				List<Object> list = new ArrayList<Object>();
-				JsonArray arr = in.getAsJsonArray();
-				for (JsonElement anArr : arr) {
-					list.add(read(anArr));
-				}
-				return list;
-			} else if (in.isJsonObject()) {
-				LinkedHashMap<String, Object> map = new LinkedHashMap<String, Object>();
-				JsonObject obj = in.getAsJsonObject();
-				Set<Map.Entry<String, JsonElement>> entitySet = obj.entrySet();
-				for (Map.Entry<String, JsonElement> entry : entitySet) {
-					map.put(entry.getKey(), read(entry.getValue()));
-				}
-				return map;
-			} else if (in.isJsonPrimitive()) {
-				JsonPrimitive prim = in.getAsJsonPrimitive();
-				if (prim.isBoolean()) {
-					return prim.getAsBoolean();
-				} else if (prim.isString()) {
-					return prim.getAsString();
-				} else if (prim.isNumber()) {
-					Number num = prim.getAsNumber();
-					// here you can handle double int/long values
-					// and return any type you want
-					// this solution will transform 3.0 float to long values
-					if (Math.ceil(num.doubleValue()) == num.longValue())
-						return num.longValue();
-					else {
-						return num.doubleValue();
-					}
-				}
-			}
-			return null;
-		}
-	}
 
 	private class UnclassifiedMacAddressTimerTask extends TimerTask {
 		String unclassifiedMacAddress;
@@ -258,9 +197,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		} catch (IOException e) {
 			LOG.error("Error closing socket");
 		}
-		
+
 	}
-	
+
 	private class UnclassifiedMacAddressNotificationServer implements Runnable {
 
 		private UnclassifiedMacAddressNotificationServer(int port) {
@@ -285,11 +224,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 
-	
 	public void startNotificationThread() {
 		int notificationPort = sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
 		LOG.info("start thread on notification port " + notificationPort);
-		Thread notifier =  new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
+		Thread notifier = new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
 		notifier.setDaemon(true);
 		notifier.start();
 	}
@@ -595,12 +533,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String nodeId = IdUtils.getNodeUri(node);
 
 		if (flow == null) {
-			int timeout = new Long(sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout()).intValue();
+			int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
 			short tableId = sdnmudProvider.getSdnmudRulesTable();
 			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
-					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId, sdnmudProvider.getDropTable(),
-					metadata, metadataMask, timeout, flowId, flowCookie).build();
+					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId,
+					sdnmudProvider.getDropTable(), metadata, metadataMask, timeout, flowId, flowCookie).build();
 			this.flowTable.put(flowIdStr, flow);
 		}
 
@@ -658,112 +596,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			}
 		}
 		this.flowTable.clear();
-	}
-
-	private void importFromNormalizedNode(final DOMDataReadWriteTransaction rwTrx, final LogicalDatastoreType type,
-			final NormalizedNode<?, ?> data) throws TransactionCommitFailedException, ReadFailedException {
-		if (data instanceof NormalizedNodeContainer) {
-			@SuppressWarnings("unchecked")
-			YangInstanceIdentifier yid = YangInstanceIdentifier.create(data.getIdentifier());
-			// rwTrx.put(type, yid, data);
-			rwTrx.merge(type, yid, data);
-			rwTrx.submit();
-		} else {
-			throw new IllegalStateException("Root node is not instance of NormalizedNodeContainer");
-		}
-	}
-
-	private int doHttpGet(String url, byte[] data) throws NoSuchAlgorithmException, KeyStoreException,
-			KeyManagementException, ClientProtocolException, IOException {
-		SSLContextBuilder builder = new SSLContextBuilder();
-
-		/*
-		 * DUMMY Host Name verifier for testing purposes
-		 */
-
-		HostnameVerifier hv = new HostnameVerifier() {
-			@Override
-			public boolean verify(String urlHostName, SSLSession session) {
-				return true;
-			}
-
-		};
-
-		if (sdnmudProvider.getSdnmudConfig().isTrustSelfSignedCert()) {
-			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
-		} else {
-
-			TrustStrategy trustStrategy = new TrustStrategy() {
-				@Override
-				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-					LOG.error("VALIDATION CODE SHOULD GO HERE -- this accepts ALL certificates");
-					// TODO -- verify the certificate chain.
-					return true;
-				}
-			};
-			builder.loadTrustMaterial(null, trustStrategy);
-		}
-
-		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
-
-		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
-
-		HttpGet httpGet = new HttpGet(url);
-
-		CloseableHttpResponse response = httpclient.execute(httpGet);
-
-		try {
-			// Get the response
-			if (response.getStatusLine().getStatusCode() == 200) {
-				return response.getEntity().getContent().read(data);
-			} else {
-				LOG.error("Could not fetch from " + url + " statusCode = " + response.getStatusLine().getStatusCode());
-				throw new IOException(
-						"Could not fetch from " + url + " statusCode = " + response.getStatusLine().getStatusCode());
-			}
-		} finally {
-			response.close();
-		}
-
-	}
-
-	private void writeToDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
-			ReadFailedException, SchemaSourceException, YangSyntaxErrorException {
-		// create StringBuffer object
-
-		LOG.info("jsonData = " + jsonData);
-
-		byte bytes[] = jsonData.getBytes();
-		InputStream is = new ByteArrayInputStream(bytes);
-
-		final NormalizedNodeContainerBuilder<?, ?, ?, ?> builder = ImmutableContainerNodeBuilder.create()
-				.withNodeIdentifier(new YangInstanceIdentifier.NodeIdentifier(qname));
-
-		// Create a writer from the builder.
-		try (NormalizedNodeStreamWriter writer = ImmutableNormalizedNodeStreamWriter.from(builder)) {
-
-			SchemaPath schemaPath = SchemaPath.create(true, qname);
-
-			LOG.debug("SchemaPath " + schemaPath);
-
-			SchemaNode parentNode = SchemaContextUtil.findNodeInSchemaContext(schemaService.getGlobalContext(),
-					schemaPath.getPathFromRoot());
-
-			LOG.debug("parentNode " + parentNode);
-
-			// Create a jsonParser from the writer.
-			try (JsonParserStream jsonParser = JsonParserStream.create(writer, schemaService.getGlobalContext(),
-					parentNode)) {
-				try (JsonReader reader = new JsonReader(new InputStreamReader(is))) {
-					reader.setLenient(true);
-					// The side effect of this parse is a write to the builder.
-					jsonParser.parse(reader);
-					DOMDataReadWriteTransaction rwTrx = domDataBroker.newReadWriteTransaction();
-					importFromNormalizedNode(rwTrx, LogicalDatastoreType.CONFIGURATION, builder.build());
-				}
-			}
-		}
-
 	}
 
 	@SuppressWarnings("unchecked")
@@ -857,7 +689,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
-			} else if (tableId ==sdnmudProvider.getSdnmudRulesTable()) {
+			} else if (tableId == sdnmudProvider.getSdnmudRulesTable()) {
 				this.mudRelatedPacketInCounter++;
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
@@ -904,122 +736,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
 						String mudUrl = dhcpRequestPacket.getMudUrl();
-						if (mudUrl != null && sdnmudProvider.getSdnmudConfig() != null) {
-							LOG.info("Options 161 request: MUD URL = " + mudUrl);
-							try {
 
-								byte[] mudFileChars = new byte[65536];
-								int nread = this.doHttpGet(mudUrl, mudFileChars);
+						if (mudUrl != null) {
+							MappingBuilder mb = new MappingBuilder();
+							ArrayList<MacAddress> macAddresses = new ArrayList<>();
+							macAddresses.add(srcMac);
+							mb.setDeviceId(macAddresses);
+							mb.setMudUrl(new Uri(mudUrl));
+							InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class).build();
+							ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
 
-								if (nread > 0) {
-
-									LOG.info("read " + nread + " characters");
-
-									assert nread < 65536;
-
-									byte[] mudfileData = Arrays.copyOf(mudFileChars, nread);
-
-									String mudFileStr = new String(mudfileData);
-
-									/* Set up gson to not convert to double */
-									Gson gson = new GsonBuilder().setLenient()
-											.registerTypeAdapter(new TypeToken<Map<String, LinkedHashMap>>() {
-											}.getType(), new MapDeserializerDoubleAsIntFix()).setPrettyPrinting()
-											.create();
-
-									/*
-									 * Set up gson to preserve the order of fields
-									 */
-									Map<?, ?> mudFile = gson.fromJson(mudFileStr,
-											new TypeToken<Map<String, LinkedHashMap>>() {
-											}.getType());
-
-									Map<?, ?> ietfMud = (Map<?, Object>) mudFile.get("ietf-mud:mud");
-
-									/*
-									 * The MUD signature points to the signature file for this MUD file.
-									 */
-									String mudSignatureUrl = (String) ietfMud.get("mud-signature");
-
-									LOG.info("mud-signature " + mudSignatureUrl);
-
-									if (mudSignatureUrl != null) {
-
-										byte[] buffer = new byte[65536];
-										int bytesRead = this.doHttpGet(mudSignatureUrl, buffer);
-										LOG.debug("read " + bytesRead + " bytes");
-										byte[] signature = Arrays.copyOf(buffer, bytesRead);
-										String manufacturer = IdUtils.getAuthority(mudUrl);
-										if (sdnmudProvider.getSdnmudConfig() == null) {
-											LOG.error("Configuration file not found -- not installing MUD profile");
-											return;
-										}
-										String cacertHome = sdnmudProvider.getSdnmudConfig().getCaCerts();
-										if (!cacertHome.startsWith("/")) {
-											cacertHome = System.getProperty("java.home") + "/" + cacertHome;
-										}
-										LOG.debug("cacertHome = " + cacertHome);
-										FileInputStream is = new FileInputStream(cacertHome);
-										String keyPass = sdnmudProvider.getSdnmudConfig().getKeyPass();
-										LOG.debug("keyPass = " + keyPass);
-										KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-										LOG.debug("keystore = " + keystore);
-										keystore.load(is, keyPass.toCharArray());
-										Certificate cert = keystore.getCertificate(manufacturer);
-										if (cert == null) {
-											LOG.error(
-													"Certificate not found in keystore -- not installing mud profile");
-											return;
-										}
-										PublicKey publicKey = cert.getPublicKey();
-										String algorithm = publicKey.getAlgorithm();
-										Signature sig = Signature.getInstance("SHA256withRSA");
-										sig.initVerify(publicKey);
-										sig.update(mudfileData);
-										LOG.debug("Signature = " + sig + " algorithm = " + algorithm);
-										if (!sig.verify(signature)) {
-											LOG.error("Signature verification failed -- "
-													+ " need to alert the admin or block device.");
-											return;
-										} else {
-											LOG.info("Signature verification succeeded");
-										}
-
-									}
-
-									String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));
-
-									// Writing to the datastore will invoke the listener.
-									this.writeToDatastore(mudStr, Mud.QNAME);
-
-									String aclStr = gson.toJson(mudFile.get("ietf-access-control-list:acls"));
-
-									this.writeToDatastore(aclStr, Acls.QNAME);
-
-									MappingBuilder mb = new MappingBuilder();
-									ArrayList<MacAddress> macAddresses = new ArrayList<>();
-									macAddresses.add(srcMac);
-									mb.setDeviceId(macAddresses);
-									mb.setMudUrl(new Uri(mudUrl));
-									InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)
-											.build();
-									ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-
-									tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
-									tx.submit();
-								}
-
-							} catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException
-									| TransactionCommitFailedException | ReadFailedException | CertificateException
-									| SchemaSourceException | YangSyntaxErrorException | SignatureException
-									| InvalidKeyException ex) {
-								LOG.error("Error fetching MUD file -- not installing", ex);
-							}
-
-						} else {
-							if (this.sdnmudProvider.getSdnmudConfig() == null) {
-								LOG.error("Configuration error -- sdnmudprovider.getsdnmudconfig() is null");
-							}
+							tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
+							tx.submit();
 						}
 					}
 				}

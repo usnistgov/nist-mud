@@ -128,7 +128,7 @@ to appear on those switches.
 To install MUD rules, you must specify which switches are managed.
 By default only the passthrough Base-app rules are installed when a switch connects.
 The switches where MUD rules need to be installed are specified in a configuration file
-that is posted to controller using a REST API for which the REST URL is:
+that is posted to controller using a REST API for which the REST URI is:
 
 
       /restconf/config/nist-cpe-nodes:cpe-collections
@@ -146,5 +146,44 @@ Here is a sample CPE collections file indicating that switches 1 and 2 will be m
 Please note that the switch will present its identifier as a hex string to the controller. 
 These identifiers are in decimal. We'll leave the conversion from hex to decimal as an exercise
 for the reader.
+
+
+### Associating MAC addresses with MUD profiles ###
+
+The MUD specification describes different methods for associating devices with MUD profiles. 
+We support two such methods : 
+
+* DHCP Options 66 support. In this method, the device emits its own MUD URL. The DHCP (UDP) 
+request is sent to the Controller, which then fetches the MUD profile. No configuration is 
+necessary for this to work. However, the Manufactuer web site must be up and running and the
+device must support issuing a MUR URL as part of the DHCP Request.
+
+* Associate MAC address with MUD profile by sending the controller a list of addresses
+along with associated MUD urls. We have an API to support this. The configuration URI is
+
+
+      /restconf/config/nist-mud-device-association:mapping
+
+[The data to be posted with this URI is given by a YANG model](../../sdnmud-aggregator/api/src/main/yang/nist-mud-device-association.yang)
+
+Here is a sample of the data that needs to be POSTed to the URI
+
+      {
+       "mapping":
+        { 
+            "device-id": [ "00:00:00:00:00:01",
+                            "00:00:00:00:00:02",
+                            "00:00:00:00:00:03"
+                ],
+            "mud-url": "https://toaster.nist.local/super1"
+        }
+     }   
+
+The JSON file above indicates that the MAC addresses 01, 02 and 03 are associated with the https://toaster.nist.local/super1 MUD URL
+
+At this point the server may fetch the MUD file from the manufacturer web site. For testing purposes, we also support POSTing the MUD
+file to the server using another API. 
+
+
 
 

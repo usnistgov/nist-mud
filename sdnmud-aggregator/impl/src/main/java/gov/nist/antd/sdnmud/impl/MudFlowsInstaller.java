@@ -479,7 +479,7 @@ public class MudFlowsInstaller {
 
 	private static short getProtocol(Matches matches) {
 		if (matches.getL3() == null) {
-			LOG.error("No IPV4 node foound -- cannto determine protocol ");
+			LOG.info("No IPV4 node foound -- cannot determine protocol ");
 			return -1;
 		}
 		return ((Ipv4) matches.getL3()).getIpv4().getProtocol();

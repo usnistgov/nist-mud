@@ -1,0 +1,58 @@
+module nist-nmud-cache {
+    yang-version 1.1;
+    namespace "urn:opendaylight:params:xml:ns:yang:nist-mud-file-cache";
+    prefix "nist-mud-file-cache";
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  
+  organization
+    "NIST Advanced Networking Technologies Division.";
+
+  contact
+    "Web: http://www.nist.gov
+    email: mranga@nist.gov
+    ";
+  description
+    "Application system configuration parameters. ";
+
+  revision 2017-09-15 {
+    description
+      "Internal YANG model for cached MUD profiles. This tracks when the MUD profile was actually
+       obtained and installed";
+  }
+
+  grouping mud-cache-entry {
+     leaf mud-url {
+        type string;
+        description "The MUD URL";
+     }
+     
+     leaf cached-mudfile-name {
+        type string;
+        description "The cached mud file in etc/mudprofiles";
+     }
+
+     leaf retrival-time {
+        type uint64;
+        description "System time when the MUD profile was fetched";
+
+     }
+
+     leaf cache-timeout {
+        type uint32;
+        default "-1";
+        description "Mud file cache timeout - set to infinity by default";
+
+    }
+  }
+
+  container mud-cache {
+    list mud-cache-entries {
+        description "A list of cache entries";
+        uses mud-cache-entry;
+    }
+  }
+
+}
