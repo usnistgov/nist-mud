@@ -26,4 +26,11 @@
 		<nature>net.sf.eclipsecs.core.CheckstyleNature</nature>
 		<nature>org.eclipse.m2e.core.maven2Nature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>generated-sources</name>
+			<type>2</type>
+			<location>/home/mranga/opendaylight-hacking/nist-mud/sdnmud-aggregator/api/target/generated-sources</location>
+		</link>
+	</linkedResources>
 </projectDescription>

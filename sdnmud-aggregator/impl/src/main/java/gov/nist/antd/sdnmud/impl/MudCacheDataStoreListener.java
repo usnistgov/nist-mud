@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -74,7 +75,7 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 			if (cacheEntry != null) {
 				long timeout = cacheEntry.getCacheTimeout() * 60 * 60 * 1000;
 				if (timeout > 0) {
-					long retrievalTime = cacheEntry.getRetrivalTime().longValue();
+					long retrievalTime = cacheEntry.getRetrievalTime().longValue();
 					long currentTime = System.currentTimeMillis();
 					if (retrievalTime + timeout < currentTime) {
 						return null;
@@ -125,12 +126,12 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 					MudCacheEntry entry = this.mudCache.get(url);
 					HashMap jsonObject = new HashMap<String, Object>();
 					jsonObject.put("mud-url", entry.getMudUrl());
-					jsonObject.put("retrieval-time", entry.getRetrivalTime() );
+					jsonObject.put("retrieval-time", entry.getRetrievalTime().longValue() );
 					jsonObject.put("cache-timeout", entry.getCacheTimeout());
 					jsonObject.put("cached-mudfile-name", entry.getCachedMudfileName());
-					HashMap cacheEntry = new HashMap<String,Object>();
-					cacheEntry.put("mud-cache-entry", jsonObject);
-					cacheEntries.add(cacheEntry);
+					//HashMap cacheEntry = new HashMap<String,Object>();
+					//cacheEntry.put("mud-cache-entry", jsonObject);
+					cacheEntries.add(jsonObject);
 				}
 			}
 			HashMap entry = new HashMap();
@@ -138,9 +139,7 @@ public class MudCacheDataStoreListener implements DataTreeChangeListener<MudCach
 			entry.put("retrieval-time",Long.valueOf(System.currentTimeMillis()));
 			entry.put("cache-timeout",cacheTimeout);
 			entry.put("cached-mudfile-name",fileName);
-			HashMap cacheEntry = new HashMap<String,Object>();
-			cacheEntry.put("mud-cache-entry", entry);
-			cacheEntries.add(cacheEntry);
+			cacheEntries.add(entry);
 			
 			HashMap<String, Object> mudCacheEntries = new HashMap<>();
 			mudCacheEntries.put("mud-cache-entries", cacheEntries);
