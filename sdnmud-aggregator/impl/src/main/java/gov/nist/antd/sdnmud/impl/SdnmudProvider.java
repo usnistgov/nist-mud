@@ -257,6 +257,11 @@ public class SdnmudProvider {
 				aclWildCardPath);
 		this.aclDataStoreListener = new AclDataStoreListener(dataBroker, this);
 		this.aclRegistration = this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
+		
+		/*
+		 * Instance of mud file fetcher. Should be set before mapping datastore registration.
+		 */
+		this.mudFileFetcher = new MudFileFetcher(this);
 
 		/*
 		 * Register a data tree change listener for MAC to MUD URL mapping. The MAC to
@@ -277,10 +282,7 @@ public class SdnmudProvider {
 		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
 		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
 
-		/*
-		 * Instance of mud file fetcher.
-		 */
-		this.mudFileFetcher = new MudFileFetcher(this);
+	
 
 		/* Listener for flow miss packets sent to the controller */
 		this.packetInDispatcher = new PacketInDispatcher(this);

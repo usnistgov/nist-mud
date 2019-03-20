@@ -98,7 +98,7 @@ public class MudFileFetcher {
 	private static final Logger LOG = LoggerFactory.getLogger(MudFileFetcher.class);
 	private SdnmudConfig sdnmudConfig;
 	private DatastoreUpdater datastoreUpdater;
-	private MudCacheDataStoreListener mudCacheDatastoreListener;
+	private SdnmudProvider sdnmudProvider;
 
 	private static class MapDeserializerDoubleAsIntFix implements JsonDeserializer<LinkedHashMap<String, Object>> {
 		/*
@@ -228,13 +228,14 @@ public class MudFileFetcher {
 			String protocol = parts[0];
 
 			int nread = -1;
-			boolean toCache = false;
+			boolean fileFetchedFromHttps = false;
 			if (protocol.equals("http") || protocol.equals("https")) {
 
-				byte[] cachedFile = this.mudCacheDatastoreListener.getMudFile(mudUrl);
+				// check if we have the cached file.
+				byte[] cachedFile = this.sdnmudProvider.getMudCacheDatastoreListener().getMudFile(mudUrl);
 				if (cachedFile == null) {
 					nread = this.doHttpGet(mudUrl, mudFileChars);
-					toCache = true;
+					fileFetchedFromHttps = true;
 				} else {
 					nread = cachedFile.length;
 					mudFileChars = cachedFile;
@@ -292,11 +293,15 @@ public class MudFileFetcher {
 				 */
 				String mudSignatureUrl = (String) ietfMud.get("mud-signature");
 				String mudUrlFromProfile = (String) ietfMud.get("mud-url");
-				int cacheTimeout = ((Long)  ietfMud.get("cache-validity")).intValue();
+				int cacheTimeout = ((Long) ietfMud.get("cache-validity")).intValue();
 
 				LOG.info("mud-signature " + mudSignatureUrl);
-
-				if (mudSignatureUrl != null) {
+				if ( mudSignatureUrl == null && fileFetchedFromHttps) {
+					LOG.error("File verification failed -- no mud signature URL is given protocol " + protocol);
+					return null;
+				}
+		
+				if (mudSignatureUrl != null && fileFetchedFromHttps) {
 
 					// Allocate a buffer to fetch the signature.
 					byte[] buffer = new byte[65536];
@@ -334,15 +339,12 @@ public class MudFileFetcher {
 						LOG.info("Signature verification succeeded");
 					}
 
-				} else if (protocol.equals("http") || protocol.equals("https")) {
-					// Note that we dont need to verify signature for file: urls.
-					LOG.error("Signature is missing - protocol is " + protocol + " not installing MUD rules");
-					return null;
-				}
+				} 
 
-			    if (toCache) {
-			    	LOG.info("Write to Cache here ");
-				    this.mudCacheDatastoreListener.putMudProfileInCache(mudUrl, cacheTimeout, mudFileStr);
+				if (fileFetchedFromHttps) {
+					LOG.info("Write to Cache here ");
+					this.sdnmudProvider.getMudCacheDatastoreListener().putMudProfileInCache(mudUrl, cacheTimeout,
+							mudFileStr);
 				}
 
 				String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));
@@ -368,9 +370,9 @@ public class MudFileFetcher {
 	}
 
 	public MudFileFetcher(SdnmudProvider sdnmudProvider) {
+		this.sdnmudProvider = sdnmudProvider;
 		this.sdnmudConfig = sdnmudProvider.getSdnmudConfig();
 		this.datastoreUpdater = sdnmudProvider.getDatastoreUpdater();
-		this.mudCacheDatastoreListener = sdnmudProvider.getMudCacheDatastoreListener();
 	}
 
 }
