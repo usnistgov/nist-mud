@@ -89,6 +89,7 @@ Add a fake hosts in /etc/dnsmasq.hosts by adding the following lines:
       203.0.113.13    www.nist.local
       203.0.113.14    www.antd.local
       203.0.113.15    printer.nist.local
+      127.0.0.1       dhcptest.nist.local
 
 Kill any existing instance of dnsmasq on the emulation VM. We will
 restart it in the test script.

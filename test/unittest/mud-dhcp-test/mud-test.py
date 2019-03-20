@@ -57,7 +57,7 @@ class TestAccess(unittest.TestCase) :
     def testAccessControl(self):
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1 -O foo.html --delete-after ")
         print "result = ",result
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")

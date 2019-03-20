@@ -7,7 +7,7 @@ Make sure your /etc/hosts has the following entries on the CONTROLLER (OpenDayli
 
     203.0.113.13    www.nist.local
     203.0.113.14    www.antd.local
-    127.0.0.1       toaster.nist.local
+    127.0.0.1       dhcptest.nist.local
 
 Edit the file sign-and-import.sh to point at your keystore (if not using the default location).
 
