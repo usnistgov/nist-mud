@@ -41,6 +41,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
 public class IdUtils {
 	private static AtomicLong flowIdInc = new AtomicLong();
 	private static ArrayList<String> manufacturers = new ArrayList<String>();
@@ -65,8 +66,7 @@ public class IdUtils {
 	/**
 	 * Shorten's node child path to node path.
 	 *
-	 * @param nodeChild
-	 *            child of node, from which we want node path.
+	 * @param nodeChild child of node, from which we want node path.
 	 * @return
 	 */
 	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
@@ -98,22 +98,26 @@ public class IdUtils {
 	}
 
 	static String getAuthority(String uri) {
-		int index = uri.indexOf("//");
-		if (index == -1) {
-			LOG.debug("getAuthority : Malformed URI " + uri);
-			return SdnMudConstants.UNCLASSIFIED;
+		try {
+			int index = uri.indexOf("//");
+			if (index == -1) {
+				LOG.debug("getAuthority : Malformed URI " + uri);
+				return SdnMudConstants.UNCLASSIFIED;
+			}
+			String rest = uri.substring(index + 2);
+			index = rest.indexOf("/");
+			String authority = rest.substring(0, index);
+			return authority;
+		} catch (Exception ex) {
+			LOG.error("Error parsing URL " + uri , ex);
+			return null;
 		}
-		String rest = uri.substring(index + 2);
-		index = rest.indexOf("/");
-		String authority = rest.substring(0, index);
-		return authority;
 	}
 
 	/**
 	 * Create a flow hash given a flow specification.
 	 *
-	 * @param flowSpec
-	 *            -- the flow spec to hash.
+	 * @param flowSpec -- the flow spec to hash.
 	 *
 	 */
 	public static int getFlowHash(String flowSpec) {

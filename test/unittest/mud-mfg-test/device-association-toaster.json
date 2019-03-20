@@ -2,6 +2,6 @@
  "mapping":
    { 
      "device-id": [ "00:00:00:00:00:01" ],
-     "mud-url": "https://toaster.nist.local/super1"
+     "mud-url": "file://mudfile-mfg-test.json"
    }
 }

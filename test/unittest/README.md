@@ -1,16 +1,9 @@
 
 Make sure you have the setup described in ../../README.md
 
-Edit config/sdnmud-config.json to specify keystore-home and keypass. This is used for mud file verification in the DHCP test. Here is a sample.
+Run the following script:
 
-
-    {
-        "sdnmud-config" : {
-                "keystore-home": "/home/mranga/jdk1.8.0_102/jre/lib/security/cacerts",
-                "key-pass" : "changeit",
-		"relaxed-acl" : false
-        }
-    }
+      copy-test-files-to-odl-cache.sh
 
     
 The unittests are only partially automated at this time. Please clean the karaf directories before running each test:

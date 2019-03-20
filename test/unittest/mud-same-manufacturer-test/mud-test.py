@@ -284,6 +284,12 @@ def startTestServer(host):
     proc = subprocess.Popen(cmd,shell=True, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  
     print "test server started"
 
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
 if __name__ == '__main__':
     setLogLevel( 'info' )
     parser = argparse.ArgumentParser()
@@ -332,6 +338,8 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
+
+    clean_mud_rules(controller_addr)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         time.sleep(10)

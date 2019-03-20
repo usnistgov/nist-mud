@@ -174,6 +174,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private ServerSocket listenerSock;
 
+	private boolean isClosed;
+
 	private class UnclassifiedMacAddressTimerTask extends TimerTask {
 		String unclassifiedMacAddress;
 
@@ -194,6 +196,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			for (Socket s : this.listeners) {
 				s.close();
 			}
+			this.isClosed = true;
 		} catch (IOException e) {
 			LOG.error("Error closing socket");
 		}
@@ -601,6 +604,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	@SuppressWarnings("unchecked")
 	@Override
 	public void onPacketReceived(PacketReceived notification) {
+		
+		if ( this.isClosed) {
+			LOG.info("ignore packet -- closed");
+			return;
+		}
 
 		if (this.sdnmudProvider.getCpeCollections() == null) {
 			LOG.error("Topology node not found -- ignoring packet");
@@ -671,6 +679,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				this.checkIfTcpSynAllowed(node, rawPacket);
 
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
 

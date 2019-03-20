@@ -83,15 +83,15 @@ class TestAccess(unittest.TestCase) :
         h2 = hosts[1]
     	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
-        self.assertTrue(int(result) > 0, "expect successful ping")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client")
+        self.assertTrue(int(result) > 0, "*** expect successful ping ****")
 
     def testUdpManufacturerPingExpectPass1(self) :
         print "pinging from a  manufacturer peer -- this should succeed with MUD"
         h2 = hosts[1]
         h1 = hosts[0]
     	h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client --quiet --bind --npings 20")
+        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client  --bind --npings 20")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpManufacturerPingExpectFail(self) :
@@ -101,6 +101,9 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
         self.assertTrue(int(result) == 0, "expect unsuccessful ping")
+
+    def tearDown(self):
+        time.sleep(5)
 
 
 
@@ -326,12 +329,11 @@ if __name__ == '__main__':
     for (configfile,suffix) in {
         (cfgfile, "sdnmud:sdnmud-config"),
         ("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        ("ietfmud.json","ietf-mud:mud")} :
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
+        } :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix

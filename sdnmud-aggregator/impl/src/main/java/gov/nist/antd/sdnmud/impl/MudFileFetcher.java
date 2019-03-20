@@ -230,7 +230,6 @@ public class MudFileFetcher {
 			int nread = -1;
 			boolean fileFetchedFromHttps = false;
 			if (protocol.equals("http") || protocol.equals("https")) {
-
 				// check if we have the cached file.
 				byte[] cachedFile = this.sdnmudProvider.getMudCacheDatastoreListener().getMudFile(mudUrl);
 				if (cachedFile == null) {
