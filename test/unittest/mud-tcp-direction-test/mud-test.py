@@ -160,6 +160,9 @@ class TestAccess(unittest.TestCase) :
               time.sleep(3)
         self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
+    def tearDown(self):
+        time.sleep(5)
+
 #########################################################
 
 
@@ -373,12 +376,9 @@ if __name__ == '__main__':
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("ietfmud.json","ietf-mud:mud")
-        } :
+        (cfgfile, "sdnmud:sdnmud-config") } :
         print "configfile", configfile
         data = json.load(open(configfile))
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
