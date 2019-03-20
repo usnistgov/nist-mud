@@ -107,6 +107,9 @@ class TestAccess(unittest.TestCase) :
         result = h1.cmdPrint("python ../util/tcp-client.py -H 203.0.113.13 -P 8000")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
+    def tearDown(self):
+        time.sleep(5)
+
 
 
 
@@ -337,11 +340,9 @@ if __name__ == '__main__':
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("ietfmud.json","ietf-mud:mud")} :
+        (cfgfile, "sdnmud:sdnmud-config") } :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
