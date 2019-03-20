@@ -91,9 +91,12 @@ class TestAccess(unittest.TestCase) :
         h9.cmdPrint('python -m SimpleHTTPServer 800&')
 	time.sleep(3)
         h1 = hosts[0]
-        result = h1.cmdPrint("wget  http://www.nist.local:800")
+        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after http://www.nist.local:800")
         print ("result " + str(result))
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+
+    def tearDown(self):
+        time.sleep(5)
 
 
 
@@ -317,12 +320,9 @@ if __name__ == '__main__':
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-printer.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("ietfmud.json","ietf-mud:mud")
-        } :
+        (cfgfile, "sdnmud:sdnmud-config")} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
