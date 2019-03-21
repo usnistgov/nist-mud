@@ -216,7 +216,7 @@ def setupTopology(controller_addr):
     h7.setMAC("00:00:00:00:00:27","h7-eth0")
     h8.setMAC("00:00:00:00:00:28","h8-eth0")
     h9.setMAC("00:00:00:00:00:29","h9-eth0")
-    h10.setMAC("00:00:00:00:00:2a","h10-eth0")
+    h10.setMAC("00:00:00:00:00:2A","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3

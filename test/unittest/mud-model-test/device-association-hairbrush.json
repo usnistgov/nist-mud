@@ -1,7 +1,7 @@
 {
  "mapping":
    { 
-     "device-id": [ "00:00:00:00:00:03" ],
+     "device-id": [ "00:00:00:00:00:73" ],
      "mud-url": "https://hairbrush.nist.local/super1"
    }
 }

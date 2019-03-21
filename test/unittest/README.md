@@ -1,16 +1,13 @@
 
-Make sure you have the setup described in ../../README.md
 
-Run the following script:
+Build the sdnmud project using mvn 
 
-      copy-test-files-to-odl-cache.sh
+Run the following script on the *ODL controller host*:
 
-    
-The unittests are only partially automated at this time. Please clean the karaf directories before running each test:
+      sh copy-test-files-to-odl-cache.sh
 
-Stop the container using
-
-     karaf> halt
+This will copy the mudfiles to the cache in preparation for testing.
+To run mud-dhcp-test make sure you have the [setup described in ../../README.md](../../README.md)
 
 Then 
 
@@ -22,20 +19,14 @@ Then
     
     cd bin
     ./karaf clean
-    feature:install features-sdnmud
 
-   
-And then run the tests. Before you run each test, please do the above steps manually.
+At the karaf prompt, install the sdnmud feature 
 
-Unfortunately I have reused mac addresses for different tests. This needs to be fixed.
-Help needed in fully automating the tests.
+     karaf> feature:install features-sdnmud
 
-The each test is its own directory and can be run standalone. You have to start the OpenDaylight controller and load the necessary feature to do the test.
-For example, for mud tests, you would load the features-sdnmud feature. 
-
-     karaf> features:install features-sdnmud
-
-You can run the test as follows in each test directory:
+Tests are run from the mininet emulation machine. 
+*important -- run the copy-test-files-to-odl-cache.sh script on the controller before you do this, or the tests will fail.*
+You can run the test as follows in each mud\*test directory:
 
     sudo -E UNITTEST=1 python mud-test.py
    

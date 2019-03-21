@@ -214,16 +214,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:01","h1-eth0")
-    h2.setMAC("00:00:00:00:00:02","h2-eth0")
-    h3.setMAC("00:00:00:00:00:03","h3-eth0")
-    h4.setMAC("00:00:00:00:00:04","h4-eth0")
-    h5.setMAC("00:00:00:00:00:05","h5-eth0")
-    h6.setMAC("00:00:00:00:00:06","h6-eth0")
-    h7.setMAC("00:00:00:00:00:07","h7-eth0")
-    h8.setMAC("00:00:00:00:00:08","h8-eth0")
-    h9.setMAC("00:00:00:00:00:09","h9-eth0")
-    h10.setMAC("00:00:00:00:00:10","h10-eth0")
+    h1.setMAC("00:00:00:00:00:51","h1-eth0")
+    h2.setMAC("00:00:00:00:00:52","h2-eth0")
+    h3.setMAC("00:00:00:00:00:53","h3-eth0")
+    h4.setMAC("00:00:00:00:00:54","h4-eth0")
+    h5.setMAC("00:00:00:00:00:55","h5-eth0")
+    h6.setMAC("00:00:00:00:00:56","h6-eth0")
+    h7.setMAC("00:00:00:00:00:57","h7-eth0")
+    h8.setMAC("00:00:00:00:00:58","h8-eth0")
+    h9.setMAC("00:00:00:00:00:59","h9-eth0")
+    h10.setMAC("00:00:00:00:00:5A","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3

@@ -204,16 +204,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:01","h1-eth0")
-    h2.setMAC("00:00:00:00:00:02","h2-eth0")
-    h3.setMAC("00:00:00:00:00:03","h3-eth0")
-    h4.setMAC("00:00:00:00:00:04","h4-eth0")
-    h5.setMAC("00:00:00:00:00:05","h5-eth0")
-    h6.setMAC("00:00:00:00:00:06","h6-eth0")
-    h7.setMAC("00:00:00:00:00:07","h7-eth0")
-    h8.setMAC("00:00:00:00:00:08","h8-eth0")
-    h9.setMAC("00:00:00:00:00:09","h9-eth0")
-    h10.setMAC("00:00:00:00:00:10","h10-eth0")
+    h1.setMAC("00:00:00:00:00:71","h1-eth0")
+    h2.setMAC("00:00:00:00:00:72","h2-eth0")
+    h3.setMAC("00:00:00:00:00:73","h3-eth0")
+    h4.setMAC("00:00:00:00:00:74","h4-eth0")
+    h5.setMAC("00:00:00:00:00:75","h5-eth0")
+    h6.setMAC("00:00:00:00:00:76","h6-eth0")
+    h7.setMAC("00:00:00:00:00:77","h7-eth0")
+    h8.setMAC("00:00:00:00:00:78","h8-eth0")
+    h9.setMAC("00:00:00:00:00:79","h9-eth0")
+    h10.setMAC("00:00:00:00:00:7A","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -318,12 +318,10 @@ if __name__ == '__main__':
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        ("ietfmud.json","ietf-mud:mud")} :
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping") } :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
