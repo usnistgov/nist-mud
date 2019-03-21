@@ -48,7 +48,7 @@ class TestAccess(unittest.TestCase) :
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
-        result = h4.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        result = h4.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
     def testUdpSameManPingExpectPass(self) :
@@ -80,7 +80,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetExpectPass(self):
         print "wgetting from a non-mud -- this should succeed with MUD"
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1 -O foo.html --delete-after")
         print "result = ",result
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
@@ -88,7 +88,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetExpectFail(self):
         print "Wgetting from antd.local -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
 
 

@@ -20,6 +20,31 @@ import unittest
 import re
 import os
 
+class TestAccess(unittest.TestCase) :
+   def setUp(self):
+      pass
+
+   def testPing(self):
+      result = h1.cmdPrint("ping 10.0.0.2 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h2.cmdPrint("ping 10.0.0.3 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h3.cmdPrint("ping 10.0.0.4 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h4.cmdPrint("ping 10.0.0.5 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h5.cmdPrint("ping 10.0.0.6 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h6.cmdPrint("ping 10.0.0.7 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h6.cmdPrint("ping 10.0.0.7 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+      result = h7.cmdPrint("ping 10.0.0.8 -c 10 -q")
+      self.assertTrue(re.search("0% packet loss",result) is not None, "Expecting a successful ping")
+
+   def tearDown(self):
+      pass
+
 def cli():
     global net,c1,s1,s2,s3
     global hosts
@@ -118,16 +143,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:01","h1-eth0")
-    h2.setMAC("00:00:00:00:00:02","h2-eth0")
-    h3.setMAC("00:00:00:00:00:03","h3-eth0")
-    h4.setMAC("00:00:00:00:00:04","h4-eth0")
-    h5.setMAC("00:00:00:00:00:05","h5-eth0")
-    h6.setMAC("00:00:00:00:00:06","h6-eth0")
-    h7.setMAC("00:00:00:00:00:07","h7-eth0")
-    h8.setMAC("00:00:00:00:00:08","h8-eth0")
-    h9.setMAC("00:00:00:00:00:09","h9-eth0")
-    h10.setMAC("00:00:00:00:00:10","h10-eth0")
+    h1.setMAC("00:00:00:00:00:11","h1-eth0")
+    h2.setMAC("00:00:00:00:00:22","h2-eth0")
+    h3.setMAC("00:00:00:00:00:33","h3-eth0")
+    h4.setMAC("00:00:00:00:00:44","h4-eth0")
+    h5.setMAC("00:00:00:00:00:55","h5-eth0")
+    h6.setMAC("00:00:00:00:00:66","h6-eth0")
+    h7.setMAC("00:00:00:00:00:77","h7-eth0")
+    h8.setMAC("00:00:00:00:00:88","h8-eth0")
+    h9.setMAC("00:00:00:00:00:99","h9-eth0")
+    h10.setMAC("00:00:00:00:00:100","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
