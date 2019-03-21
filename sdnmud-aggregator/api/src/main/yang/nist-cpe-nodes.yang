@@ -31,7 +31,7 @@ module nist-cpe-nodes {
           "The collection of CPE switches on which MUD rules are installed.";
        leaf-list cpe-switches {
           description 
-             "CPE switch ID's where MUD rules are installed";
+             "CPE switch ID's where MUD rules are installed. These are of the form openflow:xxxx where xxxx is usually the MAC address of the switch in HEX";
           type inet:uri;
        }
   }
