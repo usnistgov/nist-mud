@@ -110,12 +110,14 @@ Add the following line to /etc/resolv.conf on the emulation VM.
 
 ### Configure the SDN Controller (OpenDaylight)  Host ###
 
-Add the following to /etc/hosts on your controller host so that the java library can look up our fake hosts.
+Add the following to /etc/hosts on your *controller* host so that the java library can look up our fake hosts.
 
       203.0.113.13   www.nist.local
       203.0.113.14   www.antd.local
       203.0.113.15   printer.nist.local
-      127.0.0.1      toaster.nist.local
+      127.0.0.1      dhcptest.nist.local
+
+(We will run the "manufacturer server" on 127.0.0.1 on the controller host.)
 
 ### DEMO ###
 
