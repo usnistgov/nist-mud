@@ -14,17 +14,19 @@ module ietf-mud {
   }
 
   organization
-    "IETF OPSAWG (Ops Area) Working Group";
+    "IETF OPSAWG (Operations and Management Area Working Group)";
   contact
-    "WG Web: http://tools.ietf.org/wg/opsawg/
+    "WG Web: <https://datatracker.ietf.org/wg/opsawg/>
      WG List: opsawg@ietf.org
-     Author: Eliot Lear
-     lear@cisco.com
-     Author: Ralph Droms
-     rdroms@gmail.com
-     Author: Dan Romascanu
-     dromasca@gmail.com
 
+     Author: Eliot Lear
+             lear@cisco.com
+
+     Author: Ralph Droms
+             rdroms@gmail.com
+
+     Author: Dan Romascanu
+             dromasca@gmail.com
     ";
   description
     "This YANG module defines a component that augments the
@@ -32,26 +34,34 @@ module ietf-mud {
      focuses on additional filters that include local, model,
      and same-manufacturer.
 
-     This module is intended to be serialized via JSON and stored
-     as a file, as described in RFC XXXX [RFC Editor to fill in with
-     this document #].
 
-     Copyright (c) 2016,2017 IETF Trust and the persons
-     identified as the document authors.  All rights reserved.
+     This module is intended to be serialized via JSON and stored
+     as a file, as described in RFC 8520.
+
+     The key words 'MUST', 'MUST NOT', 'REQUIRED', 'SHALL', 'SHALL
+     NOT', 'SHOULD', 'SHOULD NOT', 'RECOMMENDED', 'NOT RECOMMENDED',
+     'MAY', and 'OPTIONAL' in this document are to be interpreted as
+     described in BCP 14 (RFC 2119) (RFC 8174) when, and only when,
+     they appear in all capitals, as shown here.
+
+     Copyright (c) 2019 IETF Trust and the persons identified as
+     authors of the code.  All rights reserved.
+
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject
-     to the license terms contained in, the Simplified BSD
-     License set forth in Section 4.c of the IETF Trust's Legal
-     Provisions Relating to IETF Documents
+     to the license terms contained in, the Simplified BSD License
+     set forth in Section 4.c of the IETF Trust's Legal Provisions
+     Relating to IETF Documents
      (http://trustee.ietf.org/license-info).
-     This version of this YANG module is part of RFC XXXX; see
+
+     This version of this YANG module is part of RFC 8520; see
      the RFC itself for full legal notices.";
 
-  revision 2018-06-15 {
+  revision 2019-01-28 {
     description
       "Initial proposed standard.";
     reference
-      "RFC XXXX: Manufacturer Usage Description
+      "RFC 8520: Manufacturer Usage Description
        Specification";
   }
 
@@ -60,12 +70,12 @@ module ietf-mud {
       enum to-device {
         description
           "packets or flows destined to the target
-           Thing";
+           Thing.";
       }
       enum from-device {
         description
           "packets or flows destined from
-           the target Thing";
+           the target Thing.";
       }
     }
     description
@@ -73,17 +83,18 @@ module ietf-mud {
   }
 
   container mud {
+
     presence "Enabled for this particular MUD URL";
     description
-      "MUD related information, as specified
-       by RFC-XXXX [RFC Editor to fill in].";
+      "MUD-related information, as specified
+       by RFC 8520.";
     uses mud-grouping;
   }
 
   grouping mud-grouping {
     description
-      "Information about when support end(ed), and
-       when to refresh";
+      "Information about when support ends (or ended)
+       and when to refresh.";
     leaf mud-version {
       type uint8;
       mandatory true;
@@ -103,8 +114,8 @@ module ietf-mud {
       mandatory true;
       description
         "This is intended to be when the current MUD file
-         was generated.  MUD Managers SHOULD NOT check
-         for updates between this time plus cache validity";
+         was generated.  MUD managers SHOULD NOT check
+         for updates between this time plus cache validity.";
     }
     leaf mud-signature {
       type inet:uri;
@@ -121,7 +132,8 @@ module ietf-mud {
       description
         "The information retrieved from the MUD server is
          valid for these many hours, after which it should
-         be refreshed.  N.B. MUD manager implementations
+
+         be refreshed.  N.B., MUD manager implementations
          need not discard MUD files beyond this period.";
     }
     leaf is-supported {
@@ -156,25 +168,26 @@ module ietf-mud {
       type string;
       description
         "firmware-rev, as described in the
-         ietf-hardware YANG module.  Note this field MUST
-         NOT be included when the device can be updated
-         but the MUD-URL cannot.";
+         ietf-hardware YANG module.  Note that this field
+         MUST NOT be included when the device can be
+         updated but the MUD URL cannot.";
     }
     leaf software-rev {
       type string;
       description
         "software-rev, as described in the
-         ietf-hardware YANG module.  Note this field MUST
-         NOT be included when the device can be updated
-         but the MUD-URL cannot.";
+         ietf-hardware YANG module.  Note that this field
+         MUST NOT be included when the device can be
+         updated but the MUD URL cannot.";
     }
     leaf documentation {
+
       type inet:uri;
       description
         "This URL points to documentation that
          relates to this device and any classes that it uses
          in its MUD file.  A caution: MUD managers need
-         not resolve this URL on their own, but rather simply
+         not resolve this URL on their own but rather simply
          provide it to the administrator.  Parsing HTML is
          not an intended function of a MUD manager.";
     }
@@ -190,9 +203,9 @@ module ietf-mud {
     container from-device-policy {
       description
         "The policies that should be enforced on traffic
-         coming from the device. These policies are not
+         coming from the device.  These policies are not
          necessarily intended to be enforced at a single
-         point, but may be rendered by the controller to any
+         point but may be rendered by the controller to any
          relevant enforcement points in the network or
          elsewhere.";
       uses access-lists;
@@ -200,9 +213,9 @@ module ietf-mud {
     container to-device-policy {
       description
         "The policies that should be enforced on traffic
-         going to the device. These policies are not
+         going to the device.  These policies are not
          necessarily intended to be enforced at a single
-         point, but may be rendered by the controller to any
+         point but may be rendered by the controller to any
          relevant enforcement points in the network or
          elsewhere.";
       uses access-lists;
@@ -216,14 +229,15 @@ module ietf-mud {
     container access-lists {
       description
         "The access lists that should be applied to traffic
-           to or from the device.";
+         to or from the device.";
+
       list access-list {
         key "name";
         description
           "Each entry on this list refers to an ACL that
-             should be present in the overall access list
-             data model. Each ACL is identified by name and
-             type.";
+           should be present in the overall access list
+           data model.  Each ACL is identified by name and
+           type.";
         leaf name {
           type leafref {
             path "/acl:acls/acl:acl/acl:name";
@@ -237,7 +251,7 @@ module ietf-mud {
 
   augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches" {
     description
-      "adding abstractions to avoid need of IP addresses";
+      "adding abstractions to avoid the need of IP addresses.";
     container mud {
       description
         "MUD-specific matches.";
@@ -245,7 +259,7 @@ module ietf-mud {
         type inet:host;
         description
           "A domain that is intended to match the authority
-           section of the MUD URL. This node is used to specify
+           section of the MUD URL.  This node is used to specify
            one or more manufacturers a device should
            be authorized to access.";
       }
@@ -265,6 +279,7 @@ module ietf-mud {
       leaf local-networks {
         type empty;
         description
+
           "IP addresses will match this node if they are
            considered local addresses.  A local address may be
            a list of locally defined prefixes and masks
@@ -287,15 +302,15 @@ module ietf-mud {
       }
     }
   }
-  augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches" +
-    "/acl:l4/acl:tcp/acl:tcp" {
+  augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches"
+        + "/acl:l4/acl:tcp/acl:tcp" {
     description
       "add direction-initiated";
     leaf direction-initiated {
       type direction;
       description
         "This node matches based on which direction a
-         connection was initiated. The means by which that
+         connection was initiated.  The means by which that
          is determined is discussed in this document.";
     }
   }

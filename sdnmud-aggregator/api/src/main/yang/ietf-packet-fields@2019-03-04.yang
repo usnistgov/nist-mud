@@ -18,49 +18,52 @@ module ietf-packet-fields {
   import ietf-ethertypes {
     prefix eth;
     reference
-      "RFC XXXX - Network ACL YANG Model.";
+      "RFC 8519 - YANG Data Model for Network Access Control
+                  Lists (ACLs).";
   }
 
   organization
-    "IETF NETMOD (Network Modeling Language) Working
-     Group";
+    "IETF NETMOD (Network Modeling) Working Group.";
 
   contact
-    "WG Web: http://tools.ietf.org/wg/netmod/
+    "WG Web:  <https://datatracker.ietf.org/wg/netmod/>
      WG List: netmod@ietf.org
 
      Editor: Mahesh Jethanandani
              mjethanandani@gmail.com
      Editor: Lisa Huang
-             lyihuang16@gmail.com
+             huangyi_99@yahoo.com
      Editor: Sonal Agarwal
              sagarwal12@gmail.com
      Editor: Dana Blair
-             dblair@cisco.com";
+             dana@blairhome.com";
+
 
   description
     "This YANG module defines groupings that are used by
-    ietf-access-control-list YANG module. Their usage is not
-    limited to ietf-access-control-list and can be
-    used anywhere as applicable.
+     the ietf-access-control-list YANG module.  Their usage
+     is not limited to ietf-access-control-list and can be
+     used anywhere as applicable.
 
-    Copyright (c) 2018 IETF Trust and the persons identified as
-    the document authors.  All rights reserved.
-    Redistribution and use in source and binary forms, with or
-    without modification, is permitted pursuant to, and subject
-    to the license terms contained in, the Simplified BSD
-    License set forth in Section 4.c of the IETF Trust's Legal
-    Provisions Relating to IETF Documents
-    (http://trustee.ietf.org/license-info).
+     Copyright (c) 2019 IETF Trust and the persons identified as
+     the document authors.  All rights reserved.
 
-    This version of this YANG module is part of RFC XXXX; see
-    the RFC itself for full legal notices.";
+     Redistribution and use in source and binary forms, with or
+     without modification, is permitted pursuant to, and subject
+     to the license terms contained in, the Simplified BSD
+     License set forth in Section 4.c of the IETF Trust's Legal
+     Provisions Relating to IETF Documents
+     (http://trustee.ietf.org/license-info).
 
-  revision 2018-04-27 {
+     This version of this YANG module is part of RFC 8519; see
+     the RFC itself for full legal notices.";
+
+  revision 2019-03-04 {
     description
       "Initial version.";
     reference
-      "RFC XXX: Network Access Control List (ACL) YANG Data Model.";
+      "RFC 8519: YANG Data Model for Network Access Control
+                 Lists (ACLs).";
   }
 
   /*
@@ -70,11 +73,11 @@ module ietf-packet-fields {
     type enumeration {
       enum lte {
         description
-          "Less than or equal.";
+          "Less than or equal to.";
       }
       enum gte {
         description
-          "Greater than or equal.";
+          "Greater than or equal to.";
       }
       enum eq {
         description
@@ -87,10 +90,10 @@ module ietf-packet-fields {
     }
     description
       "The source and destination port range definitions
-       can be further qualified using an operator. An
-       operator is needed only if lower-port is specified
-       and upper-port is not specified. The operator
-       therefore further qualifies lower-port only.";
+       can be further qualified using an operator.  An
+       operator is needed only if the lower-port is specified
+       and the upper-port is not specified.  The operator
+       therefore further qualifies the lower-port only.";
   }
 
   /*
@@ -101,26 +104,26 @@ module ietf-packet-fields {
       case range {
         leaf lower-port {
           type inet:port-number;
-          must ". <= ../upper-port" {
+          must '. <= ../upper-port' {
             error-message
               "The lower-port must be less than or equal to
-               upper-port.";
+               the upper-port.";
           }
           mandatory true;
           description
-            "Lower boundry for a port.";
+            "Lower boundary for a port.";
         }
         leaf upper-port {
           type inet:port-number;
           mandatory true;
           description
-            "Upper boundry for port.";
+            "Upper boundary for a port.";
         }
       }
       case operator {
         leaf operator {
           type operator;
-          default eq;
+          default "eq";
           description
             "Operator to be applied on the port below.";
         }
@@ -128,7 +131,7 @@ module ietf-packet-fields {
           type inet:port-number;
           mandatory true;
           description
-            "Port number along with operator on which to
+            "Port number along with the operator on which to
              match.";
         }
       }
@@ -143,7 +146,7 @@ module ietf-packet-fields {
 
   grouping acl-ip-header-fields {
     description
-      "IP header fields common to ipv4 and ipv6";
+      "IP header fields common to IPv4 and IPv6";
     reference
       "RFC 791: Internet Protocol.";
 
@@ -152,34 +155,36 @@ module ietf-packet-fields {
       description
         "Differentiated Services Code Point.";
       reference
-        "RFC 2474: Definition of Differentiated services field
-         (DS field) in the IPv4 and IPv6 headers.";
+        "RFC 2474: Definition of the Differentiated Services
+                   Field (DS Field) in the IPv4 and IPv6
+                   Headers.";
     }
+
     leaf ecn {
       type uint8 {
-        range 0..3;
+        range "0..3";
       }
       description
         "Explicit Congestion Notification.";
       reference
-        "RFC 3168: Explicit Congestion Notification.";
+        "RFC 3168: The Addition of Explicit Congestion
+                   Notification (ECN) to IP.";
     }
 
     leaf length {
       type uint16;
       description
-        "In IPv4 header field, this field is known as the Total Length.
-         Total Length is the length of the datagram, measured in octets,
-         including internet header and data.
+        "In the IPv4 header field, this field is known as the Total
+         Length.  Total Length is the length of the datagram, measured
+         in octets, including internet header and data.
 
-         In IPv6 header field, this field is known as the Payload
-         Length, the length of the IPv6 payload, i.e. the rest of
-         the packet following the IPv6 header, in octets.";
+         In the IPv6 header field, this field is known as the Payload
+         Length, which is the length of the IPv6 payload, i.e., the rest
+         of the packet following the IPv6 header, in octets.";
       reference
-        "RFC 791: Internet Protocol,
+        "RFC 791: Internet Protocol
          RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
-
     leaf ttl {
       type uint8;
       description
@@ -189,50 +194,47 @@ module ietf-packet-fields {
 
          In IPv6, this field is known as the Hop Limit.";
       reference
-        "RFC 791: Internet Protocol,
+        "RFC 791: Internet Protocol
          RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
-
     leaf protocol {
       type uint8;
       description
-        "Internet Protocol number. Refers to the protocol of the
-         payload. In IPv6, this field is known as 'next-header,
+        "Internet Protocol number.  Refers to the protocol of the
+         payload.  In IPv6, this field is known as 'next-header',
          and if extension headers are present, the protocol is
          present in the 'upper-layer' header.";
       reference
-        "RFC 791: Internet Protocol,
+        "RFC 791: Internet Protocol
          RFC 8200: Internet Protocol, Version 6 (IPv6) Specification.";
     }
   }
 
   grouping acl-ipv4-header-fields {
     description
-      "Fields in IPv4 header.";
-
+      "Fields in the IPv4 header.";
     leaf ihl {
       type uint8 {
         range "5..60";
       }
       description
-        "An IPv4 header field, the Internet Header Length (IHL) is
-         the length of the internet header in 32 bit words, and
-         thus points to the beginning of the data. Note that the
+        "In an IPv4 header field, the Internet Header Length (IHL) is
+         the length of the internet header in 32-bit words and
+         thus points to the beginning of the data.  Note that the
          minimum value for a correct header is 5.";
     }
-
     leaf flags {
       type bits {
         bit reserved {
           position 0;
           description
-            "Reserved. Must be zero.";
+            "Reserved.  Must be zero.";
         }
         bit fragment {
           position 1;
           description
-            "Setting value to 0 indicates may fragment, while setting
-             the value to 1 indicates do not fragment.";
+            "Setting the value to 0 indicates may fragment, while
+             setting the value to 1 indicates do not fragment.";
         }
         bit more {
           position 2;
@@ -243,18 +245,16 @@ module ietf-packet-fields {
         }
       }
       description
-        "Bit definitions for the flags field in IPv4 header.";
+        "Bit definitions for the Flags field in the IPv4 header.";
     }
-
     leaf offset {
       type uint16 {
         range "20..65535";
       }
       description
         "The fragment offset is measured in units of 8 octets (64 bits).
-         The first fragment has offset zero. The length is 13 bits";
+         The first fragment has offset zero.  The length is 13 bits";
     }
-
     leaf identification {
       type uint16;
       description
@@ -274,6 +274,7 @@ module ietf-packet-fields {
         "Choice of specifying a destination IPv4 address or
          referring to a group of IPv4 destination addresses.";
     }
+
     choice source-network {
       case source-ipv4-network {
         leaf source-ipv4-network {
@@ -290,7 +291,7 @@ module ietf-packet-fields {
 
   grouping acl-ipv6-header-fields {
     description
-      "Fields in IPv6 header";
+      "Fields in the IPv6 header.";
 
     choice destination-network {
       case destination-ipv6-network {
@@ -310,8 +311,8 @@ module ietf-packet-fields {
       case source-ipv6-network {
         leaf source-ipv6-network {
           type inet:ipv6-prefix;
-            description
-              "Source IPv6 address prefix.";
+          description
+            "Source IPv6 address prefix.";
         }
       }
       description
@@ -328,17 +329,17 @@ module ietf-packet-fields {
       "RFC 4291: IP Version 6 Addressing Architecture
        RFC 4007: IPv6 Scoped Address Architecture
        RFC 5952: A Recommendation for IPv6 Address Text
-                 Representation";
+                 Representation.";
   }
 
   grouping acl-eth-header-fields {
     description
-      "Fields in Ethernet header.";
-
+      "Fields in the Ethernet header.";
     leaf destination-mac-address {
       type yang:mac-address;
       description
-        "Destination IEEE 802 MAC address.";
+        "Destination IEEE 802 Media Access Control (MAC)
+         address.";
     }
     leaf destination-mac-address-mask {
       type yang:mac-address;
@@ -363,7 +364,7 @@ module ietf-packet-fields {
          The canonical representation uses lowercase
          characters.";
       reference
-        "IEEE 802-2014 Clause 9.2";
+        "IEEE 802-2014, Clause 9.2.";
     }
     reference
       "IEEE 802: IEEE Standard for Local and Metropolitan
@@ -373,49 +374,45 @@ module ietf-packet-fields {
   grouping acl-tcp-header-fields {
     description
       "Collection of TCP header fields that can be used to
-       setup a match filter.";
-
+       set up a match filter.";
     leaf sequence-number {
       type uint32;
       description
         "Sequence number that appears in the packet.";
     }
-
     leaf acknowledgement-number {
       type uint32;
       description
         "The acknowledgement number that appears in the
          packet.";
     }
-
     leaf data-offset {
       type uint8 {
         range "5..15";
       }
       description
         "Specifies the size of the TCP header in 32-bit
-         words. The minimum size header is 5 words and
-         the maximum is 15 words thus giving the minimum
-         size of 20 bytes and maximum of 60 bytes,
-         allowing for up to 40 bytes of options in the
-         header.";
+         words.  The minimum size header is 5 words and
+         the maximum is 15 words; thus, this gives a
+         minimum size of 20 bytes and a maximum of 60
+         bytes, allowing for up to 40 bytes of options
+         in the header.";
     }
-
     leaf reserved {
       type uint8;
       description
         "Reserved for future use.";
     }
-
     leaf flags {
       type bits {
         bit cwr {
           position 1;
           description
-            "Congestion Window Reduced (CWR) flag is set by
-             the sending host to indicate that it received
-             a TCP segment with the ECE flag set and had
-             responded in congestion control mechanism.";
+            "The Congestion Window Reduced (CWR) flag is set
+             by the sending host to indicate that it received
+             a TCP segment with the ECN-Echo (ECE) flag set
+             and had responded in the congestion control
+             mechanism.";
           reference
             "RFC 3168: The Addition of Explicit Congestion
                        Notification (ECN) to IP.";
@@ -424,14 +421,14 @@ module ietf-packet-fields {
           position 2;
           description
             "ECN-Echo has a dual role, depending on the value
-             of the SYN flag. It indicates:
-             If the SYN flag is set (1), that the TCP peer is ECN
-             capable. If the SYN flag is clear (0), that a packet
-             with Congestion Experienced flag set (ECN=11) in IP
-             header was received during normal transmission
-             (added to header by RFC 3168). This serves as an
-             indication of network congestion (or impending
-             congestion) to the TCP sender.";
+             of the SYN flag.  It indicates the following: if
+             the SYN flag is set (1), the TCP peer is ECN
+             capable, and if the SYN flag is clear (0), a packet
+             with the Congestion Experienced flag set (ECN=11)
+             in the IP header was received during normal
+             transmission (added to the header by RFC 3168).
+             This serves as an indication of network congestion
+             (or impending congestion) to the TCP sender.";
           reference
             "RFC 3168: The Addition of Explicit Congestion
                        Notification (ECN) to IP.";
@@ -439,19 +436,19 @@ module ietf-packet-fields {
         bit urg {
           position 3;
           description
-            "Indicates that the Urgent pointer field is significant.";
+            "Indicates that the Urgent Pointer field is significant.";
         }
         bit ack {
           position 4;
           description
-            "Indicates that the Acknowledgment field is significant.
+            "Indicates that the Acknowledgement field is significant.
              All packets after the initial SYN packet sent by the
              client should have this flag set.";
         }
         bit psh {
           position 5;
           description
-            "Push function. Asks to push the buffered data to the
+            "Push function.  Asks to push the buffered data to the
              receiving application.";
         }
         bit rst {
@@ -462,8 +459,8 @@ module ietf-packet-fields {
         bit syn {
           position 7;
           description
-            "Synchronize sequence numbers. Only the first packet
-             sent from each end should have this flag set. Some
+            "Synchronize sequence numbers.  Only the first packet
+             sent from each end should have this flag set.  Some
              other flags and fields change meaning based on this
              flag, and some are only valid for when it is set,
              and others when it is clear.";
@@ -471,42 +468,41 @@ module ietf-packet-fields {
         bit fin {
           position 8;
           description
-            "Last package from sender.";
+            "Last package from the sender.";
         }
       }
       description
-        "Also known as Control Bits. Contains 9 1-bit flags.";
+        "Also known as Control Bits.  Contains nine 1-bit flags.";
       reference
-        "RFC 793: Transmission Control Protocol (TCP).";
+        "RFC 793: Transmission Control Protocol.";
     }
-
     leaf window-size {
       type uint16;
       units "bytes";
       description
         "The size of the receive window, which specifies
          the number of window size units beyond the segment
-         identified by the sequence number in the acknowledgment
+         identified by the sequence number in the Acknowledgement
          field that the sender of this segment is currently
          willing to receive.";
     }
-
     leaf urgent-pointer {
       type uint16;
       description
         "This field is an offset from the sequence number
          indicating the last urgent data byte.";
     }
-
     leaf options {
-      type uint32;
+      type binary {
+        length "1..40";
+      }
       description
         "The length of this field is determined by the
-         data offset field. Options have up to three
+         Data Offset field.  Options have up to three
          fields: Option-Kind (1 byte), Option-Length
-         (1 byte), Option-Data (variable). The Option-Kind
-         field indicates the type of option, and is the
-         only field that is not optional. Depending on
+         (1 byte), and Option-Data (variable).  The Option-Kind
+         field indicates the type of option and is the
+         only field that is not optional.  Depending on
          what kind of option we are dealing with,
          the next two fields may be set: the Option-Length
          field indicates the total length of the option,
@@ -518,25 +514,24 @@ module ietf-packet-fields {
   grouping acl-udp-header-fields {
     description
       "Collection of UDP header fields that can be used
-       to setup a match filter.";
-
+       to set up a match filter.";
     leaf length {
       type uint16;
       description
         "A field that specifies the length in bytes of
-         the UDP header and UDP data. The minimum
+         the UDP header and UDP data.  The minimum
          length is 8 bytes because that is the length of
-         the header. The field size sets a theoretical
-         limit of 65,535 bytes (8 byte header + 65,527
-         bytes of data) for a UDP datagram. However the
+         the header.  The field size sets a theoretical
+         limit of 65,535 bytes (8-byte header plus 65,527
+         bytes of data) for a UDP datagram.  However, the
          actual limit for the data length, which is
          imposed by the underlying IPv4 protocol, is
-         65,507 bytes (65,535 minus 8 byte UDP header
-         minus 20 byte IP header).
+         65,507 bytes (65,535 minus 8-byte UDP header
+         minus 20-byte IP header).
 
-         In IPv6 jumbograms it is possible to have
-         UDP packets of size greater than 65,535 bytes.
-         RFC 2675 specifies that the length field is set
+         In IPv6 jumbograms, it is possible to have
+         UDP packets of a size greater than 65,535 bytes.
+         RFC 2675 specifies that the Length field is set
          to zero if the length of the UDP header plus
          UDP data is greater than 65,535.";
     }
@@ -545,27 +540,38 @@ module ietf-packet-fields {
   grouping acl-icmp-header-fields {
     description
       "Collection of ICMP header fields that can be
-       used to setup a match filter.";
-
+       used to set up a match filter.";
     leaf type {
       type uint8;
       description
-        "Also known as Control messages.";
+        "Also known as control messages.";
       reference
-        "RFC 792: Internet Control Message Protocol (ICMP).";
+        "RFC 792: Internet Control Message Protocol
+         RFC 4443: Internet Control Message Protocol (ICMPv6)
+                   for Internet Protocol Version 6 (IPv6)
+                   Specification.";
     }
-
     leaf code {
       type uint8;
       description
-        "ICMP subtype. Also known as Control messages.";
+        "ICMP subtype.  Also known as control messages.";
+      reference
+        "RFC 792: Internet Control Message Protocol
+         RFC 4443: Internet Control Message Protocol (ICMPv6)
+                   for Internet Protocol Version 6 (IPv6)
+                   Specification.";
     }
-
     leaf rest-of-header {
-      type uint32;
+      type binary;
       description
-        "Four-bytes field, contents vary based on the
-         ICMP type and code.";
+        "Unbounded in length, the contents vary based on the
+         ICMP type and code.  Also referred to as 'Message Body'
+         in ICMPv6.";
+      reference
+        "RFC 792: Internet Control Message Protocol
+         RFC 4443: Internet Control Message Protocol (ICMPv6)
+                   for Internet Protocol Version 6 (IPv6)
+                   Specification.";
     }
   }
 }

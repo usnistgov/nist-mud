@@ -375,7 +375,7 @@ if __name__ == '__main__':
     setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
+    for (configfile,suffix) in {
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
         (cfgfile, "sdnmud:sdnmud-config") } :

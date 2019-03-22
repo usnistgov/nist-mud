@@ -312,7 +312,7 @@ if __name__ == '__main__':
     url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-cache"
     headers= {"Content-Type":"application/json"}
     r = requests.post(url,headers=headers , auth=('admin', 'admin'))
-    for (configfile,suffix) in {("cpenodes.json","nist-cpe-nodes:cpe-collections"),
+    for (configfile,suffix) in {
         ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association-toaster-100.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),

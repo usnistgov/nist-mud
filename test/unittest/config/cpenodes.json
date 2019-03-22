@@ -1,5 +1,0 @@
-{
- "cpe-collections" : {
-	       "cpe-switches" : [ "openflow:1" ]
-   }
-}

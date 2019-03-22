@@ -318,7 +318,6 @@ if __name__ == '__main__':
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 
         ("../config/sdnmud-config.json", "sdnmud:sdnmud-config"),
-        ("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping") }:
         data = json.load(open(configfile))
         print "configfile", configfile

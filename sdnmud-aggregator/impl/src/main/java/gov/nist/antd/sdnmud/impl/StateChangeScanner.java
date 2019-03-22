@@ -23,9 +23,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TimerTask;
 
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,42 +51,31 @@ public class StateChangeScanner extends TimerTask {
 	@Override
 	public synchronized void run() {
 
-		if (sdnmudProvider.getCpeCollections() == null || !sdnmudProvider.isControllerMapped()) {
-			if (sdnmudProvider.getCpeCollections() == null) {
-				LOG.info("StateChangeScanner : Configuration incomplete -- cpeCollections not found");
-			} 
-			if (!sdnmudProvider.isControllerMapped()) {
-				LOG.info("StateChangeScanner: controller class mapping not provided");
-			}
-			return;
-		}
-
 		if (!sdnmudProvider.isConfigStateChanged()) {
 			LOG.debug("Config state is unchanged -- returning");
 			return;
 		}
 
-		CpeCollections topology = sdnmudProvider.getCpeCollections();
-
 		try {
 
 			boolean failed = false;
-			for (Uri cpeSwitch : topology.getCpeSwitches()) {
+			for (String cpeSwitch : sdnmudProvider.getCpeSwitches()) {
 
-				if (!initialFlowsInstalled.contains(cpeSwitch.getValue())) {
-					this.sdnmudProvider.getWakeupListener().installSendToControllerFlows(cpeSwitch.getValue());
-					this.sdnmudProvider.getWakeupListener().installInitialFlows(cpeSwitch.getValue());
-					this.initialFlowsInstalled.add(cpeSwitch.getValue());
-				}
-
-				MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider.getMudFlowsInstaller();
-				for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
-					String key = mud.getMudUrl().getValue() + ":" + cpeSwitch.getValue();
-					if (!installTime.containsKey(key)) {
-						if (mudFlowsInstaller.tryInstallFlows(mud, cpeSwitch.getValue())) {
-							installTime.put(key, System.currentTimeMillis());
-						} else {
-							failed = true;
+				if (sdnmudProvider.getNode(cpeSwitch) != null) {
+					if (!initialFlowsInstalled.contains(cpeSwitch)) {
+						this.sdnmudProvider.getWakeupListener().installSendToControllerFlows(cpeSwitch);
+						this.sdnmudProvider.getWakeupListener().installInitialFlows(cpeSwitch);
+						this.initialFlowsInstalled.add(cpeSwitch);
+					}
+					MudFlowsInstaller mudFlowsInstaller = this.sdnmudProvider.getMudFlowsInstaller();
+					for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
+						String key = mud.getMudUrl().getValue() + ":" + cpeSwitch;
+						if (!installTime.containsKey(key)) {
+							if (mudFlowsInstaller.tryInstallFlows(mud, cpeSwitch)) {
+								installTime.put(key, System.currentTimeMillis());
+							} else {
+								failed = true;
+							}
 						}
 					}
 				}
@@ -104,21 +91,21 @@ public class StateChangeScanner extends TimerTask {
 		}
 
 	}
-	
+
 	public synchronized void clearState(String switchUrl) {
 		this.clearMudState(switchUrl);
 		this.initialFlowsInstalled.remove(switchUrl);
 	}
-	
+
 	public void clearMudState(String switchUrl) {
-		for (Iterator<String> keyIterator = this.installTime.keySet().iterator(); keyIterator.hasNext(); ) {
+		for (Iterator<String> keyIterator = this.installTime.keySet().iterator(); keyIterator.hasNext();) {
 			String key = keyIterator.next();
 			if (key.endsWith(switchUrl)) {
 				keyIterator.remove();
-			} 
+			}
 		}
 	}
-	
+
 	public synchronized void clearState() {
 		this.installTime.clear();
 		this.initialFlowsInstalled.clear();

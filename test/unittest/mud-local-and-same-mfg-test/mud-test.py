@@ -339,8 +339,7 @@ if __name__ == '__main__':
     clean_mud_rules(controller_addr)
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("device-association-toaster.json","nist-mud-device-association:mapping"),
+    for (configfile,suffix) in { ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
         (cfgfile, "sdnmud:sdnmud-config") } :
         data = json.load(open(configfile))

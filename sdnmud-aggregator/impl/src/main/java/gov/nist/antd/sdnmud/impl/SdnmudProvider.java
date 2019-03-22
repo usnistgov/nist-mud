@@ -37,16 +37,16 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
+import org.opendaylight.controller.sal.binding.api.BindingAwareBroker.RpcRegistration;
 import org.opendaylight.controller.sal.binding.api.RpcProviderRegistry;
 import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.Acls;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev180427.acls.acl.Aces;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.Acls;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.acls.acl.Aces;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev180615.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.cpe.nodes.rev170915.CpeCollections;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.controllerclass.mapping.Controller;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
@@ -116,11 +116,10 @@ public class SdnmudProvider {
 
 	private FlowCommitWrapper flowCommitWrapper;
 
-	private CpeCollectionsDataStoreListener topoDataStoreListener;
 
 	private WakeupOnFlowCapableNode wakeupListener;
 
-	private CpeCollections topology;
+	//private CpeCollections topology;
 
 	private DOMDataBroker domDataBroker;
 
@@ -152,8 +151,6 @@ public class SdnmudProvider {
 
 	private ListenerRegistration<SdnmudConfigDataStoreListener> configRegistration;
 
-	private ListenerRegistration<CpeCollectionsDataStoreListener> topRegistration;
-
 	private ListenerRegistration<MudProfileDataStoreListener> mudProfileRegistration;
 
 	private ListenerRegistration<AclDataStoreListener> aclRegistration;
@@ -163,6 +160,10 @@ public class SdnmudProvider {
 	private ListenerRegistration<MudCacheDataStoreListener> mudCacheRegistration;
 
 	private ListenerRegistration<PacketInDispatcher> packetInDispatcherRegistration;
+
+	private RpcRegistration<SdnmudService> sdnmudServiceRegistration;
+
+	private HashSet<String> cpeNodes = new HashSet<String>();
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
@@ -207,10 +208,6 @@ public class SdnmudProvider {
 		return InstanceIdentifier.create(ControllerclassMapping.class);
 	}
 
-	private static InstanceIdentifier<CpeCollections> getTopologyWildCardPath() {
-		return InstanceIdentifier.create(CpeCollections.class);
-	}
-
 	private static InstanceIdentifier<SdnmudConfig> getConfigWildCardPath() {
 		return InstanceIdentifier.create(SdnmudConfig.class);
 	}
@@ -236,13 +233,6 @@ public class SdnmudProvider {
 				LogicalDatastoreType.CONFIGURATION, configWildCardPath);
 		SdnmudConfigDataStoreListener configDataStoreListener = new SdnmudConfigDataStoreListener(this);
 		this.configRegistration = this.dataBroker.registerDataTreeChangeListener(configId, configDataStoreListener);
-
-		/* Register data tree change listener for Topology change */
-		InstanceIdentifier<CpeCollections> topoWildCardPath = getTopologyWildCardPath();
-		final DataTreeIdentifier<CpeCollections> topoId = new DataTreeIdentifier<CpeCollections>(
-				LogicalDatastoreType.CONFIGURATION, topoWildCardPath);
-		this.topoDataStoreListener = new CpeCollectionsDataStoreListener(this);
-		this.topRegistration = this.dataBroker.registerDataTreeChangeListener(topoId, topoDataStoreListener);
 
 		/* Register a data tree change listener for MUD profiles */
 		InstanceIdentifier<Mud> mudWildCardPath = getMudWildCardPath();
@@ -301,7 +291,7 @@ public class SdnmudProvider {
 		this.dataBroker.registerDataTreeChangeListener(ccmappingTreeId, controllerClassMappingDataStoreListener);
 
 		SdnmudServiceImpl service = new SdnmudServiceImpl(this);
-		this.rpcProviderRegistry.addRpcImplementation(SdnmudService.class, service);
+		this.sdnmudServiceRegistration = this.rpcProviderRegistry.addRpcImplementation(SdnmudService.class, service);
 
 		// Create a listener that wakes up on a node being added.
 		this.wakeupListener = new WakeupOnFlowCapableNode(this);
@@ -346,13 +336,13 @@ public class SdnmudProvider {
 		this.dataTreeChangeListenerRegistration.close();
 		this.aclRegistration.close();
 		this.configRegistration.close();
-		this.topRegistration.close();
 		this.mudCacheRegistration.close();
 		this.mappingRegistration.close();
 		this.packetInDispatcherRegistration.close();
 		this.uriToMudMap.clear();
 		this.packetInDispatcher.close();
 		this.stateChangeScanner.cancel();
+		this.sdnmudServiceRegistration.close();
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -523,14 +513,9 @@ public class SdnmudProvider {
 		return this.nodeToMudUriMap.get(cpeNodeId);
 	}
 
-	public void setTopology(CpeCollections topology) {
-		this.topology = topology;
-		this.configStateChanged++;
 
-	}
-
-	public CpeCollections getCpeCollections() {
-		return topology;
+	public Collection<String> getCpeSwitches() {
+		return this.cpeNodes;
 	}
 
 	public Collection<Mud> getMudProfiles() {
@@ -547,15 +532,7 @@ public class SdnmudProvider {
 	}
 
 	public boolean isCpeNode(String nodeId) {
-		if (this.getCpeCollections() == null) {
-			return false;
-		}
-		for (Uri cpeNode : topology.getCpeSwitches()) {
-			if (nodeId.equals(cpeNode.getValue())) {
-				return true;
-			}
-		}
-		return false;
+		return this.cpeNodes.contains(nodeId);
 	}
 
 	/**
@@ -597,6 +574,7 @@ public class SdnmudProvider {
 	public void addControllerMap(ControllerclassMapping controllerMapping) {
 		String nodeId = controllerMapping.getSwitchId().getValue();
 		LOG.info("SdnmudProvider: Registering Controller for SwitchId " + nodeId);
+		this.cpeNodes.add(nodeId);
 		HashMap<String, List<IpAddress>> map = this.controllerMap.get(nodeId);
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();

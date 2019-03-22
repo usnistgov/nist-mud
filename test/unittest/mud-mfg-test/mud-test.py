@@ -328,7 +328,6 @@ if __name__ == '__main__':
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {
         (cfgfile, "sdnmud:sdnmud-config"),
-        ("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
         ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),

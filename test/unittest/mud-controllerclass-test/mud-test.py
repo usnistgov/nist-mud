@@ -321,8 +321,7 @@ if __name__ == '__main__':
 
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        ("access-control-list.json","ietf-access-control-list:acls"),
+    for (configfile,suffix) in { ("access-control-list.json","ietf-access-control-list:acls"),
         ("device-association.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
         , (cfgfile, "sdnmud:sdnmud-config")

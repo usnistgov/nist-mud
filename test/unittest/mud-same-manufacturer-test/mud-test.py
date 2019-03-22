@@ -204,16 +204,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:01","h1-eth0")
-    h2.setMAC("00:00:00:00:00:02","h2-eth0")
-    h3.setMAC("00:00:00:00:00:03","h3-eth0")
-    h4.setMAC("00:00:00:00:00:04","h4-eth0")
-    h5.setMAC("00:00:00:00:00:05","h5-eth0")
-    h6.setMAC("00:00:00:00:00:06","h6-eth0")
-    h7.setMAC("00:00:00:00:00:07","h7-eth0")
-    h8.setMAC("00:00:00:00:00:08","h8-eth0")
-    h9.setMAC("00:00:00:00:00:09","h9-eth0")
-    h10.setMAC("00:00:00:00:00:10","h10-eth0")
+    h1.setMAC("00:00:00:00:00:81","h1-eth0")
+    h2.setMAC("00:00:00:00:00:82","h2-eth0")
+    h3.setMAC("00:00:00:00:00:83","h3-eth0")
+    h4.setMAC("00:00:00:00:00:84","h4-eth0")
+    h5.setMAC("00:00:00:00:00:85","h5-eth0")
+    h6.setMAC("00:00:00:00:00:86","h6-eth0")
+    h7.setMAC("00:00:00:00:00:87","h7-eth0")
+    h8.setMAC("00:00:00:00:00:88","h8-eth0")
+    h9.setMAC("00:00:00:00:00:89","h9-eth0")
+    h10.setMAC("00:00:00:00:00:8a","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -325,12 +325,9 @@ if __name__ == '__main__':
     setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in {("../config/cpenodes.json","nist-cpe-nodes:cpe-collections"),
-        # ("access-control-list.json","ietf-access-control-list:acls"),
-        (cfgfile, "sdnmud:sdnmud-config"),
+    for (configfile,suffix) in { (cfgfile, "sdnmud:sdnmud-config"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
-        #,("ietfmud.json","ietf-mud:mud")
         } :
         data = json.load(open(configfile))
         print "configfile", configfile
