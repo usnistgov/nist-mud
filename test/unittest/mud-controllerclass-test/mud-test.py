@@ -321,10 +321,10 @@ if __name__ == '__main__':
 
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in { ("access-control-list.json","ietf-access-control-list:acls"),
+    for (configfile,suffix) in { 
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("device-association.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
-        , (cfgfile, "sdnmud:sdnmud-config")
 	}:
         data = json.load(open(configfile))
         print "configfile", configfile
@@ -333,13 +333,7 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    
-    configfile = "ietfmud.json"
-    url = "http://" + controller_addr + ":8181/restconf/config/ietf-mud:mud"
-    data = json.load(open(configfile))
-    r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
     print "uploaded mud rules ", str(r)
-    time.sleep(10)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
 	time.sleep(10)

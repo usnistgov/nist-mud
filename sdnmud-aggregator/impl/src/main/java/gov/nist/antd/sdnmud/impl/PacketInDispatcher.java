@@ -603,7 +603,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public void onPacketReceived(PacketReceived notification) {
+	public synchronized void onPacketReceived(PacketReceived notification) {
 		
 		if ( this.isClosed) {
 			LOG.info("ignore packet -- closed");

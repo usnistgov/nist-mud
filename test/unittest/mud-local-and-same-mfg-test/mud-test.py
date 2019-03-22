@@ -339,9 +339,11 @@ if __name__ == '__main__':
     clean_mud_rules(controller_addr)
 
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in { ("device-association-toaster.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config") } :
+    for (configfile,suffix) in { 
+        (cfgfile, "sdnmud:sdnmud-config"),
+	("device-association-toaster.json","nist-mud-device-association:mapping"),
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
+	} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix

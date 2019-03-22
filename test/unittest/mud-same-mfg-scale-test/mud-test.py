@@ -313,11 +313,10 @@ if __name__ == '__main__':
     headers= {"Content-Type":"application/json"}
     r = requests.post(url,headers=headers , auth=('admin', 'admin'))
     for (configfile,suffix) in {
-        ("access-control-list.json","ietf-access-control-list:acls"),
+        (cfgfile, "sdnmud:sdnmud-config"),
         ("device-association-toaster-100.json","nist-mud-device-association:mapping"),
         ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("ietfmud.json","ietf-mud:mud")} :
+	} :
         with open(configfile) as f:
             data = json.load(f)
             print "configfile", configfile

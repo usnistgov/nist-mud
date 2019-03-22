@@ -2,7 +2,7 @@
 {
   "ietf-mud:mud": {
     "mud-version": 1,
-    "mud-url": "https://toaster.nist.local/super1",
+    "mud-url": "https://same-manufacturer-test.nist.local/super1",
     "last-update": "2018-06-21T15:07:36+02:00",
     "cache-validity": 48,
     "is-supported": true,
