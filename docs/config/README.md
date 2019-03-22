@@ -70,15 +70,17 @@ application with another application.
 
 ### Specifying local networks and device controller classes ###
 
-To support the "local-networks" class abstraction, the administrator needs to specify 
-the local networks for each switch where the MUD rules will be installed. 
-To support the controller class for MUD-enabled devices, the administrator needs to specify
-the host addresses for the hosts on the local network that will serve as "device controllers".
-
+To support the "local-networks" the administrator needs to specify the
+local networks for each switch where the MUD rules will be installed.
+To support the controller class for MUD-enabled devices, the administrator
+needs to specify the host addresses for the hosts on the local network
+that will serve as "device controllers".
 
 This is specified using a REST URI:
 
       /restconf/config/nist-mud-controllerclass-mapping:controllerclass-mapping
+
+You will need to POST a JSON document to that URI for each of the switches that is managed.
 
 
 (Note: we only specify the URI. 
@@ -88,7 +90,6 @@ The URL could be something like http://127.0.0.1:8181/restconf/config/nist-mud-c
 [The YANG model for the posted data is here](../../sdnmud-aggregator/api/src/main/yang/nist-mud-controllerclass-mapping.yang)
 
 Detailed documentation for each of the fields is provided in the YANG model.
-
 
 A sample controller class mapping file is shown here:
 
@@ -120,32 +121,7 @@ A sample controller class mapping file is shown here:
 
 
 You must post a controller-class mapping for each managed switch using the REST URI above for MUD rules
-to appear on those switches.
-
-
-### Specifying which switches will be managed  ###
-
-To install MUD rules, you must specify which switches are managed.
-By default only the passthrough Base-app rules are installed when a switch connects.
-The switches where MUD rules need to be installed are specified in a configuration file
-that is posted to controller using a REST API for which the REST URI is:
-
-
-      /restconf/config/nist-cpe-nodes:cpe-collections
-
-[The YANG model](../../sdnmud-aggregator/api/src/main/yang/nist-cpe-nodes.yang) provides detailed documentation.
-
-Here is a sample CPE collections file indicating that switches 1 and 2 will be managed:
-
-     
-   "cpe-collections" : {
-               "cpe-switches" : [ "openflow:1", "openflow:2" ]
-      }
-    }
-
-Please note that the switch will present its identifier as a hex string to the controller. 
-These identifiers are in decimal. We'll leave the conversion from hex to decimal as an exercise
-for the reader.
+to appear on those switches. 
 
 
 ### Associating MAC addresses with MUD profiles ###
@@ -180,10 +156,24 @@ Here is a sample of the data that needs to be POSTed to the URI
      }   
 
 The JSON file above indicates that the MAC addresses 01, 02 and 03 are associated with the https://toaster.nist.local/super1 MUD URL
+At this point the server may fetch the MUD file from the manufacturer web site. 
 
-At this point the server may fetch the MUD file from the manufacturer web site. For testing purposes, we also support POSTing the MUD
-file to the server using another API. 
+You can also simply copy the MUD file to the mud cache. This is useful for testing purposes:
+
+    cp mudfile  karaf/target/assembly/etc/mudrofiles/ 
+
+You can then associate it with one or more device MAC addresses with a mapping as follows:
 
 
-
+      {
+       "mapping":
+        { 
+            "device-id": [ "00:00:00:00:00:01",
+                            "00:00:00:00:00:02",
+                            "00:00:00:00:00:03"
+                ],
+            "mud-url": "file://mudfile.json
+        }
+     }   
+    
 
