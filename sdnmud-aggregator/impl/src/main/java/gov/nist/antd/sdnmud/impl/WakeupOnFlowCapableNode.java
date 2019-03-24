@@ -200,6 +200,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
 		this.sdnmudProvider.getStateChangeScanner().clearState(nodeUri);
 		this.sdnmudProvider.getStateChangeScanner().clearMudState(nodeUri);
+		this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
 	}
 
 	/**

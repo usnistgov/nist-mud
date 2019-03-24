@@ -160,13 +160,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
 
-	private HashMap<String, Flow> flowTable = new HashMap<String, Flow>();
-
 	private int mudRelatedPacketInCounter = 0;
 
 	private int packetInCounter = 0;
 
+	// Set of MAC addresses that are unclassified or for which no MUD uri has been
+	// assigned.
 	private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
+
+	// Set of Mac addresses for which a source mac classification rule exists
+	private HashSet<MacAddress> srcMacRuleTable = new HashSet<MacAddress>();
+	// Set of mac addresses for which a dst mac classification rule exists
+	private HashSet<MacAddress> dstMacRuleTable = new HashSet<MacAddress>();
+	// Flow rules in the first two tables -- these can be cleared via an API
+	private HashSet<Flow> flowTable = new HashSet<Flow>();
 
 	private Timer timer = new Timer();
 
@@ -175,6 +182,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private ServerSocket listenerSock;
 
 	private boolean isClosed;
+
+	private Thread notifier;
 
 	private class UnclassifiedMacAddressTimerTask extends TimerTask {
 		String unclassifiedMacAddress;
@@ -185,9 +194,38 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		@Override
 		public void run() {
-			LOG.info("removing mac address " + unclassifiedMacAddress);
 			unclassifiedMacAddresses.remove(unclassifiedMacAddress);
 		}
+	}
+
+	private class SrcMacAddressTimerTask extends TimerTask {
+
+		private MacAddress macAddress;
+
+		public SrcMacAddressTimerTask(MacAddress macAddress) {
+			this.macAddress = macAddress;
+		}
+
+		@Override
+		public void run() {
+			PacketInDispatcher.this.srcMacRuleTable.remove(macAddress);
+		}
+
+	}
+
+	private class DstMacAddressTimerTask extends TimerTask {
+		private MacAddress macAddress;
+
+		public DstMacAddressTimerTask(MacAddress macAddresss) {
+			this.macAddress = macAddress;
+		}
+
+		@Override
+		public void run() {
+			PacketInDispatcher.this.dstMacRuleTable.remove(macAddress);
+
+		}
+
 	}
 
 	public void close() {
@@ -230,7 +268,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	public void startNotificationThread() {
 		int notificationPort = sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
 		LOG.info("start thread on notification port " + notificationPort);
-		Thread notifier = new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
+		this.notifier = new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
 		notifier.setDaemon(true);
 		notifier.start();
 	}
@@ -304,8 +342,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private void addUclassifiedAddresses(String addr) {
-		LOG.info("addUnclassifiedAddress : " + addr);
 		if (!this.unclassifiedMacAddresses.contains(addr)) {
+			LOG.debug("addUnclassifiedAddress : " + addr);
 			this.unclassifiedMacAddresses.add(addr);
 			// Clears out the table in the timeout time.
 			timer.schedule(new UnclassifiedMacAddressTimerTask(addr),
@@ -328,8 +366,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private void removeUnclassifiedAddress(String addr) {
-		LOG.info("removeUnclassifiedAddress : " + addr);
 		if (this.unclassifiedMacAddresses.contains(addr)) {
+			LOG.debug("removeUnclassifiedAddress : " + addr);
 			this.unclassifiedMacAddresses.remove(addr);
 			this.broadcastStateChange();
 		}
@@ -483,17 +521,15 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
 				+ srcMac.getValue() + "/" + metadata.toString(16);
 
-		Flow flow = this.flowTable.get(flowIdStr);
+		FlowId flowId = new FlowId(flowIdStr);
 
-		if (flow == null) {
-			FlowId flowId = new FlowId(flowIdStr);
-
-			flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
-					sdnmudProvider.getSrcDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
-			this.flowTable.put(flowIdStr, flow);
-		}
-
+		Flow flow = FlowUtils.createSourceMacMatchSetMetadataGoToNextTableFlow(srcMac, metadata, metadataMask,
+				sdnmudProvider.getSrcDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
+		flowTable.add(flow);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
+		this.srcMacRuleTable.add(srcMac);
+		timer.schedule(new SrcMacAddressTimerTask(srcMac),
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2);
 
 	}
 
@@ -504,21 +540,17 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				+ SdnMudConstants.TCP_PROTOCOL + ":" + port;
 
 		FlowId flowId = new FlowId(flowIdStr);
-		Flow flow = this.flowTable.get(flowIdStr);
 
-		if (flow == null) {
-			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-			/*
-			 * create a short term pass through flow to allow packet through. Give it a
-			 * short timeout.
-			 */
-			short tableId = sdnmudProvider.getSdnmudRulesTable();
+		FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
+		/*
+		 * create a short term pass through flow to allow packet through. Give it a
+		 * short timeout.
+		 */
+		short tableId = sdnmudProvider.getSdnmudRulesTable();
 
-			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
-					new Ipv4Address(dstIp), port, SdnMudConstants.TCP_PROTOCOL, tableId, (short) (tableId + 1),
-					metadata, metadataMask, 1, flowId, flowCookie).build();
-			this.flowTable.put(flowIdStr, flow);
-		}
+		Flow flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
+				new Ipv4Address(dstIp), port, SdnMudConstants.TCP_PROTOCOL, tableId, (short) (tableId + 1), metadata,
+				metadataMask, 1, flowId, flowCookie).build();
 
 		this.sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
@@ -532,18 +564,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String flowIdStr = "/sdnmud/SrcIpAddressProtocolDestMacMatchDrop:" + srcIp + ":" + dstIp + ":"
 				+ SdnMudConstants.TCP_PROTOCOL + ":" + dstPort;
 		FlowId flowId = new FlowId(flowIdStr);
-		Flow flow = this.flowTable.get(flowIdStr);
 		String nodeId = IdUtils.getNodeUri(node);
 
-		if (flow == null) {
-			int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-			FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-			short tableId = sdnmudProvider.getSdnmudRulesTable();
-			flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
-					new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId,
-					sdnmudProvider.getDropTable(), metadata, metadataMask, timeout, flowId, flowCookie).build();
-			this.flowTable.put(flowIdStr, flow);
-		}
+		int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
+		FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
+		short tableId = sdnmudProvider.getSdnmudRulesTable();
+		Flow flow = FlowUtils.createSrcIpAddressProtocolDestIpAddressDestPortMatchGoTo(new Ipv4Address(srcIp),
+				new Ipv4Address(dstIp), dstPort, SdnMudConstants.TCP_PROTOCOL, tableId, sdnmudProvider.getDropTable(),
+				metadata, metadataMask, timeout, flowId, flowCookie).build();
 
 		this.sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
@@ -574,14 +602,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
 				+ dstMac.getValue() + "/" + metadata.toString(16);
 
-		Flow flow = this.flowTable.get(flowIdStr);
-
-		if (flow == null) {
-			FlowId flowId = new FlowId(flowIdStr);
-			flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
-					sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
-			this.flowTable.put(flowIdStr, flow);
-		}
+		FlowId flowId = new FlowId(flowIdStr);
+		Flow flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
+				sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
+		flowTable.add(flow);
+		this.timer.schedule(new DstMacAddressTimerTask(dstMac),
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2);
 
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 	}
@@ -593,19 +619,21 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
 			InstanceIdentifier<FlowCapableNode> flowCapableNode = sdnmudProvider.getNode(nodeId);
 			if (flowCapableNode != null) {
-				for (Flow f : this.flowTable.values()) {
+				for (Flow f : this.flowTable) {
 					sdnmudProvider.getFlowWriter().deleteFlows(flowCapableNode, f);
 				}
 			}
 		}
 		this.flowTable.clear();
+		this.srcMacRuleTable.clear();
+		this.dstMacRuleTable.clear();
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
 	public synchronized void onPacketReceived(PacketReceived notification) {
-		
-		if ( this.isClosed) {
+
+		if (this.isClosed) {
 			LOG.info("ignore packet -- closed");
 			return;
 		}
@@ -666,6 +694,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (tableId == sdnmudProvider.getSrcDeviceManufacturerStampTable()) {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
+				if (srcMacRuleTable.contains(srcMac)) {
+					// Rule is in cache so we dont bother
+					return;
+				}
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 				boolean hasMudProfile = this.sdnmudProvider.hasMudProfile(mudUri.getValue());
 
@@ -679,9 +711,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				this.checkIfTcpSynAllowed(node, rawPacket);
 
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-				
+
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
+				if (dstMacRuleTable.contains(dstMac)) {
+					return;
+				}
 
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 
@@ -693,6 +728,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
+				if ( this.dstMacRuleTable.contains(dstMac)) {
+					return;
+				}
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 				this.checkIfTcpSynAllowed(node, rawPacket);
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);

@@ -23,7 +23,7 @@ option routers 10.0.0.8;
 send host-name = gethostname();
 option mud-url code 161 = text;
 
-send mud-url = "https://toaster.nist.local/super1";
+send mud-url = "https://dhcptest.nist.local/super1";
 
 request subnet-mask, broadcast-address, time-offset, routers,
 	domain-name, domain-name-servers, domain-search, host-name, mud-url,

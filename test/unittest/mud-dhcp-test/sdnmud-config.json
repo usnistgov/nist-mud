@@ -1,0 +1,9 @@
+{
+ "sdnmud-config" : {
+        "ca-certs": "lib/security/cacerts",
+        "key-pass" : "changeit",
+        "trust-self-signed-cert" : true,
+        "mfg-id-rule-cache-timeout": 0,
+	    "relaxed-acl":true
+  }
+}
