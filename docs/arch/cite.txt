@@ -1,0 +1,7 @@
+@inproceedings{SoftMudICN2019 
+title = {ICN 2019: The Eighteenth International Conference on Networks},
+author= {Ranganathan,Mudumbai and Montgomery, Doug and Elmimouni, Omar},
+isbn =  {978-1-61208-695-8},
+pages= {49-54},
+url= {https://www.thinkmind.org/index.php?view=instance&instance=ICN+2019}
+}

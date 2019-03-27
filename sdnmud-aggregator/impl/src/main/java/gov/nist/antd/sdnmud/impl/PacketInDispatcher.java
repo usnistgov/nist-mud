@@ -627,6 +627,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.flowTable.clear();
 		this.srcMacRuleTable.clear();
 		this.dstMacRuleTable.clear();
+		
 	}
 
 	@SuppressWarnings("unchecked")
@@ -708,8 +709,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 				this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
 
-				this.checkIfTcpSynAllowed(node, rawPacket);
-
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
@@ -732,7 +731,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					return;
 				}
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-				this.checkIfTcpSynAllowed(node, rawPacket);
+				//this.checkIfTcpSynAllowed(node, rawPacket);
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
