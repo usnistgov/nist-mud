@@ -3,4 +3,7 @@
         <normal-rule-table>
                 3
         </normal-rule-table>
+        <wireless-switch>
+                false
+        </wireless-switch>
 </baseapp-config>

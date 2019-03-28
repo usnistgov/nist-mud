@@ -26,6 +26,12 @@ module baseapp {
         type uint32;
         default "0";
     }
+    leaf wireless-switch {
+        description
+            "A flag indicating whether or not the switch is a wireless SDN switch";
+        type boolean;
+        default "false";
+    }
   }
 }
 

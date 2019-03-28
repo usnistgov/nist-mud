@@ -103,4 +103,9 @@ public class BaseappProvider {
 		LOG.info("FlowmonProvider Closed");
 	}
 
+	public boolean isWirelessSwitch() {
+		LOG.info("isWirelessSwitch : " + baseappConfig.isWirelessSwitch());
+		return this.baseappConfig.isWirelessSwitch();
+	}
+
 }

@@ -71,9 +71,6 @@ abstract class FlowUtils {
 		return (int) instructionKey.incrementAndGet();
 	}
 
-
-	
-
 	/**
 	 * Go to the target table.
 	 * 
@@ -89,7 +86,6 @@ abstract class FlowUtils {
 		return isb;
 	}
 
-	
 	/**
 	 * create and return a goto table instruction.
 	 * 
@@ -108,8 +104,8 @@ abstract class FlowUtils {
 
 	}
 
-	private static Instruction createNormalInstruction( ) {
-		
+	private static Instruction createNormalInstruction() {
+
 		ApplyActionsBuilder aab = new ApplyActionsBuilder();
 		ActionBuilder ab = new ActionBuilder();
 		ab.setKey(new ActionKey(0));
@@ -117,7 +113,7 @@ abstract class FlowUtils {
 		OutputActionBuilder oob = new OutputActionBuilder();
 		oob.setOutputNodeConnector(new Uri("NORMAL"));
 		oob.setMaxLength(60);
-		ab.setAction(new  OutputActionCaseBuilder().setOutputAction(oob.build()).build());
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(oob.build()).build());
 		List<Action> actionList = new ArrayList<Action>();
 		actionList.add(ab.build());
 		aab.setAction(actionList);
@@ -127,18 +123,47 @@ abstract class FlowUtils {
 		ApplyActionsCaseBuilder aacb = new ApplyActionsCaseBuilder();
 
 		aacb.setApplyActions(aab.build());
-        ib.setInstruction(aacb.build());
-        return ib.build();
+		ib.setInstruction(aacb.build());
+		return ib.build();
 
 	}
-	
 
-	
-	public static FlowBuilder createUnconditionalGoToNextTableFlow(short table, FlowId flowId,
-			FlowCookie flowCookie) {
+	private static Instruction createOutputToInPortInstruction() {
+		ApplyActionsBuilder aab = new ApplyActionsBuilder();
+		ActionBuilder ab = new ActionBuilder();
+		ab.setKey(new ActionKey(0));
+		ab.setOrder(0);
+		OutputActionBuilder oob = new OutputActionBuilder();
+		oob.setOutputNodeConnector(new Uri("NORMAL"));
+		oob.setMaxLength(60);
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(oob.build()).build());
+
+		ActionBuilder ab1 = new ActionBuilder();
+		ab1.setKey(new ActionKey(0));
+		ab1.setOrder(0);
+		OutputActionBuilder oob1 = new OutputActionBuilder();
+		oob1.setOutputNodeConnector(new Uri("IN_PORT"));
+		oob1.setMaxLength(60);
+		ab1.setAction(new OutputActionCaseBuilder().setOutputAction(oob1.build()).build());
+
+		List<Action> actionList = new ArrayList<Action>();
+		actionList.add(ab.build());
+		actionList.add(ab1.build());
+		aab.setAction(actionList);
+		InstructionBuilder ib = new InstructionBuilder();
+		ib.setOrder(0);
+		ib.setKey(new InstructionKey(getInstructionKey()));
+		ApplyActionsCaseBuilder aacb = new ApplyActionsCaseBuilder();
+
+		aacb.setApplyActions(aab.build());
+		ib.setInstruction(aacb.build());
+		return ib.build();
+	}
+
+	public static FlowBuilder createUnconditionalGoToNextTableFlow(short table, FlowId flowId, FlowCookie flowCookie) {
 		LOG.info("createGoToTableFlow ");
-		short nextTable = (short)(table + 1);
-		
+		short nextTable = (short) (table + 1);
+
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("permitPackets").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
@@ -146,29 +171,36 @@ abstract class FlowUtils {
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 
 	}
-	
-	public static FlowBuilder createNormalFlow(short table, FlowId flowId, FlowCookie flowCookie) {
 
-		Instruction normal = FlowUtils.createNormalInstruction();
+	public static FlowBuilder createNormalFlow(boolean outputToInport, short table, FlowId flowId,
+			FlowCookie flowCookie) {
+
+		Instruction normal;
+		if (!outputToInport) {
+			normal = FlowUtils.createNormalInstruction();
+		} else {
+			// WIRELESS
+			normal = FlowUtils.createOutputToInPortInstruction();
+		}
 		InstructionsBuilder insb = new InstructionsBuilder();
 		List<Instruction> instructions = new ArrayList<Instruction>();
 		instructions.add(normal);
 		insb.setInstruction(instructions);
-		
+
 		MatchBuilder matchBuilder = new MatchBuilder();
-		
+
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("normalFlow").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build()).setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-		.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 	}
 
-	
 }
