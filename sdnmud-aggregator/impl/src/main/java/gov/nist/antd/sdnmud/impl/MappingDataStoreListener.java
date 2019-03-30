@@ -106,6 +106,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 					this.uriToMacs.put(uri, macs);
 				}
 
+				/*
 				for (InstanceIdentifier<FlowCapableNode> node : sdnmudProvider.getNodes()) {
 					if (sdnmudProvider.isCpeNode(IdUtils.getNodeUri(node))) {
 						String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
@@ -115,7 +116,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
 								sdnmudProvider.getSrcDeviceManufacturerStampTable(), mac, null);
 					}
-				}
+				}*/
 
 				macs.add(mac);
 			}

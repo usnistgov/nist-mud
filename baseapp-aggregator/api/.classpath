@@ -30,5 +30,15 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry excluding="**" kind="src" output="target-ide/classes" path="target-ide/generated-sources/spi">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="**" kind="src" output="target-ide/classes" path="target-ide/generated-sources/yang">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="target-ide/classes"/>
 </classpath>

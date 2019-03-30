@@ -169,9 +169,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
 
 	// Set of Mac addresses for which a source mac classification rule exists
-	private HashSet<MacAddress> srcMacRuleTable = new HashSet<MacAddress>();
+	private HashSet<String> srcMacRuleTable = new HashSet<String>();
 	// Set of mac addresses for which a dst mac classification rule exists
-	private HashSet<MacAddress> dstMacRuleTable = new HashSet<MacAddress>();
+	private HashSet<String> dstMacRuleTable = new HashSet<String>();
 	// Flow rules in the first two tables -- these can be cleared via an API
 	private HashSet<Flow> flowTable = new HashSet<Flow>();
 
@@ -182,6 +182,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private ServerSocket listenerSock;
 
 	private boolean isClosed;
+	
+	private boolean isBlocked;
 
 	private Thread notifier;
 
@@ -208,7 +210,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		@Override
 		public void run() {
-			PacketInDispatcher.this.srcMacRuleTable.remove(macAddress);
+			PacketInDispatcher.this.srcMacRuleTable.remove(macAddress.getValue());
 		}
 
 	}
@@ -216,13 +218,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private class DstMacAddressTimerTask extends TimerTask {
 		private MacAddress macAddress;
 
-		public DstMacAddressTimerTask(MacAddress macAddresss) {
+		public DstMacAddressTimerTask(MacAddress macAddress) {
 			this.macAddress = macAddress;
 		}
 
 		@Override
 		public void run() {
-			PacketInDispatcher.this.dstMacRuleTable.remove(macAddress);
+			PacketInDispatcher.this.dstMacRuleTable.remove(macAddress.getValue());
 
 		}
 
@@ -239,6 +241,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			LOG.error("Error closing socket");
 		}
 
+	}
+	
+	public void block() {
+		this.isBlocked = true;
+	}
+	
+	public void unblock() {
+		this.isBlocked = false;
 	}
 
 	private class UnclassifiedMacAddressNotificationServer implements Runnable {
@@ -527,9 +537,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				sdnmudProvider.getSrcDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
-		this.srcMacRuleTable.add(srcMac);
+		this.srcMacRuleTable.add(srcMac.getValue());
 		timer.schedule(new SrcMacAddressTimerTask(srcMac),
-				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2);
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2*1000);
 
 	}
 
@@ -606,8 +616,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		Flow flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
 				sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
+        // BUGBUG
+        this.dstMacRuleTable.add(dstMac.getValue());
 		this.timer.schedule(new DstMacAddressTimerTask(dstMac),
-				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2);
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2*1000);
 
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 	}
@@ -616,6 +628,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	 *
 	 */
 	public void clearMfgModelRules() {
+		LOG.info("Clear mfgModelRules");
+		
 		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
 			InstanceIdentifier<FlowCapableNode> flowCapableNode = sdnmudProvider.getNode(nodeId);
 			if (flowCapableNode != null) {
@@ -632,7 +646,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public synchronized void onPacketReceived(PacketReceived notification) {
+	public  void onPacketReceived(PacketReceived notification) {
 
 		if (this.isClosed) {
 			LOG.info("ignore packet -- closed");
@@ -641,6 +655,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		if (this.sdnmudProvider.getCpeSwitches().isEmpty()) {
 			LOG.error("No switches found -- ignoring packet");
+			return;
+		}
+		
+		if (this.isBlocked) {
+			LOG.info("Blocked - installing flows ");
 			return;
 		}
 
@@ -695,8 +714,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (tableId == sdnmudProvider.getSrcDeviceManufacturerStampTable()) {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
-				if (srcMacRuleTable.contains(srcMac)) {
+				if (srcMacRuleTable.contains(srcMac.getValue())) {
 					// Rule is in cache so we dont bother
+					LOG.info("already installed -- returning");
 					return;
 				}
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
@@ -707,19 +727,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 
-				this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
-
-				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				//this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
+				if ( this.dstMacRuleTable.contains(dstMac.getValue())) {
+					LOG.info("dst mac rule already installed in table 1");
+					return;
+				}
+			     mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
-				if (dstMacRuleTable.contains(dstMac)) {
-					return;
-				}
+			
 
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 
-				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
+				//this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
@@ -727,11 +748,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
-				if ( this.dstMacRuleTable.contains(dstMac)) {
+				if ( this.dstMacRuleTable.contains(dstMac.getValue())) {
+					LOG.info("already installed in table 1");
 					return;
 				}
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-				//this.checkIfTcpSynAllowed(node, rawPacket);
 				this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 				// transmitPacket(notification);

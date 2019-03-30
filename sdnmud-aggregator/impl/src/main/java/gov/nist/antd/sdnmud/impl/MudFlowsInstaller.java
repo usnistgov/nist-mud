@@ -716,7 +716,11 @@ public class MudFlowsInstaller {
 		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
 				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
 				+ destinationPort);
-
+		if (direction.equals(Direction.ToDevice)) {
+			int temp = sourcePort;
+			sourcePort = destinationPort;
+			destinationPort = temp;
+		}
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
 				sendToController, flowCookie, flowId, node);
@@ -741,6 +745,11 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
 		boolean sendToController = computeSendToControllerFlag(direction, true);
+		if (direction.equals(Direction.ToDevice)) {
+			int temp = sourcePort;
+			sourcePort = destinationPort;
+			destinationPort = temp;
+		}
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
@@ -1029,6 +1038,8 @@ public class MudFlowsInstaller {
 			}
 
 			// Delete all the flows previously associated with this MUD URI.
+			sdnmudProvider.getPacketInDispatcher().block();
+			try {
 
 			sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
 					sdnmudProvider.getSdnmudRulesTable(), null, null);
@@ -1182,6 +1193,9 @@ public class MudFlowsInstaller {
 		} catch (Exception ex) {
 			LOG.error("MudFlowsInstaller: Exception caught installing MUD Flow ", ex);
 			return false;
+		}
+		}finally {
+			this.sdnmudProvider.getPacketInDispatcher().unblock();
 		}
 		return true;
 

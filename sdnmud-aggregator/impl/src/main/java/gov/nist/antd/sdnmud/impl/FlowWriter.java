@@ -49,7 +49,7 @@ public class FlowWriter {
 		this.salFlowService = salFlowService;
 	}
 
-	public void writeFlow(FlowBuilder fb, InstanceIdentifier<FlowCapableNode> node) {
+	public synchronized void writeFlow(FlowBuilder fb, InstanceIdentifier<FlowCapableNode> node) {
 		this.writeFlow(fb.build(), node);
 	}
 	public static final InstanceIdentifier<Node> getNodePath(final InstanceIdentifier<?> nodeChild) {
@@ -58,7 +58,7 @@ public class FlowWriter {
 	}
 
 
-	public void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> node) {
+	public synchronized void writeFlow(Flow flow, InstanceIdentifier<FlowCapableNode> node) {
 		AddFlowInputBuilder afib = new AddFlowInputBuilder();
 
 		afib.setNode(new NodeRef(getNodePath(node)));
@@ -88,7 +88,7 @@ public class FlowWriter {
 		}
 	}
 
-	public void deleteFlows(InstanceIdentifier<FlowCapableNode> node, Flow flow) {
+	public synchronized void deleteFlows(InstanceIdentifier<FlowCapableNode> node, Flow flow) {
 		RemoveFlowInputBuilder afib = new RemoveFlowInputBuilder();
 
 		afib.setNode(new NodeRef(getNodePath(node)));

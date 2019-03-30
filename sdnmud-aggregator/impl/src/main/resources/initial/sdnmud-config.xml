@@ -15,7 +15,7 @@
         </trust-self-signed-cert> 
         <!-- The cache timeout for rules that associate manufactuerer with MAC address -->
         <mfg-id-rule-cache-timeout>
-                600
+                30
         </mfg-id-rule-cache-timeout>
         <!-- Table start - the start location where we place the application 
              - which takes up three consequitive table entries and an entry in the drop-rule-table -->

@@ -166,4 +166,11 @@ public class IdUtils {
 		return index;
 	}
 
+	public static void setManufacturerAndModel(String mudUrl) {
+		
+		String manufacturer = getAuthority(mudUrl);
+		getManfuacturerId(manufacturer);
+		getModelId(mudUrl);
+	}
+
 }
