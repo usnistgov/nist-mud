@@ -198,7 +198,7 @@ abstract class FlowUtils {
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("normalFlow").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(BaseappConstants.UNCONDITIONAL_GOTO_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 	}

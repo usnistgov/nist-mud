@@ -59,14 +59,6 @@
 			<version>${project.version}</version>
 		</dependency>
 
-        <!--
-		<dependency>
-			<groupId>${project.groupId}</groupId>
-			<artifactId>baseapp-impl</artifactId>
-			<version>0.1.0</version>
-			<scope>compile</scope>
-		</dependency>
-        -->
 
 		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
@@ -213,12 +205,6 @@
                                     <file>${project.build.directory}/classes/initial/sdnmud-config.xml</file>
 									<type>xml</type>
 									<classifier>sdnmud-config</classifier>
-								</artifact>
-								<artifact>
-                                    <!-- The default sdnmud-config that can be changed -->
-                                    <file>${project.build.directory}/classes/initial/baseapp-config.xml</file>
-									<type>xml</type>
-									<classifier>baseapp-config</classifier>
 								</artifact>
 								<artifact>
                                     <!-- The default sdnmud-config that can be changed -->

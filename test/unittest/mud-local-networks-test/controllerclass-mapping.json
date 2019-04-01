@@ -16,6 +16,7 @@
      	}
    ],
    "local-networks": [ "10.0.0.0/24" ],
-   "local-networks-excluded-hosts" : ["10.0.0.8"]
+   "local-networks-excluded-hosts" : ["10.0.0.8"],
+   "wireless":false
  }
 }

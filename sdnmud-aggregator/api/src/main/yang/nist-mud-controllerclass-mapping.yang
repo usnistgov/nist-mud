@@ -32,14 +32,14 @@ module nist-mud-controllerclass-mapping {
 
   container controllerclass-mapping {
      description
-         "Mapping between switch ID and controller classes defined in MUD.
-          This is scoped on a per-CPE switch basis. If a switch 
-          does not have a mapping, then no MUD rules will be
-          applied for the switch.";
+         "Local network configuration. This is scoped on a per-switch basis. If a switch 
+          does not have a mapping, then no MUD rules will be applied for the switch.";
 
      leaf switch-id {
         description
-            "URI of the CPE switch for which to apply this controller class mapping.";
+            "URI of the CPE switch for which to apply this controller class mapping.
+            This is normally of the form openflow:switchId where switchId is often the
+            MAC address of the switch.";
         type inet:uri;
         mandatory true;
      }
@@ -73,15 +73,17 @@ module nist-mud-controllerclass-mapping {
     
     leaf-list local-networks-excluded-hosts {
        description
-          "Network address that are excluded from the local networks classification";
+          "Network IP address that are excluded from the local networks classification. 
+          Typically these are local network services such as routers.";
        type string; 
     }
 
-    leaf-list router-mac-addresses {
+    leaf wireless {
        description
-          "Router MAC addresses. Exclude these from accounting table when classifying packets as belonging to Non-IOT hosts. 
-           This is for IDS support (experimental)";
-       type yang:mac-address;
+          "Flag indicating whether the switch is wireless or not";
+       type boolean;
+       default false;
     }
+
   }
 }

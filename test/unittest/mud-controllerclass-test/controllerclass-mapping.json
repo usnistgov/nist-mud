@@ -19,6 +19,7 @@
 		    "address-list" : [ "10.0.0.7" ]
         }
    ],
-   "local-networks": [ "10.0.0.0/24" ]
+   "local-networks": [ "10.0.0.0/24" ],
+   "wireless":false
  }
 }

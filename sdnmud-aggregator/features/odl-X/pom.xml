@@ -85,14 +85,6 @@
             <classifier>features</classifier>
         </dependency>
 
-        <!-- baseapp lays out the table structure -->
-        <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>odl-baseapp</artifactId>
-            <version>${project.version}</version>
-            <type>xml</type>
-            <classifier>features</classifier>
-        </dependency>
 
         <dependency>
             <groupId>org.opendaylight.controller</groupId>

@@ -3,7 +3,7 @@
   "ietf-mud:mud": {
     "mud-version": 1,
     "mud-url": "https://local-and-same-mfg-test.nist.local/super1",
-    "mud-signature": "https://toaster.nist.local/super1/mudfile.json.sha256",
+    "mud-signature": "https://loca-and-same-mfg-test.nist.local/super1/mudfile.json.sha256",
     "last-update": "2019-03-26T15:31:38+00:00",
     "cache-validity": 48,
     "is-supported": true,

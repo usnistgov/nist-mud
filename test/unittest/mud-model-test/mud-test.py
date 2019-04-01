@@ -83,7 +83,8 @@ class TestAccess(unittest.TestCase) :
         h2 = hosts[1]
     	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client ")
+        print ("result " + str(result))
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpManufacturerPingExpectPass1(self) :

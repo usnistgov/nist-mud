@@ -47,6 +47,13 @@ module sdnmud {
                 "Start of tables in rules table space. Not yet implemented";
       }
 
+      leaf broadcast-rule-table {
+            type uint32;
+            default "3";
+            description
+                "Table location for the Broadcast rule.";
+      }
+
       leaf drop-rule-table {
             type uint32;
             default "4";

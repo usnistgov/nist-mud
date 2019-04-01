@@ -21,12 +21,14 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
 import java.util.Collection;
+import java.util.HashMap;
 
 import org.opendaylight.controller.md.sal.binding.api.DataObjectModification.ModificationType;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
@@ -45,6 +47,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private static final Logger LOG = LoggerFactory.getLogger(WakeupOnFlowCapableNode.class);
 
 	private SdnmudProvider sdnmudProvider;
+
+	private HashMap<String, Flow> normalFlows = new HashMap<String, Flow>();
 
 	public WakeupOnFlowCapableNode(SdnmudProvider sdnMudProvider) {
 		this.sdnmudProvider = sdnMudProvider;
@@ -81,7 +85,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowBuilder fb = FlowUtils.createIpMatchSendPacketToControllerFlow(metadata, metadataMask, forwardFlag, tableId,
 				flowId, flowCookie);
 
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		this.sdnmudProvider.getFlowWriter().writeFlow(fb, node);
 	}
 
 	/**
@@ -90,12 +94,12 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	 * @param metadata
 	 * @param metadataMask
 	 */
-	private void installToDhcpFlow(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath, Short tableId, BigInteger metadata,
-			BigInteger metadataMask) {
+	private void installToDhcpFlow(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath, Short tableId,
+			BigInteger metadata, BigInteger metadataMask) {
 		FlowId flowId = IdUtils.createFlowId(nodeUri + ":bypassDhcp");
 		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
 		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, flowCookie, flowId, false);
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, nodePath);
+		this.sdnmudProvider.getFlowWriter().writeFlow(fb, nodePath);
 	}
 
 	private void installUnconditionalGoToTable(String nodeUri, InstanceIdentifier<FlowCapableNode> node, short table) {
@@ -103,7 +107,20 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
 				flowCookie);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(unconditionalGoToNextFlow, node);
+		sdnmudProvider.getFlowWriter().writeFlow(unconditionalGoToNextFlow, node);
+	}
+
+	private void installBroadcastRule(String nodeUri, InstanceIdentifier<FlowCapableNode> node) {
+		LOG.info("install normal flow");
+		// This is wireless - we delete the NORMAL flow
+		if (this.normalFlows.get(nodeUri) != null) {
+			sdnmudProvider.getFlowWriter().deleteFlows(node, this.normalFlows.get(nodeUri));
+		}
+		FlowId flowId = IdUtils.createFlowId("BASEAPP");
+		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
+		assert sdnmudProvider.isWirelessSwitch(nodeUri);
+		FlowBuilder fb = FlowUtils.createNormalFlow(true, sdnmudProvider.getBroadcastRuleTable(), flowId, flowCookie);
+		sdnmudProvider.getFlowWriter().writeFlow(fb, node);
 	}
 
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
@@ -112,7 +129,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowId flowId = IdUtils.createFlowId(nodeId);
 
 		FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(dropPacketTable, flowId, flowCookie);
-		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, nodePath);
+		this.sdnmudProvider.getFlowWriter().writeFlow(flow, nodePath);
 	}
 
 	public void installSendToControllerFlows(String nodeUri) {
@@ -130,7 +147,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getSrcDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
-		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getSrcDeviceManufacturerStampTable(), metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getSrcDeviceManufacturerStampTable(), metadata,
+				metadataMask);
 
 		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
@@ -142,7 +160,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getDstDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
 
-		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getDstDeviceManufacturerStampTable(), metadata, metadataMask);
+		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getDstDeviceManufacturerStampTable(), metadata,
+				metadataMask);
 
 	}
 
@@ -157,7 +176,11 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendToControllerFlows(nodeUri);
 
-		installUnconditionalGoToTable(nodeUri, nodePath,sdnmudProvider.getSdnmudRulesTable());
+		installUnconditionalGoToTable(nodeUri, nodePath, sdnmudProvider.getSdnmudRulesTable());
+
+		if (sdnmudProvider.isWirelessSwitch(nodeUri)) {
+			installBroadcastRule(nodeUri, nodePath);
+		}
 
 		/*
 		 * Install an unconditional packet drop in the DROP_TABLE (this is where MUD
@@ -185,6 +208,34 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		}
 	}
 
+	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
+		FlowId flowId = IdUtils.createFlowId("BASEAPP");
+		FlowCookie flowCookie = IdUtils.createFlowCookie("GoToNext");
+		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
+				flowCookie);
+		sdnmudProvider.getFlowWriter().writeFlow(unconditionalGoToNextFlow, node);
+	}
+
+	private synchronized void installNormalFlow(InstanceIdentifier<FlowCapableNode> node, String nodeUri) {
+		LOG.info("install normal flow");
+		FlowId flowId = IdUtils.createFlowId("Normal");
+		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
+		// Assume we are dealing with a WIRED switch unless otherwise configured.
+		FlowBuilder fb = FlowUtils.createNormalFlow(false, sdnmudProvider.getBroadcastRuleTable(), flowId, flowCookie);
+		Flow normalFlow = fb.build();
+		this.normalFlows.put(nodeUri, normalFlow);
+		sdnmudProvider.getFlowWriter().writeFlow(fb.build(), node);
+	}
+
+	private synchronized void installDefaultFlows(InstanceIdentifier<FlowCapableNode> nodePath, String nodeUri) {
+
+		for (int i = sdnmudProvider.getTableStart(); i < sdnmudProvider.getBroadcastRuleTable(); i++) {
+			installUnconditionalGoToTable(nodePath, (short) i);
+		}
+		installNormalFlow(nodePath,nodeUri);
+
+	}
+
 	/**
 	 * This gets invoked when a switch appears and connects.
 	 *
@@ -196,6 +247,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		String nodeUri = IdUtils.getNodeUri(nodePath);
 
 		LOG.info("onFlowCapableSwitchAppeared " + nodeUri);
+		installDefaultFlows(nodePath,nodeUri);
 		// Stash away the URI to node path so we can reference it later.
 		this.sdnmudProvider.putInUriToNodeMap(nodeUri, nodePath);
 		this.sdnmudProvider.getStateChangeScanner().clearState(nodeUri);
@@ -214,6 +266,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("onFlowCapableSwitchDisappeared");
 		// The URI identifies the node instance.
 		LOG.info("node URI " + nodeUri);
+		// Remove the NORMAL flow
+		this.normalFlows.remove(nodeUri);
 		// Remove the node URI from the uriToNodeMap.
 		this.sdnmudProvider.removeNode(nodeUri);
 		// Remove the node URI from our switches table.

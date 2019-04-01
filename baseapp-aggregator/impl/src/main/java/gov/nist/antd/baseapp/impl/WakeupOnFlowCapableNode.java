@@ -66,8 +66,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		LOG.info("install normal flow");
 		FlowId flowId = InstanceIdentifierUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = InstanceIdentifierUtils.createFlowCookie("NORMAL");
-		FlowBuilder fb = FlowUtils.createNormalFlow(
-				baseappProvider.isWirelessSwitch(),
+		FlowBuilder fb = FlowUtils.createNormalFlow(false,
 				baseappProvider.getNormalRuleTable(), flowId, flowCookie);
 		baseappProvider.getFlowWriter().writeFlow(fb, node);
 	}

@@ -108,18 +108,11 @@ public class SdnmudProvider {
 
 	private HashMap<String, HashMap<String, List<IpAddress>>> controllerMap = new HashMap<>();
 
-	private HashMap<String, List<String>> localNetworks = new HashMap<>();
-
-	private HashMap<String, List<String>> localNetworksExcludedHosts = new HashMap<>();
-
-	private HashSet<String> routerMacAddresses = new HashSet<String>();
+	//private HashSet<String> routerMacAddresses = new HashSet<String>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
-
 	private WakeupOnFlowCapableNode wakeupListener;
-
-	//private CpeCollections topology;
 
 	private DOMDataBroker domDataBroker;
 
@@ -136,8 +129,6 @@ public class SdnmudProvider {
 	private PacketInDispatcher packetInDispatcher;
 
 	private RpcProviderRegistry rpcProviderRegistry;
-
-	private String openstackAuthToken;
 
 	private FlowWriter flowWriter;
 
@@ -164,6 +155,8 @@ public class SdnmudProvider {
 	private RpcRegistration<SdnmudService> sdnmudServiceRegistration;
 
 	private HashSet<String> cpeNodes = new HashSet<String>();
+	
+	private HashMap<String,ControllerclassMapping> controllerClassMaps = new HashMap<String,ControllerclassMapping>();
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
@@ -344,6 +337,7 @@ public class SdnmudProvider {
 		this.packetInDispatcher.close();
 		this.stateChangeScanner.cancel();
 		this.sdnmudServiceRegistration.close();
+		this.mudProfileRegistration.close();
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -576,11 +570,14 @@ public class SdnmudProvider {
 		String nodeId = controllerMapping.getSwitchId().getValue();
 		LOG.info("SdnmudProvider: Registering Controller for SwitchId " + nodeId);
 		this.cpeNodes.add(nodeId);
+		this.controllerClassMaps.put(nodeId, controllerMapping);
 		HashMap<String, List<IpAddress>> map = this.controllerMap.get(nodeId);
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();
 			this.controllerMap.put(nodeId, map);
 		}
+		
+	
 
 		for (Controller controller : controllerMapping.getController()) {
 			String name = controller.getUri().getValue();
@@ -588,19 +585,15 @@ public class SdnmudProvider {
 			map.put(name, addresses);
 		}
 
-		if (controllerMapping.getLocalNetworks() != null) {
-			this.localNetworks.put(nodeId, controllerMapping.getLocalNetworks());
-		}
-
-		if (localNetworksExcludedHosts != null) {
-			this.localNetworksExcludedHosts.put(nodeId, controllerMapping.getLocalNetworksExcludedHosts());
-		}
-
+	
+		
+        /*
 		if (controllerMapping.getRouterMacAddresses() != null) {
 			for (MacAddress macAddress : controllerMapping.getRouterMacAddresses()) {
 				this.routerMacAddresses.add(macAddress.getValue());
 			}
 		}
+        */
 
 		this.configStateChanged++;
 
@@ -615,11 +608,13 @@ public class SdnmudProvider {
 	}
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
-		return localNetworks.get(nodeUri);
+		if(controllerClassMaps.get(nodeUri) == null) return null;
+		return this.controllerClassMaps.get(nodeUri).getLocalNetworks();
 	}
 
 	public Collection<String> getLocalNetworksExclude(String nodeUri) {
-		return this.localNetworksExcludedHosts.get(nodeUri);
+		if(controllerClassMaps.get(nodeUri) == null) return null;
+		return this.controllerClassMaps.get(nodeUri).getLocalNetworksExcludedHosts();
 	}
 
 	public boolean isControllerMapped() {
@@ -671,13 +666,28 @@ public class SdnmudProvider {
 		this.nodeToMudUriMap.clear();
 		this.nameToAcesMap.clear();
 	}
+	
+	public short getBroadcastRuleTable() {
+		return this.sdnmudConfig.getBroadcastRuleTable().shortValue();
+	}
 
+    /*
 	public HashSet<String> getRouterMacAddresses() {
 		return this.routerMacAddresses;
 	}
+    */
 
 	public MudFileFetcher getMudFileFetcher() {
 		return mudFileFetcher;
+	}
+
+	public boolean isWirelessSwitch(String nodeUri) {
+		return this.controllerClassMaps.get(nodeUri) != null &&
+				this.controllerClassMaps.get(nodeUri).isWireless();
+	}
+
+	public short getTableStart() {
+		return this.sdnmudConfig.getTableStart().shortValue();
 	}
 
 }

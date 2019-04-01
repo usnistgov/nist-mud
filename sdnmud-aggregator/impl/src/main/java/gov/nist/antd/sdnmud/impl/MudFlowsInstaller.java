@@ -716,7 +716,7 @@ public class MudFlowsInstaller {
 		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
 				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
 				+ destinationPort);
-		if (direction.equals(Direction.ToDevice)) {
+		if (direction != null && direction.equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
 			destinationPort = temp;
@@ -745,7 +745,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
 		boolean sendToController = computeSendToControllerFlag(direction, true);
-		if (direction.equals(Direction.ToDevice)) {
+		if (direction != null && direction  .equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
 			destinationPort = temp;

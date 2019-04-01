@@ -77,6 +77,8 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+
+
 public class FlowUtils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
@@ -172,7 +174,61 @@ public class FlowUtils {
 		return maskInstruction;
 
 	}
+	private static Instruction createNormalInstruction() {
 
+		ApplyActionsBuilder aab = new ApplyActionsBuilder();
+		ActionBuilder ab = new ActionBuilder();
+		ab.setKey(new ActionKey(0));
+		ab.setOrder(0);
+		OutputActionBuilder oob = new OutputActionBuilder();
+		oob.setOutputNodeConnector(new Uri("NORMAL"));
+		oob.setMaxLength(60);
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(oob.build()).build());
+		List<Action> actionList = new ArrayList<Action>();
+		actionList.add(ab.build());
+		aab.setAction(actionList);
+		InstructionBuilder ib = new InstructionBuilder();
+		ib.setOrder(0);
+		ib.setKey(new InstructionKey(getInstructionKey()));
+		ApplyActionsCaseBuilder aacb = new ApplyActionsCaseBuilder();
+
+		aacb.setApplyActions(aab.build());
+		ib.setInstruction(aacb.build());
+		return ib.build();
+
+	}
+
+	private static Instruction createOutputToInPortInstruction() {
+		ApplyActionsBuilder aab = new ApplyActionsBuilder();
+		ActionBuilder ab = new ActionBuilder();
+		ab.setKey(new ActionKey(0));
+		ab.setOrder(0);
+		OutputActionBuilder oob = new OutputActionBuilder();
+		oob.setOutputNodeConnector(new Uri("NORMAL"));
+		oob.setMaxLength(60);
+		ab.setAction(new OutputActionCaseBuilder().setOutputAction(oob.build()).build());
+
+		ActionBuilder ab1 = new ActionBuilder();
+		ab1.setKey(new ActionKey(0));
+		ab1.setOrder(0);
+		OutputActionBuilder oob1 = new OutputActionBuilder();
+		oob1.setOutputNodeConnector(new Uri("IN_PORT"));
+		oob1.setMaxLength(60);
+		ab1.setAction(new OutputActionCaseBuilder().setOutputAction(oob1.build()).build());
+
+		List<Action> actionList = new ArrayList<Action>();
+		actionList.add(ab.build());
+		actionList.add(ab1.build());
+		aab.setAction(actionList);
+		InstructionBuilder ib = new InstructionBuilder();
+		ib.setOrder(0);
+		ib.setKey(new InstructionKey(getInstructionKey()));
+		ApplyActionsCaseBuilder aacb = new ApplyActionsCaseBuilder();
+
+		aacb.setApplyActions(aab.build());
+		ib.setInstruction(aacb.build());
+		return ib.build();
+	}
 	private static List<Instruction> addGoToTableInstruction(List<Instruction> instructions, short targetTable) {
 		Instruction gotoTableInstruction = new InstructionBuilder()
 				.setInstruction(new GoToTableCaseBuilder()
@@ -514,7 +570,7 @@ public class FlowUtils {
 		InstructionsBuilder isb = new InstructionsBuilder().setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -982,6 +1038,31 @@ public class FlowUtils {
 				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 2).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
+		return flowBuilder;
+	}
+	
+	public static FlowBuilder createNormalFlow(boolean outputToInport, short table, FlowId flowId,
+			FlowCookie flowCookie) {
+
+		Instruction normal;
+		if (!outputToInport) {
+			normal = FlowUtils.createNormalInstruction();
+		} else {
+			// WIRELESS
+			normal = FlowUtils.createOutputToInPortInstruction();
+		}
+		InstructionsBuilder insb = new InstructionsBuilder();
+		List<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(normal);
+		insb.setInstruction(instructions);
+
+		MatchBuilder matchBuilder = new MatchBuilder();
+
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("normalFlow").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 	}
 
