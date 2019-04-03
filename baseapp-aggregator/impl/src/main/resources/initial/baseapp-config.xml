@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<baseapp-config xmlns="urn:opendaylight:params:xml:ns:yang:baseapp">
-        <wireless-switch>
-                false
-        </wireless-switch>
-        <normal-rule-table>
-                3
-        </normal-rule-table>
-</baseapp-config>

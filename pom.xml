@@ -30,7 +30,6 @@
 		<maven.javadoc.skip>true</maven.javadoc.skip>
 	</properties>
 	<modules>
-		<module>baseapp-aggregator</module>
 		<module>sdnmud-aggregator</module>
 		<!-- <module>it</module> -->
 	</modules>
