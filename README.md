@@ -31,10 +31,10 @@ using OpenDaylight as the SDN controller.
 
 ## OpendDaylight Components ##
 
-OpenDaylight is used as the SDN controller. The following Karaf features in OpenDaylight implement the features above:
+OpenDaylight is used as the SDN controller. 
 
-* features-sdnmud is the scalable MUD implementation.  This application manages the mud-specific flow rules on the CPE switches.
-This component can be used independently of the others.
+*features-sdnmud* is the scalable MUD implementation.  This application manages the mud-specific flow rules on the CPE switches.
+
 
 
 ## Building ##
@@ -51,8 +51,26 @@ Run maven
 
        mvn -e clean install -nsu -Dcheckstyle.skip -DskipTests -Dmaven.javadoc.skip=true
 
-This will download the necessary dependencies and build the subprojects. Note that we have disabled 
-unit tests and javadoc creation with these flags.  This will change after the project is in a final state. 
+This will download the necessary dependencies and build the subprojects. (Note that we have disabled 
+unit tests and javadoc creation with these flags. We are still in Alpha state here.)
+
+Once the build is complete:
+
+     cd sdnmud-aggregator/impl/karaf/target/assembly/bin
+     ./karaf clean
+
+At the karaf prompt 
+
+     karaf> features:install features-sdnmud
+
+Will install the sdn mud feature. Next, configure it (see below) and connect your SDN-enabled switches.
+to the controller at port 6653.  Your switches should support OpenFlow 1.5.
+
+### SYSTEM CONFIGURATION DETAIL ###
+
+
+
+[See the instructions in the doc/config directory](docs/config/README.md)
 
 
 ## Try it out  ##
@@ -65,10 +83,6 @@ how to exercise the MUD feature.
 
 [See the instructions in the test/demo directory](test/demo/README.md)
 
-
-### SYSTEM CONFIGURATION DETAIL ###
-
-[See the instructions in the doc/config directory](docs/config/README.md)
 
 ### Tests ###
 
