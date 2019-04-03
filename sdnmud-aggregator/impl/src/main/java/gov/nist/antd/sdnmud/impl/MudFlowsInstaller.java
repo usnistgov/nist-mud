@@ -88,6 +88,21 @@ public class MudFlowsInstaller {
 				sdnmudProvider.getSdnmudRulesTable(), sdnmudProvider.getDropTable(), fid, flowCookie, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
+	
+	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
+			BigInteger metadataMask, int sourcePort, int destinationPort) {
+		
+			// flag.
+			FlowId fid = new FlowId(mudUri + "/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/"
+					+ sourcePort + "/" + destinationPort + "/synFlagCheck");
+			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
+			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
+					metadataMask, destinationPort, sourcePort, sdnmudProvider.getSdnmudRulesTable(),
+					sdnmudProvider.getDropTable(), fid, flowCookie, 0);
+
+			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		
+	}
 
 	
 	public MudFlowsInstaller(SdnmudProvider sdnmudProvider) {
@@ -205,7 +220,7 @@ public class MudFlowsInstaller {
 		}
 	}
 
-	private boolean computeSendToControllerFlag(Direction direction, boolean fromDeviceRule) {
+	private boolean directionCheck(Direction direction, boolean fromDeviceRule) {
 		return direction != null && (fromDeviceRule && direction.getName().equals(Direction.ToDevice.getName())
 				|| ((!fromDeviceRule) && direction.getName().equals(Direction.FromDevice.getName())));
 
@@ -387,7 +402,7 @@ public class MudFlowsInstaller {
 
 	private void installPermitFromDeviceToIpAddressFlow(String mudUri, InstanceIdentifier<FlowCapableNode> node,
 			FlowId flowId, BigInteger metadata, BigInteger metadataMask, Ipv4Address destinationAddress,
-			int destinationPort, short protocol, boolean sendToController, FlowCookie flowCookie) {
+			int destinationPort, short protocol, boolean synFlagCheck, FlowCookie flowCookie) {
 		BigInteger newMetadata = flowCookie.getValue();
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		boolean ctrlFlag = false;
@@ -397,8 +412,9 @@ public class MudFlowsInstaller {
 				newMetadata, newMetadataMask, flowId, flowCookie);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		if (sendToController) {
-			this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, null, -1, destinationAddress,
+		if (synFlagCheck) {
+			assert protocol == SdnMudConstants.TCP_PROTOCOL;
+			registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, null, -1, destinationAddress,
 					destinationPort);
 		}
 	}
@@ -425,7 +441,7 @@ public class MudFlowsInstaller {
 			 * We want to make sure that the first packet from device does not contain a Syn
 			 * in case the direction is ToDevice
 			 */
-			boolean sendToController = computeSendToControllerFlag(direction, true);
+			boolean sendToController = directionCheck(direction, true);
 			FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
 			this.installPermitFromDeviceToIpAddressFlow(mudUri, node, flowId, metadata, metadataMask, address, port,
 					protocol.shortValue(), sendToController, flowCookie);
@@ -435,7 +451,7 @@ public class MudFlowsInstaller {
 	}
 
 	private void installPermitFromIpToDeviceFlow(String mudUri, BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int sourcePort, short protocol, boolean sendToController, FlowCookie flowCookie,
+			Ipv4Address address, int sourcePort, short protocol, boolean checkTcpSyn, FlowCookie flowCookie,
 			FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
 		try {
 			BigInteger newMetadata = flowCookie.getValue();
@@ -447,8 +463,9 @@ public class MudFlowsInstaller {
 					sourcePort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(), newMetadata,
 					newMetadataMask, flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-			if (sendToController) {
+			if (checkTcpSyn) {
 				// Check for TCP SYN when packet arrives at the controller.
+				assert protocol == SdnMudConstants.TCP_PROTOCOL;
 				this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, address, sourcePort, null, -1);
 			}
 
@@ -478,9 +495,9 @@ public class MudFlowsInstaller {
 				LOG.info("MudFlowsInstaller : InstallePermitFromAddressToDeviceFlowRules : direction is null");
 			}
 			FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
-			boolean sendToController = computeSendToControllerFlag(direction, false);
+			boolean checkDirectionInitiated = directionCheck(direction, false);
 			this.installPermitFromIpToDeviceFlow(mudUri, metadata, metadataMask, address, port, protocol.shortValue(),
-					sendToController, flowCookie, flowId, node);
+					checkDirectionInitiated, flowCookie, flowId, node);
 
 		}
 
@@ -507,10 +524,10 @@ public class MudFlowsInstaller {
 		/*
 		 * For TCP send a packet to the controller to enforce direction initiated
 		 */
-		boolean sendToController = computeSendToControllerFlag(direction, true);
+		boolean checkDirectionInitiated = directionCheck(direction, true);
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
 
@@ -537,11 +554,11 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
 		Direction direction = getDirectionInitiated(matches);
-		boolean sendToController = computeSendToControllerFlag(direction, true);
+		boolean checkDirectionInitiated = directionCheck(direction, true);
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
 
@@ -562,7 +579,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
 
-		boolean sendToController = computeSendToControllerFlag(direction, false);
+		boolean checkDirectionInitiated = directionCheck(direction, false);
 
 		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
 				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
@@ -574,7 +591,7 @@ public class MudFlowsInstaller {
 		}
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
 
@@ -595,7 +612,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = BigInteger.valueOf(IdUtils.getFlowHash(flowSpec));
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
-		boolean sendToController = computeSendToControllerFlag(direction, true);
+		boolean checkDirectionInitiated = directionCheck(direction, true);
 		if (direction != null && direction.equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
@@ -604,7 +621,7 @@ public class MudFlowsInstaller {
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
 
@@ -629,11 +646,11 @@ public class MudFlowsInstaller {
 
 		Direction direction = getDirectionInitiated(matches);
 
-		boolean sendToController = computeSendToControllerFlag(direction, false);
+		boolean checkDirectionInitiated = directionCheck(direction, false);
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 	}
 
 	private void installPermitFromManufacturerToDeviceFlowRule(InstanceIdentifier<FlowCapableNode> node, String mudUri,
@@ -660,20 +677,24 @@ public class MudFlowsInstaller {
 
 		Direction direction = getDirectionInitiated(matches);
 
-		boolean sendToController = computeSendToControllerFlag(direction, false);
+		boolean checkDirectionInitiated = directionCheck(direction, false);
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-				sendToController, flowCookie, flowId, node);
+				checkDirectionInitiated, flowCookie, flowId, node);
 	}
 
 	private void installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(String mudUri, BigInteger metadata,
 			BigInteger metadataMask, short protocol, int srcPort, int destinationPort, short tableId,
-			BigInteger newMetadata, BigInteger newMetadataMask, boolean sendToController, FlowCookie flowCookie,
+			BigInteger newMetadata, BigInteger newMetadataMask, boolean checkDirectionInitiated, FlowCookie flowCookie,
 			FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 				srcPort, destinationPort, tableId, newMetadata, newMetadataMask, false, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		if (checkDirectionInitiated) {
+			assert protocol == SdnMudConstants.TCP_PROTOCOL;
+			this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, srcPort, destinationPort);
+		}
 	}
 
 	private static String createLocalFlowSpec(String manufacturer) {

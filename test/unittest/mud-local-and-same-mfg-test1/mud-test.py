@@ -46,6 +46,20 @@ class TestAccess(unittest.TestCase) :
         return rc
 
 
+    def testHttpGetFromDeviceExpectPass(self):
+        h1 = hosts[0]
+	h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 &")
+        h4 = hosts[3]
+        result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80")
+        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
+	
+
+    def testHttpGetFromLocalNetworkExpectFail(self):
+        h4 = hosts[3]
+	h4.cmdPrint("python ../util/tcp-server.py -H 10.0.0.4 -P 80 &")
+        h1 = hosts[0]
+        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.4 -P 80")
+        self.assertTrue(re.search("OK",result) is  None, "Expecting a failed get")
 
     def testUdpManufacturerPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"

@@ -335,7 +335,6 @@ if __name__ == '__main__':
     net.pingAll(timeout=2)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-	time.sleep(10)
         unittest.main()
         #clean_mud_rules(controller_addr)
     else:
