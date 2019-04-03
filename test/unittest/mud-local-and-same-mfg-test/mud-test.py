@@ -37,22 +37,7 @@ class TestAccess(unittest.TestCase) :
 
     def tearDown(self):
          print "TEAR DOWN"
-         try:
-
-             for fname in { "/tmp/udpserver.pid", 
-                            "/tmp/udpclient.pid",
-                            "/tmp/tcpserver.pid",
-                            "/tmp/tcpclient.pid" } :
-                if os.path.exists(fname):
-                    with  open(fname) as f:
-                        for h in hosts:
-                            os.kill(int(f.read()),signal.SIGTERM)
-                    os.remove(fname)
-
-             time.sleep(3)
-
-         except OSError:
-            pass
+	 time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -106,9 +91,6 @@ class TestAccess(unittest.TestCase) :
         h9.cmdPrint("python ../util/tcp-server.py -H 203.0.113.13 -P 8000 &")
         result = h1.cmdPrint("python ../util/tcp-client.py -H 203.0.113.13 -P 8000")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
-
-    def tearDown(self):
-        time.sleep(5)
 
 
 
@@ -282,9 +264,10 @@ def setupTopology(controller_addr):
     # Start the IDS on node 8
 
 
+    net.waitConnected()
     print "*********** System ready *********"
+    return net
 
-    #net.stop()
 
 def startTestServer(host):
     """
@@ -334,7 +317,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
 
     clean_mud_rules(controller_addr)
 
@@ -351,8 +334,9 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    # Put a few packets through so the rules get to the switch.
+    net.pingAll(1)
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()

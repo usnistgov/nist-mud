@@ -41,10 +41,7 @@ class TestAccess(unittest.TestCase) :
         pass
 
     def tearDown(self):
-	try:
-            os.remove("index.html.1")
-        except OSError:
-            pass
+	time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -70,11 +67,11 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(int(result) > 0, "expect successful ping")
         print "Wgetting from antd.local disallowed -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1 --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
         print "Wgetting from antd.local non mud host -- this succeed"
         h3 = hosts[2]
-        result = h3.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1")
+        result = h3.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1 --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
         h5 = hosts[4]
         print "Ping a localhost on port 8000 -- should succeed wit MUD"
@@ -258,10 +255,12 @@ def setupTopology(controller_addr):
     
     # Start the IDS on node 8
 
+    net.waitConnected()
 
     print "*********** System ready *********"
 
-    #net.stop()
+    return net
+
 
 def startTestServer(host):
     """
@@ -313,8 +312,8 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
     clean_mud_rules(controller_addr)
+    net = setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 
         ("../config/sdnmud-config.json", "sdnmud:sdnmud-config"),
@@ -325,11 +324,8 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
-        if suffix == "sdnmud:sdnmud-config":
-	    print("Wait for container restart")
-	    time.sleep(15)
 
-    time.sleep(10)
+    net.pingAll(1)
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
     else:

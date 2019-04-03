@@ -37,21 +37,6 @@ class TestAccess(unittest.TestCase) :
 
     def tearDown(self):
          print "TEAR DOWN"
-         try:
-
-             for fname in { "/tmp/udpserver.pid", 
-                            "/tmp/udpclient.pid",
-                            "/tmp/tcpserver.pid",
-                            "/tmp/tcpclient.pid" } :
-                if os.path.exists(fname):
-                    with  open(fname) as f:
-                        for h in hosts:
-                            os.kill(int(f.read()),signal.SIGTERM)
-                    os.remove(fname)
-
-
-         except OSError:
-            pass
  	 time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
@@ -83,7 +68,7 @@ class TestAccess(unittest.TestCase) :
         h2 = hosts[1]
     	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client ")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet ")
         print ("result " + str(result))
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
@@ -101,7 +86,7 @@ class TestAccess(unittest.TestCase) :
         h3 = hosts[2]
     	h3.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client ")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet ")
         self.assertTrue(int(result) <= 1, "expect unsuccessful ping")
 
 
@@ -271,10 +256,11 @@ def setupTopology(controller_addr):
     
     # Start the IDS on node 8
 
+    net.waitConnected()
 
     print "*********** System ready *********"
 
-    #net.stop()
+    return net
 
 def startTestServer(host):
     """
@@ -316,7 +302,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { ("sdnmud-config.json", "sdnmud:sdnmud-config"),
@@ -331,8 +317,9 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    net.pingAll(1)
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()

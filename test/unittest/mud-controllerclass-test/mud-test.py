@@ -34,10 +34,7 @@ class TestAccess(unittest.TestCase) :
         pass
 
     def tearDown(self):
-	try:
-            os.remove("index.html.1")
-        except OSError:
-            pass
+	time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -262,10 +259,11 @@ def setupTopology(controller_addr):
     # h7 is the controller peer.
     h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
     
+    net.waitConnected()
 
     print "*********** System ready *********"
+    return net
 
-    #net.stop()
 
 def clean_mud_rules(controller_addr) :
     url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
@@ -316,7 +314,7 @@ if __name__ == '__main__':
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
     clean_mud_rules(controller_addr)
 
 
@@ -334,11 +332,12 @@ if __name__ == '__main__':
         print "response ", r
 
     print "uploaded mud rules ", str(r)
+    net.pingAll(timeout=2)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
 	time.sleep(10)
         unittest.main()
-        clean_mud_rules(controller_addr)
+        #clean_mud_rules(controller_addr)
     else:
         cli()
 

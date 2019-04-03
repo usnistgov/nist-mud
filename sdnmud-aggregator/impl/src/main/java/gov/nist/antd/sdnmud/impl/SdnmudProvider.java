@@ -647,14 +647,7 @@ public class SdnmudProvider {
 		return this.packetInDispatcher;
 	}
 
-	/**
-	 * @return
-	 */
-	public boolean isOpenflow13Only() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
+	
 	/**
 	 * @return
 	 */

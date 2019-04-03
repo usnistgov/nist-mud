@@ -37,6 +37,8 @@ class TestAccess(unittest.TestCase) :
 
     def tearDown(self):
          print "TEAR DOWN"
+         time.sleep(5)
+ 	 """
          try:
 
              for fname in { "/tmp/udpserver.pid", 
@@ -50,9 +52,9 @@ class TestAccess(unittest.TestCase) :
                     os.remove(fname)
 
 		time.sleep(3)
-
          except OSError:
             pass
+         """
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -83,7 +85,7 @@ class TestAccess(unittest.TestCase) :
         h2 = hosts[1]
     	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) > 0, "*** expect successful ping ****")
 
     def testUdpManufacturerPingExpectPass1(self) :
@@ -91,7 +93,7 @@ class TestAccess(unittest.TestCase) :
         h2 = hosts[1]
         h1 = hosts[0]
     	h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client  --bind --npings 20")
+        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client  --bind --npings 20 --quiet")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpManufacturerPingExpectFail(self) :
@@ -272,12 +274,11 @@ def setupTopology(controller_addr):
     	#h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
     	#h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
     
-    # Start the IDS on node 8
 
 
     print "*********** System ready *********"
-
-    #net.stop()
+    net.waitConnected()
+    return net
 
 def startTestServer(host):
     """
@@ -323,7 +324,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {
@@ -340,8 +341,9 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    net.pingAll(1)
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()

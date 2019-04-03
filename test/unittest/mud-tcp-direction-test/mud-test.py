@@ -327,9 +327,12 @@ def setupTopology(controller_addr):
     	#h4.cmdPrint("python ../util/tcp-server.py -P 80 -H 10.0.0.4 -T 10000 -C&")
     
 
+    net.waitConnected()
+
     print "*********** System ready *********"
 
-    #net.stop()
+    return net
+
 
 def startTestServer(host):
     """
@@ -372,7 +375,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {
@@ -386,8 +389,9 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    net.pingAll(1)
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()

@@ -60,65 +60,6 @@ public class MudFlowsInstaller {
 	private SdnmudProvider sdnmudProvider;
 	static final Logger LOG = LoggerFactory.getLogger(MudFlowsInstaller.class);
 
-	class TcpSynFlagCheck {
-		BigInteger metadata;
-		BigInteger metadataMask;
-
-		int sourcePort;
-		int destinationPort;
-		String destinationAddress;
-		String sourceAddress;
-		private int hashCode;
-
-		public TcpSynFlagCheck(BigInteger metadata, BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort,
-				Ipv4Address destinationAddress, int destinationPort) {
-
-			this.metadata = metadata;
-			this.metadataMask = metadataMask;
-			this.sourceAddress = sourceAddress == null ? null : sourceAddress.getValue();
-			this.destinationAddress = destinationAddress == null ? null : destinationAddress.getValue();
-			this.sourcePort = sourcePort;
-			this.destinationPort = destinationPort;
-		}
-
-		@Override
-		public boolean equals(Object that) {
-			if (!that.getClass().equals(this.getClass())) {
-				return false;
-			} else {
-				TcpSynFlagCheck other = (TcpSynFlagCheck) that;
-				if (this.metadata != other.metadata || this.metadataMask != other.metadataMask)
-					return false;
-				if (other.sourcePort != this.sourcePort)
-					return false;
-				if (other.destinationPort != this.destinationPort)
-					return false;
-				if (this.sourceAddress == null && other.sourceAddress != null)
-					return false;
-				if (this.sourceAddress != null && other.sourceAddress == null)
-					return false;
-				if (this.sourceAddress != other.sourceAddress && !this.sourceAddress.equals(other.sourceAddress))
-					return false;
-				if (this.destinationAddress == null && other.destinationAddress != null)
-					return false;
-				if (this.destinationAddress != null && other.destinationAddress == null)
-					return false;
-				if (this.destinationAddress != other.destinationAddress
-						&& !this.destinationAddress.equals(other.destinationAddress))
-					return false;
-				return true;
-			}
-		}
-
-		@Override
-		public int hashCode() {
-			return this.hashCode;
-		}
-
-	};
-
-	private HashSet<TcpSynFlagCheck> tcpSynFlagCheckTable = new HashSet<TcpSynFlagCheck>();
-
 	private interface MatchesType {
 		int CONTROLLER_MAPPING = 1;
 		int SAME_MANUFACTURER = 3;
@@ -131,114 +72,24 @@ public class MudFlowsInstaller {
 
 	}
 
-	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
-			BigInteger metadataMask, int sourcePort, int destinationPort) {
-		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, null, sourcePort, null,
-				destinationPort);
-
-		if (sdnmudProvider.isOpenflow13Only()) {
-			this.tcpSynFlagCheckTable.add(flagCheck);
-		} else {
-			// flag.
-			FlowId fid = new FlowId(mudUri + "/sdnmud/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/"
-					+ sourcePort + "/" + destinationPort + "/synFlagCheck");
-			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
-			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata,
-					metadataMask, destinationPort, sourcePort, sdnmudProvider.getSdnmudRulesTable(),
-					sdnmudProvider.getDropTable(), fid, flowCookie, 0);
-
-			sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-			// In the case of relaxed ACLs we send the first packet through before
-			// classification.
-			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
-				this.tcpSynFlagCheckTable.add(flagCheck);
-			}
-		}
-	}
+	
 
 	private void registerTcpSynFlagCheck(String mudUri, InstanceIdentifier<FlowCapableNode> node, BigInteger metadata,
 			BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress,
 			int destinationPort) {
-		TcpSynFlagCheck flagCheck = new TcpSynFlagCheck(metadata, metadataMask, sourceAddress, sourcePort,
-				destinationAddress, destinationPort);
-		if (sdnmudProvider.isOpenflow13Only()) {
-			this.tcpSynFlagCheckTable.add(flagCheck);
-		} else {
-			// Insert a flow which will drop the packet if it sees a Syn
-			// flag.
-			FlowId fid = new FlowId(
-					mudUri + "/sdnmud/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/synFlagCheck");
-			FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
-			FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
-					metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
-					sdnmudProvider.getSdnmudRulesTable(), sdnmudProvider.getDropTable(), fid, flowCookie, 0);
-			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {
-				this.tcpSynFlagCheckTable.add(flagCheck);
-			}
-		}
-
+		
+		// Insert a flow which will drop the packet if it sees a Syn
+		// flag.
+		FlowId fid = new FlowId(
+				mudUri + "/sdnmud/" + metadata.toString(16) + "/" + metadataMask.toString(16) + "/synFlagCheck");
+		FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
+		FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
+				metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
+				sdnmudProvider.getSdnmudRulesTable(), sdnmudProvider.getDropTable(), fid, flowCookie, 0);
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
-	public boolean checkSynFlagMatch(BigInteger metadata, String sourceAddress, int sourcePort, String destAddress,
-			int destPort) {
-
-		LOG.debug(">>> checkSynFlagMatch : " + metadata.toString(16) + " sourceAddress " + sourceAddress
-				+ " sourcePort " + sourcePort + " destAddress " + destAddress + " destPort " + destPort);
-
-		for (TcpSynFlagCheck flagCheck : this.tcpSynFlagCheckTable) {
-			BigInteger mask = flagCheck.metadataMask;
-
-			LOG.debug("checkSynFlagMatch : flagCheckFields : " + " metadata : " + flagCheck.metadata.toString(16)
-					+ " mask " + flagCheck.metadataMask.toString(16) + " sourceAddress " + flagCheck.sourceAddress
-					+ " sourcePort " + flagCheck.sourcePort + " destAddress " + flagCheck.destinationAddress
-					+ " destPort " + flagCheck.destinationPort);
-
-			LOG.debug("metadataAndMask : " + metadata.and(mask).toString(16));
-
-			if (!metadata.and(mask).equals(flagCheck.metadata)) {
-				LOG.debug(String.format("checkSynFlagMatch : metadataCheck failed %s %s",
-						metadata.and(mask).toString(16), metadata.toString(16)));
-				continue;
-			}
-
-			if (flagCheck.sourceAddress != null) {
-				if (!sourceAddress.equals(flagCheck.sourceAddress)) {
-					LOG.debug(String.format("checkSynFlagMatch : sourceAddress check failed %s %s", sourceAddress,
-							flagCheck.sourceAddress));
-					continue;
-				}
-			}
-			if (flagCheck.sourcePort != -1) {
-				if (destPort != flagCheck.sourcePort) {
-					LOG.debug(String.format("checkSynFlagMatch : sourcePortCheck failed %d %d", destPort,
-							flagCheck.sourcePort));
-					continue;
-				}
-			}
-			if (flagCheck.destinationAddress != null) {
-				if (!destAddress.equals(flagCheck.destinationAddress)) {
-					LOG.debug(String.format("checkSynFlagMatch : desitnationAddress Check failed %s %s", destAddress,
-							flagCheck.destinationAddress));
-					continue;
-				}
-			}
-
-			if (flagCheck.destinationPort != -1) {
-				if (sourcePort != flagCheck.destinationPort) {
-					LOG.debug(String.format("checkSynFlagMatch: destinationPort Check failed %d %d", sourcePort,
-							flagCheck.destinationPort));
-					continue;
-				}
-			}
-			LOG.debug("<<< checkSynFlagMatch : return TRUE");
-			return true;
-
-		}
-		LOG.debug("<<< checSynFlagMatch : return FALSE");
-		return false;
-	}
-
+	
 	public MudFlowsInstaller(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
 	}
@@ -539,7 +390,7 @@ public class MudFlowsInstaller {
 			int destinationPort, short protocol, boolean sendToController, FlowCookie flowCookie) {
 		BigInteger newMetadata = flowCookie.getValue();
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
-		boolean ctrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
+		boolean ctrlFlag = false;
 
 		FlowBuilder fb = FlowUtils.createMetadataDestIpAndPortMatchGoToNextTableFlow(metadata, metadataMask,
 				destinationAddress, destinationPort, protocol, ctrlFlag, sdnmudProvider.getSdnmudRulesTable(),
@@ -590,11 +441,11 @@ public class MudFlowsInstaller {
 			BigInteger newMetadata = flowCookie.getValue();
 			BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
-			boolean toCtrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
+			boolean toCtrlFlag = false;
 
 			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, address,
-					sourcePort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
-					flowId, flowCookie);
+					sourcePort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(), newMetadata,
+					newMetadataMask, flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 			if (sendToController) {
 				// Check for TCP SYN when packet arrives at the controller.
@@ -745,7 +596,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
 		boolean sendToController = computeSendToControllerFlag(direction, true);
-		if (direction != null && direction  .equals(Direction.ToDevice)) {
+		if (direction != null && direction.equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
 			destinationPort = temp;
@@ -820,14 +671,9 @@ public class MudFlowsInstaller {
 			BigInteger metadataMask, short protocol, int srcPort, int destinationPort, short tableId,
 			BigInteger newMetadata, BigInteger newMetadataMask, boolean sendToController, FlowCookie flowCookie,
 			FlowId flowId, InstanceIdentifier<FlowCapableNode> node) {
-		boolean ctrlFlag = sdnmudProvider.isOpenflow13Only() ? sendToController : false;
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
-				srcPort, destinationPort, tableId, newMetadata, newMetadataMask, ctrlFlag, flowId, flowCookie);
+				srcPort, destinationPort, tableId, newMetadata, newMetadataMask, false, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		if (sendToController) {
-			this.registerTcpSynFlagCheck(mudUri, node, metadata, metadataMask, srcPort, destinationPort);
-		}
-
 	}
 
 	private static String createLocalFlowSpec(String manufacturer) {
@@ -1041,160 +887,161 @@ public class MudFlowsInstaller {
 			sdnmudProvider.getPacketInDispatcher().block();
 			try {
 
-			sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
-					sdnmudProvider.getSdnmudRulesTable(), null, null);
+				sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
+						sdnmudProvider.getSdnmudRulesTable(), null, null);
 
-			/*
-			 * Track that we have added a node for this device MAC address for this node.
-			 * i.e. we store MUD rules for this device on the given node.
-			 */
+				/*
+				 * Track that we have added a node for this device MAC address for this node.
+				 * i.e. we store MUD rules for this device on the given node.
+				 */
 
-			LOG.info("installFlows : authority (manufacturer) = " + "[" + authority + "]");
+				LOG.info("installFlows : authority (manufacturer) = " + "[" + authority + "]");
 
-			this.sdnmudProvider.addMudNode(authority, node);
+				this.sdnmudProvider.addMudNode(authority, node);
 
-			// Records that the MUD URI is installed at this CPE node.
-			this.sdnmudProvider.addMudUri(cpeNodeId, mudUri);
+				// Records that the MUD URI is installed at this CPE node.
+				this.sdnmudProvider.addMudUri(cpeNodeId, mudUri);
 
-			/*
-			 * Drop table is where all the unsuccessful matches land up. Push default drop
-			 * packet flows that will drop the packet if a MUD rule does not match.
-			 */
-			this.installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
-			this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node);
+				/*
+				 * Drop table is where all the unsuccessful matches land up. Push default drop
+				 * packet flows that will drop the packet if a MUD rule does not match.
+				 */
+				this.installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
+				this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node);
 
-			/*
-			 * Fetch and install the MUD ACLs. First install the "from-device" rules.
-			 */
-			FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
-			if (fromDevicePolicy != null) {
-				AccessLists accessLists = fromDevicePolicy.getAccessLists();
-				for (AccessList accessList : accessLists.getAccessList()) {
-					String aclName = accessList.getName();
-					Aces aces = this.sdnmudProvider.getAces(aclName);
-					if (aces != null) {
-						for (Ace ace : aces.getAce()) {
-							if (ace.getActions().getForwarding().equals(Accept.class)) {
+				/*
+				 * Fetch and install the MUD ACLs. First install the "from-device" rules.
+				 */
+				FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
+				if (fromDevicePolicy != null) {
+					AccessLists accessLists = fromDevicePolicy.getAccessLists();
+					for (AccessList accessList : accessLists.getAccessList()) {
+						String aclName = accessList.getName();
+						Aces aces = this.sdnmudProvider.getAces(aclName);
+						if (aces != null) {
+							for (Ace ace : aces.getAce()) {
+								if (ace.getActions().getForwarding().equals(Accept.class)) {
 
-								Matches matches = ace.getMatches();
-								int matchesType = matchesType(matches);
-								LOG.info("matchType " + matchesType);
-								if (matchesType == MatchesType.DNS_MATCH) {
-									List<Ipv4Address> addresses = getMatchAddresses(matches);
-									this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
-									Matches1 matches1 = matches.getAugmentation(Matches1.class);
-									Uri controllerUri = matches1.getMud().getController();
-									List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
-											controllerUri);
-									this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.MY_CONTROLLER) {
-									List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
-											mudUri);
-									this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.LOCAL_NETWORKS) {
-									String flowSpec = createLocalFlowSpec(authority);
-									this.installPermitFromDeviceToLocalNetworksFlowRule(node, mudUri.getValue(),
-											flowSpec, matches);
-								} else if (matchesType == MatchesType.MANUFACTURER) {
-									String flowSpec = createLocalFlowSpec(authority);
-									String manufacturer = getManufacturer(matches);
-									this.installPermitFromDeviceToManufacturerFlowRule(node, mudUri.getValue(),
-											manufacturer, flowSpec, matches);
-								} else if (matchesType == MatchesType.SAME_MANUFACTURER) {
-									String flowSpec = createLocalFlowSpec(authority);
-									String manufacturer = IdUtils.getAuthority(mudUri.getValue());
-									this.installPermitFromDeviceToManufacturerFlowRule(node, mudUri.getValue(),
-											manufacturer, flowSpec, matches);
-								} else if (matchesType == MatchesType.MODEL) {
-									String flowSpec = createLocalFlowSpec(authority);
-									this.installPermitFromDeviceToModelFlowRule(node, mudUri.getValue(), flowSpec,
-											matches);
+									Matches matches = ace.getMatches();
+									int matchesType = matchesType(matches);
+									LOG.info("matchType " + matchesType);
+									if (matchesType == MatchesType.DNS_MATCH) {
+										List<Ipv4Address> addresses = getMatchAddresses(matches);
+										this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
+										Matches1 matches1 = matches.getAugmentation(Matches1.class);
+										Uri controllerUri = matches1.getMud().getController();
+										List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
+												controllerUri);
+										this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.MY_CONTROLLER) {
+										List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
+												mudUri);
+										this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.LOCAL_NETWORKS) {
+										String flowSpec = createLocalFlowSpec(authority);
+										this.installPermitFromDeviceToLocalNetworksFlowRule(node, mudUri.getValue(),
+												flowSpec, matches);
+									} else if (matchesType == MatchesType.MANUFACTURER) {
+										String flowSpec = createLocalFlowSpec(authority);
+										String manufacturer = getManufacturer(matches);
+										this.installPermitFromDeviceToManufacturerFlowRule(node, mudUri.getValue(),
+												manufacturer, flowSpec, matches);
+									} else if (matchesType == MatchesType.SAME_MANUFACTURER) {
+										String flowSpec = createLocalFlowSpec(authority);
+										String manufacturer = IdUtils.getAuthority(mudUri.getValue());
+										this.installPermitFromDeviceToManufacturerFlowRule(node, mudUri.getValue(),
+												manufacturer, flowSpec, matches);
+									} else if (matchesType == MatchesType.MODEL) {
+										String flowSpec = createLocalFlowSpec(authority);
+										this.installPermitFromDeviceToModelFlowRule(node, mudUri.getValue(), flowSpec,
+												matches);
+									}
+								} else {
+									LOG.info("DENY rule not implemented");
+									return false;
 								}
-							} else {
-								LOG.info("DENY rule not implemented");
-								return false;
-							}
-						}
-
-					} else {
-						LOG.info("Could not find ACEs for " + aclName);
-						return false;
-					}
-				}
-			}
-
-			ToDevicePolicy toDevicePolicy = mud.getToDevicePolicy();
-			if (toDevicePolicy != null) {
-				AccessLists accessLists = toDevicePolicy.getAccessLists();
-				for (AccessList accessList : accessLists.getAccessList()) {
-					String aclName = accessList.getName();
-					Aces aces = this.sdnmudProvider.getAces(aclName);
-					if (aces != null) {
-						for (Ace ace : aces.getAce()) {
-							if (ace.getActions().getForwarding().equals(Accept.class)) {
-
-								Matches matches = ace.getMatches();
-								int matchesType = matchesType(matches);
-								LOG.info("matchType " + matchesType);
-								if (matchesType == MatchesType.DNS_MATCH) {
-									List<Ipv4Address> addresses = getMatchAddresses(matches);
-									this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
-									Matches1 matches1 = matches.getAugmentation(Matches1.class);
-									Uri controllerUri = matches1.getMud().getController();
-									List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
-											controllerUri);
-									this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.MY_CONTROLLER) {
-									List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
-											mudUri);
-									this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(), matches,
-											addresses);
-								} else if (matchesType == MatchesType.LOCAL_NETWORKS) {
-									String flowSpec = createLocalFlowSpec(authority);
-									this.installPermitFromLocalNetworksToDeviceFlowRule(node, mudUri.getValue(),
-											flowSpec, matches);
-								} else if (matchesType == MatchesType.MANUFACTURER) {
-									String flowSpec = createLocalFlowSpec(authority);
-									String manufacturer = getManufacturer(matches);
-									this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
-											manufacturer, flowSpec, matches);
-								} else if (matchesType == MatchesType.SAME_MANUFACTURER) {
-									String flowSpec = createLocalFlowSpec(authority);
-									String manufacturer = IdUtils.getAuthority(mudUri.getValue());
-									this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
-											manufacturer, flowSpec, matches);
-								} else if (matchesType == MatchesType.MODEL) {
-									String flowSpec = createLocalFlowSpec(authority);
-									this.installPermitFromModelToDeviceRule(node, mudUri.getValue(), flowSpec, matches);
-								}
-							} else {
-								LOG.error("DENY rules not implemented");
-								return false;
 							}
 
+						} else {
+							LOG.info("Could not find ACEs for " + aclName);
+							return false;
 						}
-					} else {
-						LOG.info("Could not find ACEs for " + aclName);
-						return false;
 					}
-
 				}
-				// Clear the cache so can be re-poplulated after packets come in again.
-				this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
-			}
 
-		} catch (Exception ex) {
-			LOG.error("MudFlowsInstaller: Exception caught installing MUD Flow ", ex);
-			return false;
-		}
-		}finally {
+				ToDevicePolicy toDevicePolicy = mud.getToDevicePolicy();
+				if (toDevicePolicy != null) {
+					AccessLists accessLists = toDevicePolicy.getAccessLists();
+					for (AccessList accessList : accessLists.getAccessList()) {
+						String aclName = accessList.getName();
+						Aces aces = this.sdnmudProvider.getAces(aclName);
+						if (aces != null) {
+							for (Ace ace : aces.getAce()) {
+								if (ace.getActions().getForwarding().equals(Accept.class)) {
+
+									Matches matches = ace.getMatches();
+									int matchesType = matchesType(matches);
+									LOG.info("matchType " + matchesType);
+									if (matchesType == MatchesType.DNS_MATCH) {
+										List<Ipv4Address> addresses = getMatchAddresses(matches);
+										this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
+										Matches1 matches1 = matches.getAugmentation(Matches1.class);
+										Uri controllerUri = matches1.getMud().getController();
+										List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
+												controllerUri);
+										this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.MY_CONTROLLER) {
+										List<Ipv4Address> addresses = getControllerMatchAddresses(cpeNodeId, mudUri,
+												mudUri);
+										this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(),
+												matches, addresses);
+									} else if (matchesType == MatchesType.LOCAL_NETWORKS) {
+										String flowSpec = createLocalFlowSpec(authority);
+										this.installPermitFromLocalNetworksToDeviceFlowRule(node, mudUri.getValue(),
+												flowSpec, matches);
+									} else if (matchesType == MatchesType.MANUFACTURER) {
+										String flowSpec = createLocalFlowSpec(authority);
+										String manufacturer = getManufacturer(matches);
+										this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
+												manufacturer, flowSpec, matches);
+									} else if (matchesType == MatchesType.SAME_MANUFACTURER) {
+										String flowSpec = createLocalFlowSpec(authority);
+										String manufacturer = IdUtils.getAuthority(mudUri.getValue());
+										this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
+												manufacturer, flowSpec, matches);
+									} else if (matchesType == MatchesType.MODEL) {
+										String flowSpec = createLocalFlowSpec(authority);
+										this.installPermitFromModelToDeviceRule(node, mudUri.getValue(), flowSpec,
+												matches);
+									}
+								} else {
+									LOG.error("DENY rules not implemented");
+									return false;
+								}
+
+							}
+						} else {
+							LOG.info("Could not find ACEs for " + aclName);
+							return false;
+						}
+
+					}
+					// Clear the cache so can be re-poplulated after packets come in again.
+					this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+				}
+
+			} catch (Exception ex) {
+				LOG.error("MudFlowsInstaller: Exception caught installing MUD Flow ", ex);
+				return false;
+			}
+		} finally {
 			this.sdnmudProvider.getPacketInDispatcher().unblock();
 		}
 		return true;
@@ -1207,19 +1054,19 @@ public class MudFlowsInstaller {
 	 */
 	public void clearMudRules() {
 		LOG.info("clearMudRules: clearing the mud rules table");
-		
-			for (String uri : this.sdnmudProvider.getCpeSwitches()) {
-				InstanceIdentifier<FlowCapableNode> flowCapableNode = this.sdnmudProvider.getNode(uri);
-				if (flowCapableNode != null) {
-					for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
-						String uriPrefix = mud.getMudUrl().getValue() + "/sdnmud";
-						short table = sdnmudProvider.getSdnmudRulesTable();
-						this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
-								null);
-					}
+
+		for (String uri : this.sdnmudProvider.getCpeSwitches()) {
+			InstanceIdentifier<FlowCapableNode> flowCapableNode = this.sdnmudProvider.getNode(uri);
+			if (flowCapableNode != null) {
+				for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
+					String uriPrefix = mud.getMudUrl().getValue() + "/sdnmud";
+					short table = sdnmudProvider.getSdnmudRulesTable();
+					this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
+							null);
 				}
 			}
-	
+		}
+
 		LOG.info("clearMudRules: done cleaning mud rules");
 	}
 

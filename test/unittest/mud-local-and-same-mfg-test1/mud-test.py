@@ -36,23 +36,7 @@ class TestAccess(unittest.TestCase) :
         pass
 
     def tearDown(self):
-         print "TEAR DOWN"
-         try:
-
-             for fname in { "/tmp/udpserver.pid", 
-                            "/tmp/udpclient.pid",
-                            "/tmp/tcpserver.pid",
-                            "/tmp/tcpclient.pid" } :
-                if os.path.exists(fname):
-                    with  open(fname) as f:
-                        for h in hosts:
-                            os.kill(int(f.read()),signal.SIGTERM)
-                    os.remove(fname)
-
-             time.sleep(3)
-
-         except OSError:
-            pass
+	time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -266,12 +250,13 @@ def setupTopology(controller_addr):
         #h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
         #h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C&")
     
-    # Start the IDS on node 8
-
 
     print "*********** System ready *********"
+    
+    net.waitConnected()
+ 
+    return net
 
-    #net.stop()
 
 def startTestServer(host):
     """
@@ -321,7 +306,7 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    setupTopology(controller_addr)
+    net = setupTopology(controller_addr)
 
     clean_mud_rules(controller_addr)
 
@@ -338,8 +323,8 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
+    net.pingAll(1)
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()
