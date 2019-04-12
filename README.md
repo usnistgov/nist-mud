@@ -161,13 +161,9 @@ OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR SERVICES PROVIDED HEREUNDER.
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
 
-Code from the following projects has been included in this code base:
-
-* DNSJava
-* Android
 
 
-## Credits ##
+## Credits and Acknowledgements ##
 
 * The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
 * SDN MUD design and implementation : M. Ranganathan <mranga@nist.gov>
@@ -176,6 +172,9 @@ Code from the following projects has been included in this code base:
 * Project Manager Doug Montgomery <dougm@nist.gov>
 * This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
 * This work was funded using a Bridge to The Future (BTF) grant at NIST.
+* Code from the following projects has been included in this code base:
+** DNSJava  (DNS Message parsing)
+** Android  (DHCP support)
 
 Please acknowledge our work if you re-use this code or design.
 
