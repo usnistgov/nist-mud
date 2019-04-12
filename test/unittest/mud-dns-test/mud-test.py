@@ -20,8 +20,6 @@ from mininet.log import setLogLevel
 import unittest
 import re
 import os
-import signal
-
 
 
 #########################################################
@@ -36,23 +34,7 @@ class TestAccess(unittest.TestCase) :
         pass
 
     def tearDown(self):
-         print "TEAR DOWN"
-         try:
-
-             for fname in { "/tmp/udpserver.pid", 
-                            "/tmp/udpclient.pid",
-                            "/tmp/tcpserver.pid",
-                            "/tmp/tcpclient.pid" } :
-                if os.path.exists(fname):
-                    with  open(fname) as f:
-                        for h in hosts:
-                            os.kill(int(f.read()),signal.SIGTERM)
-                    os.remove(fname)
-
-		time.sleep(3)
-
-         except OSError:
-            pass
+	time.sleep(3)
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -60,46 +42,19 @@ class TestAccess(unittest.TestCase) :
         pieces = retval.group(0).split('=')
         rc = pieces[1].split(']')[0]
         return rc
+    
+    def testNonIotHostHttpGetExpectPass(self):
+        h4 = hosts[3]
+        result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-    def testContactLocalHostFromPrinterExpectFail(self):
+
+    def testHttpGetExpectFail(self):
+        print "Wgetting from antd.local -- this should fail with MUD"
+        # Check to see if the result was unsuccessful.
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 20 &")
-	time.sleep(3)
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 80  ")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
-
-    def testContactPrinterFromLocalHostExpectPass(self):
-        h1 = hosts[0]
-        h3 = hosts[2]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
-	time.sleep(3)
-        result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
-
-    def testContactPrinterFromRouterHostExpectFail(self):
-        h1 = hosts[0]
-        h3 = hosts[2]
-        h8 = hosts[7]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
-	time.sleep(3)
-        result = h8.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
-
-    def testContactExternalHostFromPrinterExpectPass(self):
-        h9 = hosts[8]
-        h9.cmdPrint('python -m SimpleHTTPServer 800&')
-	time.sleep(3)
-        h1 = hosts[0]
-        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after http://www.nist.local:800")
-        print ("result " + str(result))
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
-
-    def tearDown(self):
-        time.sleep(5)
-
-
-
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
 
 
 
@@ -109,10 +64,11 @@ class TestAccess(unittest.TestCase) :
 
 def cli():
     global net,c1,s1,s2,s3
-    global hosts
+    global h1,h2,h3,h4,h5,h6,h7,h8,h9,h10
     cli = CLI( net )
-    for h in hosts:
-        h.terminate()
+    h1.terminate()
+    h2.terminate()
+    h3.terminate()
     net.stop()
 
 
@@ -130,6 +86,7 @@ def setupTopology(controller_addr):
 
     # h1: IOT Device.
     # h2 : StatciDHCPD
+    # h3 : router / NAT
     # h4 : Non IOT device.
 
     h1 = net.addHost('h1')
@@ -202,16 +159,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:91","h1-eth0")
-    h2.setMAC("00:00:00:00:00:92","h2-eth0")
-    h3.setMAC("00:00:00:00:00:93","h3-eth0")
-    h4.setMAC("00:00:00:00:00:94","h4-eth0")
-    h5.setMAC("00:00:00:00:00:95","h5-eth0")
-    h6.setMAC("00:00:00:00:00:96","h6-eth0")
-    h7.setMAC("00:00:00:00:00:97","h7-eth0")
-    h8.setMAC("00:00:00:00:00:98","h8-eth0")
-    h9.setMAC("00:00:00:00:00:99","h9-eth0")
-    h10.setMAC("00:00:00:00:00:9a","h10-eth0")
+    h1.setMAC("00:00:00:00:00:a1","h1-eth0")
+    h2.setMAC("00:00:00:00:00:a2","h2-eth0")
+    h3.setMAC("00:00:00:00:00:a3","h3-eth0")
+    h4.setMAC("00:00:00:00:00:a4","h4-eth0")
+    h5.setMAC("00:00:00:00:00:a5","h5-eth0")
+    h6.setMAC("00:00:00:00:00:a6","h6-eth0")
+    h7.setMAC("00:00:00:00:00:a7","h7-eth0")
+    h8.setMAC("00:00:00:00:00:a8","h8-eth0")
+    h9.setMAC("00:00:00:00:00:a9","h9-eth0")
+    h10.setMAC("00:00:00:00:00:aa","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -245,27 +202,34 @@ def setupTopology(controller_addr):
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
+    h9.cmdPrint('python http-server.py -H 203.0.113.13&')
 
+    # h10 is our second fake host. It runs another internet web server that we cannot reach
+    h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
+    # Start a web server there.
+    h10.cmdPrint('python http-server.py -H 203.0.113.14&')
 
 
     # Start dnsmasq (our dns server).
-    h5.cmdPrint('/usr/sbin/dnsmasq --server  10.0.4.3 --pid-file=/tmp/dnsmasq.pid'  )
+    h5.cmdPrint('/usr/sbin/dnsmasq -H /etc/dnsmasq.hosts --server 8.8.8.8 --pid-file=/tmp/dnsmasq.pid'  )
 
     # Set up our router routes.
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
+    h8.cmdPrint('ip route add 203.0.113.14/32 dev h8-eth1')
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
-
-
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h1.cmdPrint('python -m SimpleHTTPServer 80&')
-        h9.cmdPrint('python -m SimpleHTTPServer 800&')
-        #h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
-        #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
     
+    
+    net.waitConnected()
 
     print "*********** System ready *********"
+    return net
 
-    #net.stop()
+
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
 
 def startTestServer(host):
     """
@@ -295,19 +259,15 @@ def fixupResolvConf():
 	    original_data = f.read()
 	with open("/etc/resolv.conf","w") as f:
 	     f.write("nameserver 10.0.0.5\n" + original_data)
-
-def clean_mud_rules(controller_addr) :
-    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
-    headers= {"Content-Type":"application/json"}
-    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
-    print r
+	   
 
 if __name__ == '__main__':
     setLogLevel( 'info' )
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
-    parser.add_argument("-f",help="Config file",default=os.environ.get("SDNMUD_CONFIG"))
+    parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
+    parser.add_argument("-f",help="Config file",default="sdnmud-config.json")
 
     parser.set_defaults(test=False)
 
@@ -315,8 +275,6 @@ if __name__ == '__main__':
     controller_addr = args.c
     test = args.test
     cfgfile = args.f
-    if cfgfile is None:
-       cfgfile = "sdnmud-config.json"
 
 
     cmd = ['sudo','mn','-c']
@@ -333,14 +291,17 @@ if __name__ == '__main__':
 	   print "Failed to kill dnsmasq check if process is running"
 
 
-    print("IMPORTANT : append 10.0.0.5 to resolv.conf")
-
+    fixupResolvConf()
+    net = setupTopology(controller_addr)
     clean_mud_rules(controller_addr)
 
+
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in { ("device-association-printer.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
-        (cfgfile, "sdnmud:sdnmud-config")} :
+    for (configfile,suffix) in { 
+        (cfgfile, "sdnmud:sdnmud-config"),
+        ("device-association.json","nist-mud-device-association:mapping"),
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
+	}:
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -348,12 +309,12 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    fixupResolvConf()
-    setupTopology(controller_addr)
+    print "uploaded mud rules ", str(r)
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
+        net.pingAll(timeout=1)
         unittest.main()
+        #clean_mud_rules(controller_addr)
     else:
         cli()
 

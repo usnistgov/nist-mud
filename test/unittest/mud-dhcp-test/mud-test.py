@@ -261,6 +261,24 @@ def setupTopology(controller_addr):
 
     return net
 
+def fixupResolvConf():
+    # prepending 10.0.0.5 -- we want to go through our name resolution
+    found = False
+    with open("/etc/resolv.conf") as f :
+	content = f.readlines() 
+        found = False
+        for line in content:
+	    if line.find("10.0.0.5") != -1:
+		found = True
+		break
+
+    print("10.0.0.5 not found in resolv.conf")
+    if not found :
+        original_data = None
+        with open("/etc/resolv.conf") as f :
+	    original_data = f.read()
+	with open("/etc/resolv.conf","w") as f:
+	     f.write("nameserver 10.0.0.5\n" + original_data)
 
 def startTestServer(host):
     """
@@ -313,6 +331,7 @@ if __name__ == '__main__':
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
     clean_mud_rules(controller_addr)
+    fixupResolvConf()
     net = setupTopology(controller_addr)
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in { 

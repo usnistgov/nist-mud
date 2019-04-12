@@ -5,11 +5,10 @@ You will need an emulation Linux Virtual machine that runs mininet.
 In order for DNS to work on mininet hosts you should not be using local caching. 
 Edit /etc/NetworkManager/NetworkManager.conf and comment out. 
 
-We will start our own dnsmasq for testing.
 
         #dns=dnsmasq
 
-Edit /etc/dnsmasq.conf. 
+Edit /etc/dnsmasq.conf and set up DHCP addresses for testing:
 
         no-hosts
         addn-hosts=/etc/dnsmasq.hosts
@@ -19,13 +18,17 @@ Edit /etc/dnsmasq.conf.
         dhcp-host=00:00:00:00:00:03,10.0.0.3
 
 
-
-Add a fake hosts in /etc/dnsmasq.hosts by adding the following lines:
+Add a fake hosts in /etc/dnsmasq.hosts of the *emulation* machine by adding the following lines:
 
       203.0.113.13    www.nist.local
       203.0.113.14    www.antd.local
       203.0.113.15    printer.nist.local
-      127.0.0.1       dhcptest.nist.local
+
+Make the following change in /etc/nswitch.conf 
+
+      #hosts:          files mdns4_minimal [NOTFOUND=return] dns
+      hosts: files dns
+
 
 Kill any existing instance of dnsmasq on the emulation VM. We will
 restart it in the test script.
@@ -39,18 +42,11 @@ If dnsmasq is running as a service, perform the following.
       sudo service networking restart
       sudo killall dnsmasq
 
-Add the following line to /etc/resolv.conf on the emulation VM.
- 
-      nameserver 10.0.0.5
-
 
 ### Configure the SDN Controller (OpenDaylight)  Host ###
 
-Add the following to /etc/hosts on your *controller* host so that the java library can look up our fake hosts.
+Add the following to /etc/hosts on your *controller* host so that the java library can look up our fake host.
 
-      203.0.113.13   www.nist.local
-      203.0.113.14   www.antd.local
-      203.0.113.15   printer.nist.local
       127.0.0.1      dhcptest.nist.local
 
 (We will run the "manufacturer server" on 127.0.0.1 on the controller host.)
