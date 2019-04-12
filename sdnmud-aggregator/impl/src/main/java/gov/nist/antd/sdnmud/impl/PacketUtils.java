@@ -82,6 +82,10 @@ public abstract class PacketUtils {
 
 	private static final int PACKET_OFFSET_IP = 14;
 
+	private static final int UDP_HEADER_SIZE = 8;
+
+	private static final int TCP_HEADER_SIZE = 20;
+
 	private static final Logger LOG = LoggerFactory.getLogger(PacketUtils.class);
 
 	private PacketUtils() {
@@ -89,11 +93,9 @@ public abstract class PacketUtils {
 	}
 
 	/**
-	 * Simple internal utility function to convert from a 2-byte array to a
-	 * short.
+	 * Simple internal utility function to convert from a 2-byte array to a short.
 	 *
-	 * @param bytes
-	 *            byte array
+	 * @param bytes byte array
 	 * @return the bytes packed into a short
 	 */
 	private short packShort(byte[] bytes) {
@@ -127,12 +129,12 @@ public abstract class PacketUtils {
 	 * @return the ethertype.
 	 */
 	private static int extractEtherType(final byte[] payload) {
-		byte[] buffer =  Arrays.copyOfRange(payload, ETHER_TYPE_START_POSITION, ETHER_TYPE_END_POSITION);
+		byte[] buffer = Arrays.copyOfRange(payload, ETHER_TYPE_START_POSITION, ETHER_TYPE_END_POSITION);
 		ByteBuffer wrapped = ByteBuffer.wrap(buffer); // big-endian by default
-		short retval =  wrapped.asShortBuffer().get();
+		short retval = wrapped.asShortBuffer().get();
 		int etherType = retval < 0 ? 0xffff + retval + 1 : retval;
 		LOG.debug("etherType = :" + etherType);
-		return  etherType;
+		return etherType;
 	}
 
 	/**
@@ -168,8 +170,7 @@ public abstract class PacketUtils {
 	/**
 	 * Given a raw packet, return the SrcIp.
 	 *
-	 * @param rawPacket
-	 *            packet
+	 * @param rawPacket packet
 	 * @return srcIp String
 	 */
 	public static String extractSrcIpStr(final byte[] rawPacket) {
@@ -188,14 +189,13 @@ public abstract class PacketUtils {
 	/**
 	 * Given a raw packet, return the DstIp.
 	 *
-	 * @param rawPacket
-	 *            packet
+	 * @param rawPacket packet
 	 * @return dstIp String
 	 */
 	public static String extractDstIpStr(final byte[] rawPacket) {
 		int etherType = extractEtherType(rawPacket);
 		int offset = getPacketOffsetIpDst(etherType);
-		final byte[] ipDstBytes = Arrays.copyOfRange(rawPacket,offset ,  offset + 4);
+		final byte[] ipDstBytes = Arrays.copyOfRange(rawPacket, offset, offset + 4);
 		String pktDstIpStr = null;
 		try {
 			pktDstIpStr = InetAddress.getByAddress(ipDstBytes).getHostAddress();
@@ -206,8 +206,8 @@ public abstract class PacketUtils {
 	}
 
 	public static boolean isSYNFlagOnAndACKFlagOff(final byte[] rawPacket) {
-        int etherType = extractEtherType(rawPacket);
-        int offset = getPacketOffsetTcpSrcPort(etherType);
+		int etherType = extractEtherType(rawPacket);
+		int offset = getPacketOffsetTcpSrcPort(etherType);
 		byte flags = (byte) (rawPacket[offset + 13] & 63);
 		boolean synFlag = (flags & 2) == 2;
 		boolean ackFlag = (flags & 0x10) == 0x010;
@@ -216,16 +216,14 @@ public abstract class PacketUtils {
 
 	public static int getSourcePort(final byte[] rawPacket) {
 		int etherType = extractEtherType(rawPacket);
-	    int offset = getPacketOffsetTcpSrcPort(etherType);	
-		return (((rawPacket[offset] << 8) & 65280)
-				| (rawPacket[offset + 1] & 255));
+		int offset = getPacketOffsetTcpSrcPort(etherType);
+		return (((rawPacket[offset] << 8) & 65280) | (rawPacket[offset + 1] & 255));
 	}
 
 	public static int getDestinationPort(final byte[] baseHeader) {
 		int etherType = extractEtherType(baseHeader);
 		int offset = getPacketOffsetTcpDstPort(etherType);
-		return (((baseHeader[offset] << 8) & 65280)
-				| (baseHeader[offset + 1] & 255));
+		return (((baseHeader[offset] << 8) & 65280) | (baseHeader[offset + 1] & 255));
 
 	}
 
@@ -241,8 +239,10 @@ public abstract class PacketUtils {
 	}
 
 	private static int getPacketOffsetIp(int etherType) {
-		if (etherType == SdnMudConstants.ETHERTYPE_IPV4) return PACKET_OFFSET_IP;
-		else if (etherType == SdnMudConstants.ETHERTYPE_CUSTOMER_VLAN) return PACKET_OFFSET_IP + 4;
+		if (etherType == SdnMudConstants.ETHERTYPE_IPV4)
+			return PACKET_OFFSET_IP;
+		else if (etherType == SdnMudConstants.ETHERTYPE_CUSTOMER_VLAN)
+			return PACKET_OFFSET_IP + 4;
 		else {
 			LOG.error("Unsupported ethertype ");
 			throw new RuntimeException("Unsupported etherType " + etherType);
@@ -262,11 +262,23 @@ public abstract class PacketUtils {
 	}
 
 	private static int getPacketOffsetTcpSrcPort(int etherType) {
-		return  getPacketOffsetIp(etherType) + 20;
+		return getPacketOffsetIp(etherType) + 20;
 	}
 
 	private static int getPacketOffsetTcpDstPort(int etherType) {
-		return  getPacketOffsetTcpSrcPort(etherType) + 2;
+		return getPacketOffsetTcpSrcPort(etherType) + 2;
+	}
+
+	public static byte[] getPacketPayload(byte[] payload, int etherType, int protocol) {
+		int end = payload.length;
+		int start;
+		if (protocol == SdnMudConstants.UDP_PROTOCOL) {
+			start = getPacketOffsetIpDst(etherType) + 4+ UDP_HEADER_SIZE;
+		} else {
+			start = getPacketOffsetIpDst(etherType) + 4+ TCP_HEADER_SIZE;
+		}
+
+		return Arrays.copyOfRange(payload, start, end);
 	}
 
 }

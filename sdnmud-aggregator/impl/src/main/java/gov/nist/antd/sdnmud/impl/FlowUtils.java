@@ -357,6 +357,18 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 		return isb;
 	}
+	
+	private static InstructionsBuilder createGoToNextTableInstruction(short thistable, boolean sendPacketToController) {
+		// Create an instruction allowing the interaction.
+		List<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(createGoToTableInstruction((thistable)));
+		if (sendPacketToController) {
+			instructions.add(createSendPacketToControllerInstruction());
+		}
+		InstructionsBuilder isb = new InstructionsBuilder();
+		isb.setInstruction(instructions);
+		return isb;
+	}
 
 	/**
 	 * create and return a goto table instruction.
@@ -809,7 +821,7 @@ public class FlowUtils {
 	}
 
 	static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, FlowId flowId, FlowCookie flowCookie) {
+			short tableId, boolean sendPacketToController,  FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsToServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -823,7 +835,7 @@ public class FlowUtils {
 
 		short nextTable = (short) (tableId + 1);
 
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
+		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable,sendPacketToController);
 
 		flowBuilder.setMatch(match).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
@@ -833,7 +845,7 @@ public class FlowUtils {
 	}
 
 	static FlowBuilder createSrcAddressPortProtocolMatchGoToNextFlow(Ipv4Address address, int port, short protocol,
-			short tableId, FlowId flowId, FlowCookie flowCookie) {
+			short tableId, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName("SrcAddressPortProtocolMatchGoToNextFlow").setId(flowId).setKey(new FlowKey(flowId))
@@ -847,7 +859,9 @@ public class FlowUtils {
 		Match match = matchBuilder.build();
 		short nextTable = (short) (tableId + 1);
 
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable);
+		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable,sendToController);
+		
+		
 
 		flowBuilder.setMatch(match).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)

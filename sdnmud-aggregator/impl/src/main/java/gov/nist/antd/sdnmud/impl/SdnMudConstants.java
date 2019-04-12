@@ -102,6 +102,9 @@ interface SdnMudConstants {
 	FlowCookie TO_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.ToDevice.getName());
 
 	FlowCookie DH_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-request-flow-cookie");
+	FlowCookie  DNS_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dns-request-flow-cookie");
+	FlowCookie  DNS_RESPONSE_FLOW_COOKIE = IdUtils.createFlowCookie("dns-response-flow-cookie");
+
 
 	// Cache timeout for network and model stamping flow rules.
 	int ETHERTYPE_LLDP = 0x88cc;

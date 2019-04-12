@@ -39,6 +39,7 @@ package gov.nist.antd.sdnmud.impl;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.math.BigInteger;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
@@ -77,6 +78,14 @@ import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpRequestPacket;
+
+import gov.nist.antd.sdnmud.impl.dns.ARecord;
+import gov.nist.antd.sdnmud.impl.dns.DNSInput;
+import gov.nist.antd.sdnmud.impl.dns.Header;
+import gov.nist.antd.sdnmud.impl.dns.Message;
+import gov.nist.antd.sdnmud.impl.dns.Record;
+import gov.nist.antd.sdnmud.impl.dns.Section;
+import gov.nist.antd.sdnmud.impl.dns.Type;
 
 /**
  * Packet in dispatcher that gets invoked on flow table miss when a packet is
@@ -117,7 +126,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private ServerSocket listenerSock;
 
 	private boolean isClosed;
-	
+
 	private boolean isBlocked;
 
 	private Thread notifier;
@@ -177,11 +186,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 
 	}
-	
+
 	public void block() {
 		this.isBlocked = true;
 	}
-	
+
 	public void unblock() {
 		this.isBlocked = false;
 	}
@@ -341,8 +350,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private boolean isMacAddressExcluded(String macAddress) {
-        // TODO -- this should return TRUE if the host is a network service.
-        // This is for IDS support TBD.
+		// TODO -- this should return TRUE if the host is a network service.
+		// This is for IDS support TBD.
 		return false;
 	}
 
@@ -375,8 +384,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 		return isLocalAddress;
 	}
-	
-	
 
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
@@ -413,11 +420,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 		this.srcMacRuleTable.add(srcMac.getValue());
 		timer.schedule(new SrcMacAddressTimerTask(srcMac),
-				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2*1000);
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2 * 1000);
 
 	}
-
-	
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
@@ -448,11 +453,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		Flow flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
 				sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
-        this.dstMacRuleTable.add(dstMac.getValue());
-        // Supress further notification processing for CacheTimeout/2 seconds (keeps the switch from flooding
-        // the controller)
+		this.dstMacRuleTable.add(dstMac.getValue());
+		// Supress further notification processing for CacheTimeout/2 seconds (keeps the
+		// switch from flooding
+		// the controller)
 		this.timer.schedule(new DstMacAddressTimerTask(dstMac),
-				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2*1000);
+				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2 * 1000);
 
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 	}
@@ -462,7 +468,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	 */
 	public void clearMfgModelRules() {
 		LOG.info("Clear mfgModelRules");
-		
+
 		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
 			InstanceIdentifier<FlowCapableNode> flowCapableNode = sdnmudProvider.getNode(nodeId);
 			if (flowCapableNode != null) {
@@ -474,12 +480,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.flowTable.clear();
 		this.srcMacRuleTable.clear();
 		this.dstMacRuleTable.clear();
-		
+
 	}
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public  void onPacketReceived(PacketReceived notification) {
+	public void onPacketReceived(PacketReceived notification) {
 
 		if (this.isClosed) {
 			LOG.info("ignore packet -- closed");
@@ -490,7 +496,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			LOG.error("No switches found -- ignoring packet");
 			return;
 		}
-		
+
 		if (this.isBlocked) {
 			LOG.info("Blocked - installing flows ");
 			return;
@@ -517,6 +523,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		MacAddress dstMac = rawMacToMac(dstMacRaw);
 
 		short tableId = notification.getTableId().getValue();
+
+		FlowCookie cookie = notification.getFlowCookie();
 
 		String matchInPortUri = notification.getMatch().getInPort().getValue();
 
@@ -553,42 +561,44 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					return;
 				}
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-				boolean hasMudProfile = this.sdnmudProvider.hasMudProfile(mudUri.getValue());
 
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, srcIp);
 
 				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
 
-                // TODO -- IDS support.
-				//this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
-				if ( this.dstMacRuleTable.contains(dstMac.getValue())) {
+				// TODO -- IDS support.
+
+				// this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
+				if (this.dstMacRuleTable.contains(dstMac.getValue())) {
 					LOG.info("dst mac rule already installed in table 1");
 					return;
 				}
-			     mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
-			
 
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
 
-                // TODO -- IDS support.
-				//this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
+				// TODO -- IDS support.
+				// boolean hasMudProfile = this.sdnmudProvider.hasMudProfile(mudUri.getValue());
+				// this.classifyAddress(dstMac,
+				// this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
-				if ( this.dstMacRuleTable.contains(dstMac.getValue())) {
+				if (this.dstMacRuleTable.contains(dstMac.getValue())) {
 					LOG.info("already installed in table 1");
 					return;
 				}
 				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-                // TODO -- IDS support.
-				//this.classifyAddress(dstMac, this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
+				// TODO -- IDS support.
+				// this.classifyAddress(dstMac,
+				// this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
 
 			} else if (tableId == sdnmudProvider.getSdnmudRulesTable()) {
 				this.mudRelatedPacketInCounter++;
@@ -597,13 +607,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 				LOG.info("PacketInDispatcher: protocol = " + protocol + " srcIp = " + srcIp);
 
-                if (protocol == SdnMudConstants.UDP_PROTOCOL) {
+				if (cookie.equals(SdnMudConstants.DH_REQUEST_FLOW_COOKIE)) {
 					// this is a DH request.
 					DhcpPacket dhcpPacket = DhcpPacket.decodeFullPacket(notification.getPayload(), DhcpPacket.ENCAP_L2);
 
-				    LOG.info("DHCP packet type = " + dhcpPacket.getClass().getName());
+					LOG.info("DHCP packet type = " + dhcpPacket.getClass().getName());
 
-                    // TODO -- include DH Discover here.
+					// TODO -- include DH Discover here.
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
 						String mudUrl = dhcpRequestPacket.getMudUrl();
@@ -621,6 +631,32 @@ public class PacketInDispatcher implements PacketProcessingListener {
 							tx.submit();
 						}
 					}
+				} else if (cookie.equals(SdnMudConstants.DNS_REQUEST_FLOW_COOKIE)) {
+					LOG.info("Saw a DNS Request");
+				} else if (cookie.equals(SdnMudConstants.DNS_RESPONSE_FLOW_COOKIE)) {
+					LOG.info("Saw a DNS response");
+					try {
+						byte[] payload = PacketUtils.getPacketPayload(notification.getPayload(), etherType, protocol);
+						Message message = new Message(payload);
+						LOG.info("Message = " + message);
+						Record[] records = message.getSectionArray(Section.ANSWER);
+						for (Record record : records) {
+							if (record.getType() == Type.A) {
+								LOG.info("A record");
+								ARecord arecord = (ARecord) record;
+								// Get the name resolution
+								InetAddress inetAddress = arecord.getAddress();
+								// Add it to the resolution cache of the MudFlows installer
+								LOG.info("Name " + record.getName());
+								LOG.info("Address " + inetAddress.getHostAddress());
+								sdnmudProvider.getMudFlowsInstaller().addNameResolution(node,
+										record.getName().toString(true), inetAddress.getHostAddress());
+							}
+						}
+					} catch (IOException e) {
+						LOG.error("Could not resolve the DNS answer ", e);
+					}
+
 				}
 
 			}
