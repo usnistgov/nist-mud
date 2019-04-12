@@ -24,10 +24,11 @@ using OpenDaylight as the SDN controller.
 * Implements DHCP or Directly administered MUD profiles. DHCP support is transparent - does not depend on modifications to the
   DHCP server. DHCP interactions are handled in the SDN controller.
 * Scalable - *O(N)* flow rules for *N* distinct MAC addresses at a switch.
+* Implements dynamic DNS
 
 ## Read a short paper about it ##
 
-[A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn-2019-r3.pdf)
+[A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn-2019-r7.pdf)
 
 ## OpendDaylight Components ##
 
@@ -61,7 +62,7 @@ Once the build is complete:
 
 At the karaf prompt 
 
-     karaf> features:install features-sdnmud
+     karaf> feature:install features-sdnmud
 
 Will install the sdn mud feature. Next, configure it (see below) and connect your SDN-enabled switches.
 to the controller at port 6653.  Your switches should support OpenFlow 1.5.
@@ -107,11 +108,11 @@ It works but has only been lightly tested. Much more testing and validation is n
 
 This is an IPV4 only implementation of MUD.  
 
-X.509 extensions for MUD are not implemented.
+X.509 extensions for MUD (i.e. 802.1AR device Identity) not implemented.
 
 LLDP extensions for MUD support are not implemented.
 
-This is not a general ACL implementation.
+This is not a general ACL implementation. Only MUD specific ACLs are implemented..
 
 This is experimental code. Much more testing is needed before it can be
 deployed in anything close to a  production network. The authors solicit
@@ -119,6 +120,8 @@ your help in testing and validation.
 
 This code is shared for early review. It is an implementation of a
 proposed IETF standard.
+
+Dynamic name resolution is not yet fully tested.
 
 
 ## Copyrights and Disclaimers ##
@@ -158,6 +161,10 @@ OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR SERVICES PROVIDED HEREUNDER.
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
 
+Code from the following projects has been included in this code base:
+
+* DNSJava
+* Android
 
 
 ## Credits ##
