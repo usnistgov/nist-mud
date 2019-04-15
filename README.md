@@ -105,24 +105,42 @@ Your contributions will be acknowledged.
 **This is ALPHA code.** 
 
 It works but has only been lightly tested. Much more testing and validation is needed.
-
-This is an IPV4 only implementation of MUD.  
-
-X.509 extensions for MUD (i.e. 802.1AR device Identity) not implemented.
-
-LLDP extensions for MUD support are not implemented.
-
-This is not a general ACL implementation. Only MUD specific ACLs are implemented..
-
-This is experimental code. Much more testing is needed before it can be
+*This is experimental code.* Much more testing is needed before it can be
 deployed in anything close to a  production network. The authors solicit
 your help in testing and validation.
 
-This code is shared for early review. It is an implementation of a
-proposed IETF standard.
+Here are specific limitation:
 
-Dynamic name resolution is not yet fully tested.
+* This is an IPV4 only implementation of MUD. 
+* X.509 extensions for MUD (i.e. 802.1AR device Identity) not implemented.
+* LLDP extensions for MUD support are not implemented.
+* This is not a general ACL implementation. Only MUD specific ACLs are implemented..
+* Dynamic name resolution by Things  works but is not yet fully tested.
 
+
+
+## Useful Links ##
+
+
+[https://www.mudmaker.org] (Mudmaker - make your mud files here!)
+
+[https://github.com/elmiomar/OmniaTurrisSetup](How to set up OpenVSwitch on an OpenWRT based router.)
+
+[https://www.ofcourseimright.com/](Eliot Lear's blog)
+
+
+## Credits and Acknowledgements ##
+
+* The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
+* SDN MUD design and implementation : M. Ranganathan <mranga@nist.gov>
+* Testing : Omar Ilias Elmimouni <omarilias.elmimouni@nist.gov>
+* Implementation Design Contributors : Charif Mahmoudi, Doug Montgomery
+* Project Manager Doug Montgomery <dougm@nist.gov>
+* This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
+* This work was funded using a Bridge to The Future (BTF) grant at NIST.
+* Code from the following projects has been included in this code base:
+    *DNSJava  (DNS Message parsing)
+    *Android project  (DHCP support)
 
 ## Copyrights and Disclaimers ##
 
@@ -160,22 +178,6 @@ OF THE RESULTS OF, OR USE OF, THE SOFTWARE OR SERVICES PROVIDED HEREUNDER.
 
 Specific copyrights for code that has been re-used from other open 
 source projects are noted in the source files as appropriate.
-
-
-
-## Credits and Acknowledgements ##
-
-* The MUD Standard was primarily authored by Eliot Lear (Cisco) in the IETF OPSAWG working group.
-* SDN MUD design and implementation : M. Ranganathan <mranga@nist.gov>
-* Testing : Omar Ilias Elmimouni <omarilias.elmimouni@nist.gov>
-* Implementation Design Contributors : Charif Mahmoudi, Doug Montgomery
-* Project Manager Doug Montgomery <dougm@nist.gov>
-* This is a product of the Advanced Networking Technologies Division of the National Institute of Standards and Technology (NIST).
-* This work was funded using a Bridge to The Future (BTF) grant at NIST.
-* Code from the following projects has been included in this code base:
-** DNSJava  (DNS Message parsing)
-** Android  (DHCP support)
-
 Please acknowledge our work if you re-use this code or design.
 
 ![alt tag](docs/logos/nist-logo.png)
