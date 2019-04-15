@@ -272,6 +272,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.removeNode(nodeUri);
 		// Remove dns resolution from the cache of the mud flows installer.
 		this.sdnmudProvider.getMudFlowsInstaller().removeDnsMatch(nodePath);
+		// Remove the cache entry from namelookup cache
+		this.sdnmudProvider.getNameResolutionCache().removeCacheLookup(nodePath);
 	}
 
 }

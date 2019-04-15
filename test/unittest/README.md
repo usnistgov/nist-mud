@@ -5,10 +5,9 @@ You will need an emulation Linux Virtual machine that runs mininet.
 In order for DNS to work on mininet hosts you should not be using local caching. 
 Edit /etc/NetworkManager/NetworkManager.conf and comment out. 
 
-
         #dns=dnsmasq
 
-Edit /etc/dnsmasq.conf and set up DHCP addresses for testing:
+For the dhcp test, edit /etc/dnsmasq.conf and set up DHCP addresses for testing:
 
         no-hosts
         addn-hosts=/etc/dnsmasq.hosts
@@ -18,11 +17,17 @@ Edit /etc/dnsmasq.conf and set up DHCP addresses for testing:
         dhcp-host=00:00:00:00:00:03,10.0.0.3
 
 
-Add a fake hosts in /etc/dnsmasq.hosts of the *emulation* machine by adding the following lines:
+Add a fake hosts in /etc/dnsmasq.hosts of the *emulation* machine only  by adding the following lines:
 
       203.0.113.13    www.nist.local
       203.0.113.14    www.antd.local
       203.0.113.15    printer.nist.local
+
+Add the following to /etc/hosts on the *emulation* machine only:
+ 
+     203.0.113.13	www.nist.local
+     203.0.113.14	www.antd.local
+     203.0.113.15       myprinter.nist.local
 
 Make the following change in /etc/nswitch.conf 
 
@@ -51,20 +56,20 @@ Add the following to /etc/hosts on your *controller* host so that the java libra
 
 (We will run the "manufacturer server" on 127.0.0.1 on the controller host.)
 
-Run the following script on the *ODL controller host*:
+Run the following script on the *controller host*:
 
       sh copy-test-files-to-odl-cache.sh
 
 This will copy the mudfiles to the cache in preparation for testing.
 To run mud-dhcp-test make sure you have the [setup described in ../../README.md](../../README.md)
 
-Then 
+Then clean the state of the controller:
 
      cd karaf/target/assembly/
      rm journal/*
      rm snapshots/*
 
-Then
+Now start the controller:
     
     cd bin
     ./karaf clean

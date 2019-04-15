@@ -88,11 +88,19 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetExpectFail(self):
         h1 = hosts[0]
         h9 = hosts[8]
-        h9.cmdPrint("python ../util/tcp-server.py -H 203.0.113.13 -P 8000 &")
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 203.0.113.13 -P 8000")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        h9.cmdPrint("python ../util/http-server.py -H 203.0.113.13 -P 443 &")
+        time.sleep(3)
+        result = h1.cmdPrint("wget http://www.nist.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
 
+    def testHttpGetExpectPass(self):
+        h1 = hosts[0]
+        h10 = hosts[9]
+        h10.cmdPrint("python ../util/http-server.py -H 203.0.113.14 -P 443 &")
+        time.sleep(3)
+        result = h1.cmdPrint("wget http://www.antd.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("OK",result) is  None, "Expecting a failed get")
 
 
 
@@ -268,6 +276,7 @@ def setupTopology(controller_addr):
     print "*********** System ready *********"
     return net
 
+
 def fixupResolvConf():
     # prepending 10.0.0.5 -- we want to go through our name resolution
     found = False
@@ -284,6 +293,8 @@ def fixupResolvConf():
         original_data = None
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
+	with open("/etc/resolv.conf.save","w") as f:
+	     f.write(original_data)
 	with open("/etc/resolv.conf","w") as f:
 	     f.write("nameserver 10.0.0.5\n" + original_data)
 
@@ -352,8 +363,11 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    # Put a few packets through so the rules get to the switch.
     net.pingAll(1)
+    h1.cmdPrint("nslookup www.nist.local")
+    h1.cmdPrint("nslookup www.antd.local")
+
+    # Put a few packets through so the rules get to the switch.
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
     else:

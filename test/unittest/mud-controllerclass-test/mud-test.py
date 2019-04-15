@@ -45,7 +45,7 @@ class TestAccess(unittest.TestCase) :
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
-        result = h4.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1 -O foo.html --delete-after")
+        result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 2 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
     def testUdpSameManPingExpectPass(self) :
@@ -73,11 +73,10 @@ class TestAccess(unittest.TestCase) :
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
 
-
     def testHttpGetExpectPass(self):
         print "wgetting from a non-mud -- this should succeed with MUD"
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 10  --tries 1 -O foo.html --delete-after")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
         print "result = ",result
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
@@ -85,7 +84,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetExpectFail(self):
         print "Wgetting from antd.local -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 10  --tries 1 -O foo.html --delete-after")
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
 
 
@@ -234,12 +233,12 @@ def setupTopology(controller_addr):
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
-    h9.cmdPrint('python http-server.py -H 203.0.113.13&')
+    h9.cmdPrint('python ../util/http-server.py -H 203.0.113.13&')
 
     # h10 is our second fake host. It runs another internet web server that we cannot reach
     h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
     # Start a web server there.
-    h10.cmdPrint('python http-server.py -H 203.0.113.14&')
+    h10.cmdPrint('python ../util/http-server.py -H 203.0.113.14&')
 
 
     # Start dnsmasq (our dns server).
@@ -260,6 +259,7 @@ def setupTopology(controller_addr):
     h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
     
     net.waitConnected()
+
 
     print "*********** System ready *********"
     return net
@@ -287,8 +287,10 @@ def fixupResolvConf():
         original_data = None
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
+	with open("/etc/resolv.conf.save","w") as f:
+            f.write(original_data)
 	with open("/etc/resolv.conf","w") as f:
-	     f.write("nameserver 10.0.0.5\n" + original_data)
+	    f.write("nameserver 10.0.0.5\n" + original_data)
 
 def startTestServer(host):
     """
@@ -352,8 +354,9 @@ if __name__ == '__main__':
         print "response ", r
 
     print "uploaded mud rules ", str(r)
-    net.pingAll(timeout=2)
-
+    net.pingAll(timeout=1)
+    h1.cmdPrint("nslookup www.nist.local")
+    h1.cmdPrint("nslookup www.antd.local")
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
         #clean_mud_rules(controller_addr)

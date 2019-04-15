@@ -649,7 +649,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								// Add it to the resolution cache of the MudFlows installer
 								LOG.info("Name " + record.getName());
 								LOG.info("Address " + inetAddress.getHostAddress());
-								sdnmudProvider.getMudFlowsInstaller().addNameResolution(node,
+								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,record.getName().toString(true), inetAddress.getHostAddress());
+								sdnmudProvider.getMudFlowsInstaller().fixupNameResolution(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
 							}
 						}

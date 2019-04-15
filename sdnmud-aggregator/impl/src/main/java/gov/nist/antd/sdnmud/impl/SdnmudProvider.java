@@ -158,6 +158,8 @@ public class SdnmudProvider {
 	
 	private HashMap<String,ControllerclassMapping> controllerClassMaps = new HashMap<String,ControllerclassMapping>();
 
+	private NameResolutionCache nameResolutionCache;
+
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService,
@@ -219,6 +221,7 @@ public class SdnmudProvider {
 		this.flowWriter = new FlowWriter(this.flowService);
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
 		this.datastoreUpdater = new DatastoreUpdater(this);
+		this.nameResolutionCache = new NameResolutionCache();
 
 		/* Register listener for configuration state change */
 		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
@@ -681,6 +684,10 @@ public class SdnmudProvider {
 
 	public short getTableStart() {
 		return this.sdnmudConfig.getTableStart().shortValue();
+	}
+	
+	public NameResolutionCache getNameResolutionCache() {
+		return this.nameResolutionCache;
 	}
 
 }

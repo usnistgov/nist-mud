@@ -62,6 +62,25 @@ public class MudFlowsInstaller {
 	static final Logger LOG = LoggerFactory.getLogger(MudFlowsInstaller.class);
 	private HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>> nameResolutionCache = new HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>>();
 
+	private interface MatchesType {
+		int CONTROLLER_MAPPING = 1;
+		int SAME_MANUFACTURER = 3;
+		int MANUFACTURER = 4;
+		int MODEL = 5;
+		int MY_CONTROLLER = 6;
+		int LOCAL_NETWORKS = 7;
+		int DNS_MATCH = 8;
+		int UNKNOWN_MATCH = 9;
+
+	}
+
+	/**
+	 * Class for Name resolution when there is a mud ACE that needs the resolution
+	 * but we have not been able to resolve it.
+	 * 
+	 * @author mranga
+	 *
+	 */
 	class NameResolutionCacheEntry {
 		private Matches matches;
 		private String mudUrl;
@@ -81,19 +100,21 @@ public class MudFlowsInstaller {
 		}
 	}
 
-	private interface MatchesType {
-		int CONTROLLER_MAPPING = 1;
-		int SAME_MANUFACTURER = 3;
-		int MANUFACTURER = 4;
-		int MODEL = 5;
-		int MY_CONTROLLER = 6;
-		int LOCAL_NETWORKS = 7;
-		int DNS_MATCH = 8;
-		int UNKNOWN_MATCH = 9;
+	
 
-	}
-
-	private void cacheDnsMatch(InstanceIdentifier<FlowCapableNode> node, String mudUrl, Matches matches,
+	
+	/**
+	 * Cache a pending match - we install flow rules by snooping the name
+	 * resolution. When further resolutions are reported, we update our 
+	 * flow rules.
+	 * 
+	 * @param node
+	 * @param mudUrl
+	 * @param matches
+	 * @param addresses
+	 * @param toDeviceFlag
+	 */
+	private void deferDnsMatch(InstanceIdentifier<FlowCapableNode> node, String mudUrl, Matches matches,
 			List<Ipv4Address> addresses, boolean toDeviceFlag) {
 		Ipv41 ipv41 = ((Ipv4) matches.getL3()).getIpv4().getAugmentation(Ipv41.class);
 		Host dnsName = ipv41.getDstDnsname() != null ? ipv41.getDstDnsname() : ipv41.getSrcDnsname();
@@ -112,14 +133,15 @@ public class MudFlowsInstaller {
 		nameResolutionCache.remove(node);
 	}
 
-	public void addNameResolution(InstanceIdentifier<FlowCapableNode> node, String name, String address) {
+	public void fixupNameResolution(InstanceIdentifier<FlowCapableNode> node, String name, String address) {
+
 		if (this.nameResolutionCache.containsKey(node)) {
 			List<NameResolutionCacheEntry> entries = this.nameResolutionCache.get(node);
 			for (NameResolutionCacheEntry entry : entries) {
 				if (entry.domainName.equals(name)) {
 					boolean found = false;
-					for (Ipv4Address ipv4Address : entry.addresses) {
-						if (ipv4Address.getValue().equals(address)) {
+					for (Ipv4Address ipv4Address1 : entry.addresses) {
+						if (ipv4Address1.getValue().equals(address)) {
 							// resolution already exists.
 							found = true;
 							break;
@@ -148,7 +170,7 @@ public class MudFlowsInstaller {
 				}
 			}
 		} else {
-			LOG.info("Cannot find node in name resolution cache." + IdUtils.getNodeUri(node));
+			LOG.info("Cannot find node in name resolution cache." + node);
 		}
 	}
 
@@ -256,6 +278,8 @@ public class MudFlowsInstaller {
 		return matches1.getMud().getModel().getValue();
 
 	}
+	
+	/*
 
 	private static boolean isValidIpV4Address(String ip) {
 		try {
@@ -296,6 +320,7 @@ public class MudFlowsInstaller {
 			}
 		}
 	}
+	*/
 
 	private boolean directionCheck(Direction direction, boolean fromDeviceRule) {
 		return direction != null && (fromDeviceRule && direction.getName().equals(Direction.ToDevice.getName())
@@ -305,13 +330,14 @@ public class MudFlowsInstaller {
 
 	/**
 	 * Resolve the addresses for a Match clause.
-	 *
+	 *Lookup address in the name lookup cache.
 	 *
 	 * @param matches - the matches clause.
 	 * @return - a list of addresses that match.
+	 * 
 	 *
 	 */
-	private static List<Ipv4Address> getMatchAddresses(Matches matches) {
+	private  List<Ipv4Address> getMatchAddresses(InstanceIdentifier<FlowCapableNode> node, Matches matches) {
 
 		ArrayList<Ipv4Address> ipAddresses = new ArrayList<Ipv4Address>();
 		Ipv41 ipv41 = ((Ipv4) matches.getL3()).getIpv4().getAugmentation(Ipv41.class);
@@ -321,13 +347,11 @@ public class MudFlowsInstaller {
 			if (dnsName != null) {
 				// Get the domain name of the host.
 				String domainName = dnsName.getDomainName().getValue();
-				try {
-					LOG.info("domainName : " + domainName);
-					resolveDefaultDomain(ipAddresses, domainName);
-
-				} catch (UnknownHostException e) {
-					LOG.error("Unknown host  " + domainName, e);
-				}
+				List<Ipv4Address> retval =  sdnmudProvider.getNameResolutionCache().doNameLookup(node, domainName);
+				LOG.info("domainName : " + domainName + " Lookup " + retval);
+				if (retval != null) {
+					return retval;
+				} 
 			}
 		}
 		return ipAddresses;
@@ -1019,14 +1043,14 @@ public class MudFlowsInstaller {
 									int matchesType = matchesType(matches);
 									LOG.info("matchType " + matchesType);
 									if (matchesType == MatchesType.DNS_MATCH) {
-										List<Ipv4Address> addresses = getMatchAddresses(matches);
+										List<Ipv4Address> addresses = getMatchAddresses(node, matches);
 										if (!addresses.isEmpty()) {
 											this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(),
 													matches, addresses);
 										}
 										// Cache the current resolution. In case this changes we have to update
 										// it.
-										this.cacheDnsMatch(node, mudUri.getValue(), matches, addresses, false);
+										this.deferDnsMatch(node, mudUri.getValue(), matches, addresses, false);
 									} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
 										Matches1 matches1 = matches.getAugmentation(Matches1.class);
 										Uri controllerUri = matches1.getMud().getController();
@@ -1085,12 +1109,12 @@ public class MudFlowsInstaller {
 									int matchesType = matchesType(matches);
 									LOG.info("matchType " + matchesType);
 									if (matchesType == MatchesType.DNS_MATCH) {
-										List<Ipv4Address> addresses = getMatchAddresses(matches);
+										List<Ipv4Address> addresses = getMatchAddresses(node, matches);
 										if (!addresses.isEmpty()) {
 											this.installPermitFromIpAddressToDeviceFlowRules(node, mudUri.getValue(),
 													matches, addresses);
 										}
-										this.cacheDnsMatch(node, mudUri.getValue(), matches, addresses, true);
+										this.deferDnsMatch(node, mudUri.getValue(), matches, addresses, true);
 									} else if (matchesType == MatchesType.CONTROLLER_MAPPING) {
 										Matches1 matches1 = matches.getAugmentation(Matches1.class);
 										Uri controllerUri = matches1.getMud().getController();
@@ -1167,7 +1191,7 @@ public class MudFlowsInstaller {
 				}
 			}
 		}
-
+		this.nameResolutionCache.clear();
 		LOG.info("clearMudRules: done cleaning mud rules");
 	}
 

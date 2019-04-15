@@ -45,6 +45,8 @@ class TestAccess(unittest.TestCase) :
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
+        # Start a web server there.
+        h9.cmdPrint('python ../util/http-server.py -H 203.0.113.13&')
         result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
@@ -52,6 +54,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetExpectFail(self):
         print "Wgetting from antd.local -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
+        # Start a web server there.
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
@@ -201,13 +204,9 @@ def setupTopology(controller_addr):
 
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
-    # Start a web server there.
-    h9.cmdPrint('python http-server.py -H 203.0.113.13&')
 
     # h10 is our second fake host. It runs another internet web server that we cannot reach
     h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
-    # Start a web server there.
-    h10.cmdPrint('python http-server.py -H 203.0.113.14&')
 
 
     # Start dnsmasq (our dns server).
@@ -218,6 +217,8 @@ def setupTopology(controller_addr):
     h8.cmdPrint('ip route add 203.0.113.14/32 dev h8-eth1')
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
     
+    h9.cmdPrint('python ../util/http-server.py -H 203.0.113.13&')
+    h10.cmdPrint('python ../util/http-server.py -H 203.0.113.14&')
     
     net.waitConnected()
 
@@ -257,8 +258,10 @@ def fixupResolvConf():
         original_data = None
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
+	with open("/etc/resolv.conf.save","w") as f:
+	     f.write(original_data)
 	with open("/etc/resolv.conf","w") as f:
-	     f.write("nameserver 10.0.0.5\n" + original_data)
+	     f.write("nameserver 10.0.0.5\n")
 	   
 
 if __name__ == '__main__':
@@ -310,6 +313,9 @@ if __name__ == '__main__':
         print "response ", r
 
     print "uploaded mud rules ", str(r)
+    net.pingAll(timeout=1)
+    h1.cmdPrint("nslookup www.nist.local")
+    h1.cmdPrint("nslookup www.antd.local")
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         net.pingAll(timeout=1)

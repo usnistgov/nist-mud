@@ -293,6 +293,8 @@ def fixupResolvConf():
         original_data = None
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
+	with open("/etc/resolv.conf.save","w") as f:
+	     f.write(original_data)
 	with open("/etc/resolv.conf","w") as f:
 	     f.write("nameserver 10.0.0.5\n" + original_data)
 
@@ -350,9 +352,12 @@ if __name__ == '__main__':
 
     fixupResolvConf()
     setupTopology(controller_addr)
+    net.pingAll(1)
+    h1.cmdPrint("nslookup www.nist.local")
+    h1.cmdPrint("nslookup www.antd.local")
+
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        time.sleep(10)
         unittest.main()
     else:
         cli()

@@ -49,6 +49,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetFromDeviceExpectPass(self):
         h1 = hosts[0]
 	h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80 &")
+        time.sleep(3)
         h4 = hosts[3]
         result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80")
         self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
@@ -57,6 +58,7 @@ class TestAccess(unittest.TestCase) :
     def testHttpGetFromLocalNetworkExpectFail(self):
         h4 = hosts[3]
 	h4.cmdPrint("python ../util/tcp-server.py -H 10.0.0.4 -P 80 &")
+        time.sleep(3)
         h1 = hosts[0]
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.4 -P 80")
         self.assertTrue(re.search("OK",result) is  None, "Expecting a failed get")
@@ -89,6 +91,7 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         h9 = hosts[8]
         h9.cmdPrint("python ../util/tcp-server.py -H 203.0.113.13 -P 8000 &")
+        time.sleep(3)
         result = h1.cmdPrint("python ../util/tcp-client.py -H 203.0.113.13 -P 8000")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
@@ -271,6 +274,7 @@ def setupTopology(controller_addr):
  
     return net
 
+
 def fixupResolvConf():
     # prepending 10.0.0.5 -- we want to go through our name resolution
     found = False
@@ -288,7 +292,9 @@ def fixupResolvConf():
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
 	with open("/etc/resolv.conf","w") as f:
-	     f.write("nameserver 10.0.0.5\n" + original_data)
+	     f.write("nameserver 10.0.0.5\n")
+        with open("/etc/resolv.conf.save","w") as f :
+             f.write(original_data)
 
 def startTestServer(host):
     """
@@ -358,6 +364,9 @@ if __name__ == '__main__':
         print "response ", r
 
     net.pingAll(1)
+    h1.cmdPrint("nslookup www.nist.local")
+    h1.cmdPrint("nslookup www.antd.local")
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
     else:
