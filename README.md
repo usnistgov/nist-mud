@@ -126,7 +126,9 @@ Here are specific limitation:
 
 [https://github.com/elmiomar/OmniaTurrisSetup](How to set up OpenVSwitch on an OpenWRT based router.)
 
-[https://www.ofcourseimright.com/](Eliot Lear's blog)
+[https://www.ofcourseimright.com/](Eliot Lear's blog.)
+
+[mailto:mud-discuss@googlegroups.com](MUD-discuss mailing list.)
 
 
 ## Credits and Acknowledgements ##
