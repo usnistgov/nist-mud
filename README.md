@@ -28,7 +28,7 @@ using OpenDaylight as the SDN controller.
 
 ## Read a short paper about it ##
 
-[A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn-2019-r7.pdf)
+[A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn2019-r7.pdf)
 
 ## OpendDaylight Components ##
 
@@ -122,13 +122,13 @@ Here are specific limitation:
 ## Useful Links ##
 
 
-[https://www.mudmaker.org] (Mudmaker - make your mud files here!)
+[Mudmaker : Make your mud files here! https://www.mudmaker.org] (https://www.mudmaker.org)
 
-[https://github.com/elmiomar/OmniaTurrisSetup](How to set up OpenVSwitch on an OpenWRT based router.)
+[How to set up openVswitch on an openwrt router https://github.com/elmiomar/OmniaTurrisSetup](https://github.com/elmiomar/OmniaTurrisSetup)
 
-[https://www.ofcourseimright.com/](Eliot Lear's blog.)
+[Eliot Lear's Blog https://www.ofcourseimright.com/](https://www.ofcourseimright.com/)
 
-[mailto:mud-discuss@googlegroups.com](MUD-discuss mailing list.)
+[MUD discuss mailing list mud-discuss@googlegroups.com](mailto:mud-discuss@googlegroups.com)
 
 
 ## Credits and Acknowledgements ##
