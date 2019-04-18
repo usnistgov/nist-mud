@@ -24,6 +24,7 @@ import signal
 
 
 
+
 #########################################################
 
 global hosts
@@ -63,37 +64,24 @@ class TestAccess(unittest.TestCase) :
 
     def testContactLocalHostFromPrinterExpectFail(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 20 &")
-	time.sleep(3)
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 80  ")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        result = h1.cmdPrint("wget 10.0.0.3  --no-cache --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
 
     def testContactPrinterFromLocalHostExpectPass(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
-	time.sleep(3)
-        result = h3.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
 
     def testContactPrinterFromRouterHostExpectFail(self):
-        h1 = hosts[0]
-        h3 = hosts[2]
         h8 = hosts[7]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 80  -T 20&")
-	time.sleep(3)
-        result = h8.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 80  ")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        result = h8.cmdPrint("wget 10.0.0.1 --no-cache --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
 
     def testContactExternalHostFromPrinterExpectPass(self):
-        h9 = hosts[8]
-        h9.cmdPrint('python -m SimpleHTTPServer 800&')
-	time.sleep(3)
         h1 = hosts[0]
-        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after http://www.nist.local:800")
+        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after --tries 2 http://www.nist.local:800")
         print ("result " + str(result))
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
 
     def tearDown(self):
         time.sleep(5)
@@ -284,19 +272,19 @@ def fixupResolvConf():
 	content = f.readlines() 
         found = False
         for line in content:
-	    if line.find("10.0.0.5") != -1:
+	    if "10.0.0.5" in content:
 		found = True
 		break
 
-    print("10.0.0.5 not found in resolv.conf")
     if not found :
+        print("10.0.0.5 not found in resolv.conf")
         original_data = None
         with open("/etc/resolv.conf") as f :
 	    original_data = f.read()
 	with open("/etc/resolv.conf.save","w") as f:
 	     f.write(original_data)
 	with open("/etc/resolv.conf","w") as f:
-	     f.write("nameserver 10.0.0.5\n" + original_data)
+	     f.write("nameserver 10.0.0.5\n")
 
 def clean_mud_rules(controller_addr) :
     url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
@@ -355,6 +343,10 @@ if __name__ == '__main__':
     net.pingAll(1)
     h1.cmdPrint("nslookup www.nist.local")
     h1.cmdPrint("nslookup www.antd.local")
+    # Set up the servers.
+    h3.cmdPrint("python -m SimpleHTTPServer 80&")
+    h1.cmdPrint("python -m SimpleHTTPServer 80&")
+    h9.cmdPrint('python -m SimpleHTTPServer 800&')
 
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :

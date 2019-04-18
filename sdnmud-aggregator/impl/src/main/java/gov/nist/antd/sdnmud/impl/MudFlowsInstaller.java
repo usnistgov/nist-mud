@@ -684,11 +684,12 @@ public class MudFlowsInstaller {
 		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
 				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
 				+ destinationPort);
-		if (direction != null && direction.equals(Direction.ToDevice)) {
+		
+		/*if (direction != null && direction.equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
 			destinationPort = temp;
-		}
+		}*/
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
 				checkDirectionInitiated, flowCookie, flowId, node);
@@ -713,11 +714,12 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		Direction direction = getDirectionInitiated(matches);
 		boolean checkDirectionInitiated = directionCheck(direction, true);
+		/*
 		if (direction != null && direction.equals(Direction.ToDevice)) {
 			int temp = sourcePort;
 			sourcePort = destinationPort;
 			destinationPort = temp;
-		}
+		}*/
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, metadata, mask, protocol.shortValue(),
 				sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,

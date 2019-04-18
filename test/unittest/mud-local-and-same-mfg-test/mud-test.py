@@ -46,14 +46,11 @@ class TestAccess(unittest.TestCase) :
         rc = pieces[1].split(']')[0]
         return rc
 
-    def testTcpGetExpectPass(self):
+    def testTcpGetExpectFail(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
-        time.sleep(2)
         #result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+        self.assertTrue(re.search("OK",result) is None, "Expecting a failed successful get")
 
 
     def testUdpManufacturerPingExpectPass(self) :
@@ -87,18 +84,12 @@ class TestAccess(unittest.TestCase) :
 
     def testHttpGetExpectFail(self):
         h1 = hosts[0]
-        h9 = hosts[8]
-        h9.cmdPrint("python ../util/http-server.py -H 203.0.113.13 -P 443 &")
-        time.sleep(3)
         result = h1.cmdPrint("wget http://www.nist.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
 
     def testHttpGetExpectPass(self):
         h1 = hosts[0]
-        h10 = hosts[9]
-        h10.cmdPrint("python ../util/http-server.py -H 203.0.113.14 -P 443 &")
-        time.sleep(3)
         result = h1.cmdPrint("wget http://www.antd.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("OK",result) is  None, "Expecting a failed get")
 
@@ -262,15 +253,9 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h9.cmdPrint("python -m SimpleHTTPServer 80&")
-        h4.cmdPrint("python -m SimpleHTTPServer 80&")
-        #h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-        #h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-        #h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C&")
-    
-    # Start the IDS on node 8
-
+    h10.cmdPrint("python ../util/http-server.py -H 203.0.113.14 -P 443 &")
+    h9.cmdPrint("python ../util/http-server.py -H 203.0.113.13 -P 443 &")
+    h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
 
     net.waitConnected()
     print "*********** System ready *********"
