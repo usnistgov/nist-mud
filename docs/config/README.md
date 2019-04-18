@@ -129,7 +129,7 @@ to appear on those switches.
 The MUD specification describes different methods for associating devices with MUD profiles. 
 We support two such methods : 
 
-* DHCP Options 66 support. In this method, the device emits its own MUD URL. The DHCP (UDP) 
+* DHCP Options 161 support. In this method, the device emits its own MUD URL. The DHCP (UDP) 
 request is sent to the Controller, which then fetches the MUD profile. No configuration is 
 necessary for this to work. However, the Manufactuer web site must be up and running and the
 device must support issuing a MUR URL as part of the DHCP Request.
