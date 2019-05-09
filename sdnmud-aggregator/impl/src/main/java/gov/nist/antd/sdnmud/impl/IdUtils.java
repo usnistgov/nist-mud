@@ -173,4 +173,26 @@ public class IdUtils {
 		getModelId(mudUrl);
 	}
 
+	public static String getManufacturer(int srcManufacturerId) {
+
+		int index = srcManufacturerId;
+		if (index >= 0 && index < manufacturers.size()) {
+			return manufacturers.get(index);
+		} else {
+			LOG.info("manufacturers  = " + manufacturers + " mfgId " + srcManufacturerId);
+			return SdnMudConstants.UNCLASSIFIED;
+		}
+		
+	}
+
+	public static Uri getModel(int modelId) {
+		int index = modelId;
+		if (index >= 0 && index < models.size()) {
+			return new Uri (models.get(index));
+		} else {
+			LOG.info("Models = " + models + " modelId " + modelId);
+			return new Uri(SdnMudConstants.UNCLASSIFIED);
+		}
+	}
+
 }

@@ -53,39 +53,64 @@ module nist-mud-device-association {
 
   
   container mapping {
-
      description
          "Mapping between device ID and MUD URI.
           This can be posted from an external agent
           or the administrator interface.";
-
     uses device-mapping;
-
   }
+
+  container quarantene-devices {
+      description
+        "List of MAC addresses of devices under
+         quarantene";
+      leaf-list qurantene-macs {
+          type yang:mac-address;
+          description
+            "Mac address of device marked as quarantene";
+      }
+  }
+
+
 
   notification mapping-notification {
        description
-           "Publish that a MAC to MUD mapping was generated. 
-            This is for other services to be notified.";
-        leaf manufacturer-id {
-            description
-               "The global manufacturer ID";
-            type uint32;
-        }
-
-        leaf model-id {
-            description
-                "The global model ID";
-            type uint32;
-        }
-
+           "Publish that a MAC to MUD mapping was changed. 
+            This is for other services to be notified. A notification
+            is sent out when the mapping changes.";
         container mapping-info {
            description
               "The mapping for the device (MUD URI and MAC address) ";
-            uses device-mapping;
+            list mapping-info-list {
+                uses device-mapping;
+            }
         }
   }
 
-  
+  notification ace-violation-notification {
+       description
+        "Publish that a device violated its allowable behavior, 
+        The container puts out notifications that a violation has 
+        been observed. The policy application needs to set the state
+        take any necessary action to get the device out of quarantene.
+        It can do this by issuing an API request to the controller which
+        will then mark the device as being out of quarantene.";
+       container ace-violation-info {
+          description 
+                "The device identification for the misbehaving device";
+          leaf mac-address {
+             description
+               "The device MAC address";
+             type yang:mac-address;
+          }
+    
+          leaf mud-url {
+             description
+               "The MUD url for the device";
+             type inet:uri;
+          }
+           
+       }
+  }
 }
 

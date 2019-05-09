@@ -30,10 +30,5 @@
         <relaxed-acl>
                 true
         </relaxed-acl>
-        <!-- The port for mapping notifications - this is for IDS integration. Notification listeners
-             are informed of MAC addresses that do not have MUD profiles via TCP on this port. -->
-        <notification-port>
-                30001
-        </notification-port>
 </sdnmud-config>
 

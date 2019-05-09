@@ -28,12 +28,11 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Timer;
-import java.util.TimerTask;
 
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
+import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
 import org.opendaylight.controller.md.sal.binding.api.NotificationService;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
@@ -50,9 +49,12 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.controllerclass.mapping.Controller;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevices;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.OpendaylightInventoryListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.mud.file.cache.rev170915.MudCache;
@@ -117,6 +119,8 @@ public class SdnmudProvider {
 	private DOMDataBroker domDataBroker;
 
 	private SchemaService schemaService;
+	
+	private OpendaylightFlowStatisticsService flowStatisticsService;
 
 	private BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer;
 
@@ -159,10 +163,17 @@ public class SdnmudProvider {
 	private HashMap<String,ControllerclassMapping> controllerClassMaps = new HashMap<String,ControllerclassMapping>();
 
 	private NameResolutionCache nameResolutionCache;
+	
+	private NotificationPublishService notificationPublishService;
+
+	private QuaranteneDevicesListener quaranteneDevicesListener;
+
+	private ListenerRegistration<QuaranteneDevicesListener> quaranteneDevicesListenerRegistration;
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
+			OpendaylightFlowStatisticsService flowStatisticsService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
-			DOMDataBroker domDataBroker, SchemaService schemaService,
+			DOMDataBroker domDataBroker, SchemaService schemaService, NotificationPublishService notificationPublishService,
 			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer, RpcProviderRegistry rpcProviderRegistry) {
 
 		LOG.info("SdnMudProvider: SdnMudProvider - init");
@@ -170,13 +181,15 @@ public class SdnmudProvider {
 		// this.flowService = flowService;
 		this.packetProcessingService = packetProcessingService;
 		this.notificationService = notificationService;
+		this.notificationPublishService = notificationPublishService;
 		this.domDataBroker = domDataBroker;
 		this.schemaService = schemaService;
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
 		this.rpcProviderRegistry = rpcProviderRegistry;
 		this.flowService = flowService;
-		LOG.info("SdnMudProvider : sdnmudConfig = " + sdnmudConfig);
+		this.flowStatisticsService = flowStatisticsService;
 		this.sdnmudConfig = sdnmudConfig;
+		
 		if (sdnmudConfig.getDropRuleTable() < sdnmudConfig.getTableStart() + 4) {
 			LOG.error("Drop rule table is incorrectly specified");
 			throw new RuntimeException("Error in config file -- please check defaults. Drop rule table is too small.");
@@ -210,6 +223,10 @@ public class SdnmudProvider {
 	private static InstanceIdentifier<MudCache> getMudCacheWildCardPath() {
 		return InstanceIdentifier.create(MudCache.class);
 	}
+	
+	private static InstanceIdentifier<QuaranteneDevices> getQuaranteneDevicesWildCardPath() {
+		return InstanceIdentifier.create(QuaranteneDevices.class);
+	}
 
 	/**
 	 * Method called when the blueprint container is created.
@@ -222,7 +239,6 @@ public class SdnmudProvider {
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
 		this.datastoreUpdater = new DatastoreUpdater(this);
 		this.nameResolutionCache = new NameResolutionCache();
-
 		/* Register listener for configuration state change */
 		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
 		final DataTreeIdentifier<SdnmudConfig> configId = new DataTreeIdentifier<SdnmudConfig>(
@@ -243,7 +259,7 @@ public class SdnmudProvider {
 				aclWildCardPath);
 		this.aclDataStoreListener = new AclDataStoreListener(dataBroker, this);
 		this.aclRegistration = this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
-		
+				
 		/*
 		 * Instance of mud file fetcher. Should be set before mapping datastore registration.
 		 */
@@ -268,6 +284,11 @@ public class SdnmudProvider {
 		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
 		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
 
+		final InstanceIdentifier<QuaranteneDevices> quaranteneDevicesWildCardPath = getQuaranteneDevicesWildCardPath();
+		final DataTreeIdentifier<QuaranteneDevices> quaranteneDevicesId  = new DataTreeIdentifier<QuaranteneDevices>(LogicalDatastoreType.CONFIGURATION,
+				quaranteneDevicesWildCardPath);
+		this.quaranteneDevicesListener = new QuaranteneDevicesListener(this);
+		this.quaranteneDevicesListenerRegistration = this.dataBroker.registerDataTreeChangeListener(quaranteneDevicesId, quaranteneDevicesListener);
 	
 
 		/* Listener for flow miss packets sent to the controller */
@@ -341,6 +362,7 @@ public class SdnmudProvider {
 		this.stateChangeScanner.cancel();
 		this.sdnmudServiceRegistration.close();
 		this.mudProfileRegistration.close();
+		this.quaranteneDevicesListenerRegistration.close();
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -363,6 +385,10 @@ public class SdnmudProvider {
 	 */
 	public AclDataStoreListener getAclDataStoreListener() {
 		return aclDataStoreListener;
+	}
+	
+	public QuaranteneDevicesListener getQuaranteneDevicesListener() {
+		return this.quaranteneDevicesListener;
 	}
 
 	public ControllerclassMappingDataStoreListener getControllerclassMappingDataStoreListener() {
@@ -688,6 +714,14 @@ public class SdnmudProvider {
 	
 	public NameResolutionCache getNameResolutionCache() {
 		return this.nameResolutionCache;
+	}
+	
+	public NotificationPublishService getNotificationPublishService() {
+		return this.notificationPublishService;
+	}
+	
+	public OpendaylightFlowStatisticsService getFlowStatisticsService() {
+		return this.flowStatisticsService;
 	}
 
 }

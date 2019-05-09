@@ -6,6 +6,9 @@ module sdnmud {
   import ietf-inet-types {
     prefix inet;
   }
+  import ietf-yang-types {
+    prefix yang;
+  }
   
   organization
     "NIST Advanced Networking Technologies Division.";
@@ -22,6 +25,7 @@ module sdnmud {
       "Implementation YANG model for system configuration. This provides various parameter 
        settings for the application.";
   }
+
 
 
   container sdnmud-config {
@@ -85,25 +89,9 @@ module sdnmud {
                for continued operation when controller is not connected. Warn operator if ACL violated.";
       }
 
-      leaf notification-port {
-             type    uint32;
-             default "30001";
-             description
-                    "The port through which state change notification (i.e. unsecured MAC address notifications) are sent out.
-                     clients connect here and get notified of vulnerable MAC addresses.";
-      }
 
   }
 
-  rpc get-notification-port {
-     output {
-         leaf notification-port {
-            description
-                "Return the notification port where external clients can listen for notification of vulnerable addresses (IDS support)";
-            type uint32;
-         }
-    }
-  }
 
   rpc clear-packet-count {
     output {
@@ -167,5 +155,303 @@ module sdnmud {
         }
     }
   }
+
+
+
+
+    rpc unquarantine {
+      input {
+         leaf device-mac-address {
+                description 
+                    "Remove the device from quarantine. Qurarantine state is persistent.";
+                type yang:mac-address;
+          }
+        }
+        output {
+           leaf success {
+                description 
+                    " The device was found in the quarantene database and removed ";
+                type boolean;
+          }
+       }
+    }
+
+    rpc get-quarantine-macs {
+        description
+            "get the list of mac addresses that are quarantined";
+        output {
+           leaf-list mac-addresses {
+              description
+                "The list of mac address that are quarantined";
+                type yang:mac-address;
+            }
+        }
+    }
+
+  rpc get-mud-metadata-mapping {
+    input {
+        leaf metadata-and-mask {
+            description 
+                "The HEX metadata and mask to resolve (use slash as separator use 0x to indicate hex).
+                 Just dump the flow rules in ovs and supply the metaata as a parameter. This is for debugging.";
+            type string;
+            mandatory true;
+        }
+    }
+
+    output {
+            leaf masked-metadata {
+               description 
+                "The HEX masked metdata";
+                type string;
+            }
+            leaf src-manufacturer {
+                description
+                        "Src Manufacturer url";
+                type string;
+            }
+            leaf src-model {
+                description
+                       "Src Model";
+                type inet:uri;
+            }
+            leaf src-local-networks-flag {
+                type boolean;
+                description 
+                     "Local networks flag";
+            }
+            leaf src-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+            leaf dst-model {
+                description
+                       "Dst Model";
+                type inet:uri;
+            }
+            leaf dst-manufacturer {
+                description 
+                       "Dst Manufacturer";
+                type string;
+            }
+            leaf dst-local-networks-flag {
+                description 
+                     "Local networks flag";
+                type boolean;
+            }
+            leaf dst-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+
+    }
+
+  }
+
+rpc get-src-mac-classification {
+    description
+        "Get the classification label for src mac";
+
+    input {
+        leaf mac-address {
+           description 
+               "Src Mac address";
+           type yang:mac-address;
+        }
+    }
+
+    output {
+
+            leaf metadata {
+               description
+                    "The metadata as a hex string";
+                type string;
+            }
+
+            leaf src-manufacturer {
+                description
+                        "Src Manufacturer url";
+                type string;
+            }
+            leaf src-model {
+                description
+                       "Src Model";
+                type inet:uri;
+            }
+            leaf src-local-networks-flag {
+                type boolean;
+                description 
+                     "Local networks flag";
+            }
+            leaf src-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+
+    }
+
+}
+
+rpc get-dst-mac-classification {
+    description
+        "Get the classification label for src mac";
+
+    input {
+        leaf mac-address {
+           description 
+               "Src Mac address";
+           type yang:mac-address;
+        }
+    }
+
+    output {
+            leaf metadata {
+               description
+                    "The metadata as a hex string";
+                type string;
+            }
+
+            leaf dst-manufacturer {
+                description
+                        "Src Manufacturer url";
+                type string;
+            }
+            leaf dst-model {
+                description
+                       "Src Model";
+                type inet:uri;
+            }
+            leaf dst-local-networks-flag {
+                type boolean;
+                description 
+                     "Local networks flag";
+            }
+            leaf dst-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+
+    }
+
+}
+
+
+
+  rpc get-flow-rules {
+     description
+        "Get the MUD flow rules from the given switch ID for to the 
+         given MUD URL";
+     input {
+         
+          leaf mud-url {
+             description 
+                "The MUD URL of interest";
+             type inet:uri;
+           }
+
+           leaf switch-id {
+              description
+                    "The Switch ID eg. openflow:123";
+              type inet:uri;
+           }
+       }
+
+       output {
+
+          list flow-rule {
+            description
+                "Human readable flow rules";
+            leaf masked-metadata-match {
+               description 
+                "The raw HEX masked metdata to match on";
+                type string;
+            }
+
+            leaf src-manufacturer {
+                description
+                       "Src Manufacturer url";
+                type string;
+            }
+            leaf src-model {
+                description
+                       "Src Model";
+                type inet:uri;
+            }
+            leaf dst-model {
+                description
+                       "Dst Model";
+                type inet:uri;
+            }
+            leaf dst-manufacturer {
+                description 
+                       "Dst Manufacturer";
+                type string;
+            }
+            leaf src-local-networks-flag {
+                type boolean;
+                description 
+                     "Local networks flag";
+            }
+            leaf dst-local-networks-flag {
+                description 
+                     "Local networks flag";
+                type boolean;
+            }
+            leaf src-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+            leaf dst-quarantine-flag {
+                description 
+                     "Qurarantene flag networks match";
+                type boolean;
+            }
+
+            leaf priority {
+                description 
+                    "Priority";
+                type uint32;
+            }
+
+            leaf flow-id {
+                description 
+                    "Priority";
+                type string;
+            }
+    
+            leaf table-id {
+                description
+                    "The table ID";
+                type uint32;
+            }
+
+            leaf flow-rule {
+                description
+                    "The formated flow rule";
+                type string;
+    
+            }
+
+            leaf packet-count {
+                description
+                    "The packet count";
+                type uint64;
+
+            }
+
+            leaf byte-count {
+                description
+                    "The byte count";
+                type uint64;
+            }
+
+         }
+       }
+   }
 
 }

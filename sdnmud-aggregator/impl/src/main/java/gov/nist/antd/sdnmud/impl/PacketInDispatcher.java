@@ -37,15 +37,16 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -53,13 +54,19 @@ import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
-import org.opendaylight.controller.md.sal.dom.api.DOMDataBroker;
-import org.opendaylight.controller.sal.core.api.model.SchemaService;
 import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.AceViolationNotificationBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotificationBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevices;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevicesBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.ace.violation.notification.AceViolationInfoBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.MappingInfoBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.mapping.info.MappingInfoList;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.mapping.info.MappingInfoListBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.OutputActionCaseBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.action.output.action._case.OutputActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.Action;
@@ -78,10 +85,7 @@ import org.slf4j.LoggerFactory;
 
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpRequestPacket;
-
 import gov.nist.antd.sdnmud.impl.dns.ARecord;
-import gov.nist.antd.sdnmud.impl.dns.DNSInput;
-import gov.nist.antd.sdnmud.impl.dns.Header;
 import gov.nist.antd.sdnmud.impl.dns.Message;
 import gov.nist.antd.sdnmud.impl.dns.Record;
 import gov.nist.antd.sdnmud.impl.dns.Section;
@@ -98,10 +102,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private SdnmudProvider sdnmudProvider;
 
-	private SchemaService schemaService;
-
-	private DOMDataBroker domDataBroker;
-
 	private static final Logger LOG = LoggerFactory.getLogger(PacketInDispatcher.class);
 
 	private int mudRelatedPacketInCounter = 0;
@@ -110,14 +110,20 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	// Set of MAC addresses that are unclassified or for which no MUD uri has been
 	// assigned.
-	private HashSet<String> unclassifiedMacAddresses = new HashSet<String>();
+	private HashSet<MacAddress> unclassifiedMacAddresses = new HashSet<MacAddress>();
 
+	private HashMap<String,BigInteger> srcMetadataMap = new HashMap<String,BigInteger>();
+	
 	// Set of Mac addresses for which a source mac classification rule exists
-	private HashSet<String> srcMacRuleTable = new HashSet<String>();
+	private HashMap<String,BigInteger> srcMacRuleTable = new HashMap<String,BigInteger>();
+	
+	private HashMap<String,BigInteger> dstMetadataMap = new HashMap<String,BigInteger>();
 	// Set of mac addresses for which a dst mac classification rule exists
-	private HashSet<String> dstMacRuleTable = new HashSet<String>();
+	private HashMap<String,BigInteger> dstMacRuleTable = new HashMap<String,BigInteger>();
 	// Flow rules in the first two tables -- these can be cleared via an API
 	private HashSet<Flow> flowTable = new HashSet<Flow>();
+	// The set of mac addresses that were seen when a packet was dropped.
+	private HashSet<MacAddress> dropRuleTable = new HashSet<MacAddress>();
 
 	private Timer timer = new Timer();
 
@@ -128,21 +134,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private boolean isClosed;
 
 	private boolean isBlocked;
-
-	private Thread notifier;
-
-	private class UnclassifiedMacAddressTimerTask extends TimerTask {
-		String unclassifiedMacAddress;
-
-		public UnclassifiedMacAddressTimerTask(String macAddress) {
-			this.unclassifiedMacAddress = macAddress;
-		}
-
-		@Override
-		public void run() {
-			unclassifiedMacAddresses.remove(unclassifiedMacAddress);
-		}
-	}
 
 	private class SrcMacAddressTimerTask extends TimerTask {
 
@@ -174,17 +165,21 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 
-	public void close() {
-		try {
-			this.listenerSock.close();
-			for (Socket s : this.listeners) {
-				s.close();
-			}
-			this.isClosed = true;
-		} catch (IOException e) {
-			LOG.error("Error closing socket");
+	private class DropRuleTableTimerTask extends TimerTask {
+		private MacAddress macAddress;
+
+		public DropRuleTableTimerTask(MacAddress macAddress) {
+			this.macAddress = macAddress;
 		}
 
+		public void run() {
+			dropRuleTable.remove(macAddress);
+		}
+	}
+
+	public void close() {
+		this.timer.cancel();
+		this.isClosed = true;
 	}
 
 	public void block() {
@@ -195,46 +190,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.isBlocked = false;
 	}
 
-	private class UnclassifiedMacAddressNotificationServer implements Runnable {
-
-		private UnclassifiedMacAddressNotificationServer(int port) {
-			try {
-				listenerSock = new ServerSocket(port);
-			} catch (IOException e) {
-				LOG.error("Cannot open server socket ", e);
-			}
-		}
-
-		public void run() {
-			try {
-				while (true) {
-					Socket clientSock = listenerSock.accept();
-					listeners.add(clientSock);
-				}
-			} catch (IOException ex) {
-				LOG.error("Cannot open server socket -- exiting thread.", ex);
-				return;
-			}
-		}
-
-	}
-
-	public void startNotificationThread() {
-		int notificationPort = sdnmudProvider.getSdnmudConfig().getNotificationPort().intValue();
-		LOG.info("start thread on notification port " + notificationPort);
-		this.notifier = new Thread(new UnclassifiedMacAddressNotificationServer(notificationPort));
-		notifier.setDaemon(true);
-		notifier.start();
-	}
-
 	public PacketInDispatcher(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
-		this.domDataBroker = sdnmudProvider.getDomDataBroker();
-		this.schemaService = sdnmudProvider.getSchemaService();
-		this.startNotificationThread();
 	}
 
-	public Collection<String> getUnclassifiedMacAddresses() {
+	public Collection<MacAddress> getUnclassifiedMacAddresses() {
 		return this.unclassifiedMacAddresses;
 	}
 
@@ -271,60 +231,88 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return mac;
 	}
 
+	/*
+	 * Generate and send a notification on the internal bus. This can be used for
+	 * service composition - e.g. service that is interested in knowing how
+	 * addresses are mapped by the controller.
+	 */
 	private void broadcastStateChange() {
-		ArrayList<Socket> deadSockets = new ArrayList<Socket>();
-		for (Socket s : listeners) {
-			try {
-				PrintWriter pw = new PrintWriter(s.getOutputStream());
-				for (String macAddr : this.unclassifiedMacAddresses) {
-					pw.println(macAddr);
+		LOG.debug("Broadcast state change");
+		MappingNotificationBuilder mappingNotificationBuilder = new MappingNotificationBuilder();
+		MappingInfoBuilder mappingInfoBuilder = new MappingInfoBuilder();
+		MappingInfoListBuilder mappingInfoListBuilder = new MappingInfoListBuilder();
+		Map<Uri, HashSet<MacAddress>> map = this.sdnmudProvider.getMappingDataStoreListener().getMapping();
+		ArrayList<MappingInfoList> mappingInfoArrayList = new ArrayList<MappingInfoList>();
+		for (Uri uri : map.keySet()) {
+			mappingInfoListBuilder.setMudUrl(uri);
+			List<MacAddress> macAddressList = new ArrayList<MacAddress>();
+			Collection<MacAddress> mappedAddresses = map.get(uri);
+			for (MacAddress macAddr : mappedAddresses) {
+				if (srcMacRuleTable.containsKey(macAddr.getValue()) || dstMacRuleTable.containsKey(macAddr.getValue())) {
+					macAddressList.add(macAddr);
 				}
-			} catch (IOException e) {
-				try {
-					deadSockets.add(s);
-					s.close();
-				} catch (IOException e1) {
-					LOG.error("Error writing to listener socket -- closing", e1);
-				}
+			}
+			if (!macAddressList.isEmpty()) {
+				mappingInfoListBuilder.setDeviceId(macAddressList);
+				mappingInfoListBuilder.setMudUrl(uri);
+				mappingInfoArrayList.add(mappingInfoListBuilder.build());
 			}
 		}
 
-		// Remove the dead sockets from our list of listeners.
-		for (Socket d : deadSockets) {
-			this.listeners.remove(d);
+		if (!this.unclassifiedMacAddresses.isEmpty()) {
+			List<MacAddress> macAddressList = new ArrayList<MacAddress>();
+			mappingInfoListBuilder.setMudUrl(new Uri(SdnMudConstants.UNCLASSIFIED));
+			for (MacAddress macAddress : this.unclassifiedMacAddresses) {
+				macAddressList.add(macAddress);
+			}
+			mappingInfoListBuilder.setDeviceId(macAddressList);
+			mappingInfoArrayList.add(mappingInfoListBuilder.build());
+			mappingInfoBuilder.setMappingInfoList(mappingInfoArrayList);
+			mappingNotificationBuilder.setMappingInfo(mappingInfoBuilder.build());
 		}
+
+		sdnmudProvider.getNotificationPublishService().offerNotification(mappingNotificationBuilder.build());
 	}
 
-	private void addUclassifiedAddresses(String addr) {
-		if (!this.unclassifiedMacAddresses.contains(addr)) {
-			LOG.debug("addUnclassifiedAddress : " + addr);
-			this.unclassifiedMacAddresses.add(addr);
-			// Clears out the table in the timeout time.
-			timer.schedule(new UnclassifiedMacAddressTimerTask(addr),
-					2 * sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() * 1000);
+	/**
+	 * Broadcast an ACE violation on the local bus. Save the MAC in our qurarantene
+	 * database.
+	 * 
+	 * @param srcMac -- the violator
+	 * @param mudUri -- the MUD URL of the violator.
+	 */
+	private void broadcastAceViolation(MacAddress srcMac, Uri mudUri) {
+		AceViolationNotificationBuilder aceViolationNotificationBulder = new AceViolationNotificationBuilder();
+		AceViolationInfoBuilder aceViolationInfoBuilder = new AceViolationInfoBuilder();
+		aceViolationInfoBuilder.setMacAddress(srcMac);
+		aceViolationInfoBuilder.setMudUrl(mudUri);
+		aceViolationNotificationBulder.setAceViolationInfo(aceViolationInfoBuilder.build());
+		sdnmudProvider.getNotificationPublishService().offerNotification(aceViolationNotificationBulder.build());
+		// Put the device into our quarantene database.
+		QuaranteneDevices qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
+		if (qd != null) {
+			List<MacAddress> quranteneMacs = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices()
+					.getQuranteneMacs();
+			if (!quranteneMacs.contains(srcMac)) {
+				quranteneMacs.add(srcMac);
+				InstanceIdentifier<QuaranteneDevices> qId = InstanceIdentifier.builder(QuaranteneDevices.class).build();
+				ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
 
-			this.broadcastStateChange();
-		}
-	}
-
-	private void classifyAddress(MacAddress macAddress, boolean hasMudProfile, boolean isLocalAddress) {
-		if (isLocalAddress || !hasMudProfile) {
-			if (!this.isMacAddressExcluded(macAddress.getValue())) {
-				this.addUclassifiedAddresses(macAddress.getValue());
-			} else {
-				this.removeUnclassifiedAddress(macAddress.getValue());
+				tx.merge(LogicalDatastoreType.CONFIGURATION, qId, qd);
+				tx.submit();
 			}
 		} else {
-			this.removeUnclassifiedAddress(macAddress.getValue());
+			QuaranteneDevicesBuilder qb = new QuaranteneDevicesBuilder();
+			ArrayList<MacAddress> macs = new ArrayList<MacAddress>();
+			macs.add(srcMac);
+			qb.setQuranteneMacs(macs);
+			InstanceIdentifier<QuaranteneDevices> qId = InstanceIdentifier.builder(QuaranteneDevices.class).build();
+			ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+			tx.merge(LogicalDatastoreType.CONFIGURATION, qId, qb.build());
+			tx.submit();
 		}
-	}
+		clearMfgModelRules();
 
-	private void removeUnclassifiedAddress(String addr) {
-		if (this.unclassifiedMacAddresses.contains(addr)) {
-			LOG.debug("removeUnclassifiedAddress : " + addr);
-			this.unclassifiedMacAddresses.remove(addr);
-			this.broadcastStateChange();
-		}
 	}
 
 	private void transmitPacket(PacketReceived notification) {
@@ -347,12 +335,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		tpib.setAction(actionList);
 
 		this.sdnmudProvider.getPacketProcessingService().transmitPacket(tpib.build());
-	}
-
-	private boolean isMacAddressExcluded(String macAddress) {
-		// TODO -- this should return TRUE if the host is a network service.
-		// This is for IDS support TBD.
-		return false;
 	}
 
 	private boolean isLocalAddress(String nodeId, String ipAddress) {
@@ -385,25 +367,34 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return isLocalAddress;
 	}
 
+	private boolean isQuarantene(MacAddress macAddress) {
+		if (this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices() == null) {
+			return false;
+		} else {
+			return this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices().getQuranteneMacs()
+					.contains(macAddress);
+		}
+	}
+
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
-			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
+			boolean isQurantened, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 		String manufacturer = IdUtils.getAuthority(mudUri);
 		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
 		int modelId = IdUtils.getModelId(mudUri);
-		int flag = 0;
-		if (isLocalAddress) {
-			flag = 1;
-		}
+		int localAddressFlag = isLocalAddress ? 1 : 0;
+
+		int quaranteneFlag = isQurantened ? 1 : 0;
 
 		LOG.debug("installStampSrcManufacturerModelFlowRules : dstMac = " + srcMac.getValue() + " isLocalAddress "
-				+ isLocalAddress + " mudUri " + mudUri);
+				+ "isQuarantine " + isQurantened + isLocalAddress + " mudUri " + mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(localAddressFlag).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(quaranteneFlag).shiftLeft(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
 
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK)
-				.or(SdnMudConstants.SRC_NETWORK_MASK);
+				.or(SdnMudConstants.SRC_NETWORK_MASK).or(SdnMudConstants.SRC_QUARANTENE_MASK);
 
 		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
@@ -418,32 +409,34 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				sdnmudProvider.getSrcDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
-		this.srcMacRuleTable.add(srcMac.getValue());
+		this.srcMetadataMap.put(srcMac.getValue(), metadata);
+		this.srcMacRuleTable.put(srcMac.getValue(),metadata);
 		timer.schedule(new SrcMacAddressTimerTask(srcMac),
 				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2 * 1000);
+		// Classification state has changed -- broadcast it.
+		this.broadcastStateChange();
 
 	}
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
-			String mudUri, InstanceIdentifier<FlowCapableNode> node) {
+			boolean isQurarantened, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 
 		String manufacturer = IdUtils.getAuthority(mudUri);
 		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
 		int modelId = IdUtils.getModelId(mudUri);
-		int flag = 0;
-		if (isLocalAddress) {
-			flag = 1;
-		}
+		int isLocalAddressFlag = isLocalAddress ? 1 : 0;
+		int isQurantenedFlag = isQurarantened ? 1 : 0;
 
 		LOG.debug("installStampDstManufacturerModelFlowRules : dstMac = " + dstMac.getValue() + " isLocalAddress "
-				+ isLocalAddress + " mudUri " + mudUri);
+				+ isLocalAddress + " isQuarantened " + isQurarantened + " mudUri " + mudUri);
 
 		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(flag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(isQurantenedFlag).shiftLeft(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(isLocalAddressFlag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
-				.or(SdnMudConstants.DST_NETWORK_MASK);
+				.or(SdnMudConstants.DST_NETWORK_MASK).or(SdnMudConstants.DST_QURANTENE_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
 		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
@@ -453,14 +446,15 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		Flow flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,
 				sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
-		this.dstMacRuleTable.add(dstMac.getValue());
+		this.dstMetadataMap.put(dstMac.getValue(), metadata);
+		this.dstMacRuleTable.put(dstMac.getValue(),metadata);
 		// Supress further notification processing for CacheTimeout/2 seconds (keeps the
-		// switch from flooding
-		// the controller)
+		// switch from flooding the controller)
 		this.timer.schedule(new DstMacAddressTimerTask(dstMac),
 				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2 * 1000);
 
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
+		this.broadcastStateChange();
 	}
 
 	/**
@@ -555,50 +549,56 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (tableId == sdnmudProvider.getSrcDeviceManufacturerStampTable()) {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
-				if (srcMacRuleTable.contains(srcMac.getValue())) {
+				if (srcMacRuleTable.containsKey(srcMac.getValue())) {
 					// Rule is in cache so we dont bother
 					LOG.info("already installed -- returning");
 					return;
 				}
+
+				boolean isQuarantened = this.isQuarantene(srcMac);
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, srcIp);
 
-				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, mudUri.getValue(), node);
+				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, isQuarantened,
+						mudUri.getValue(), node);
 
-				// TODO -- IDS support.
+				if (isLocalAddress) {
+					this.unclassifiedMacAddresses.add(dstMac);
+				}
 
-				// this.classifyAddress(srcMac, hasMudProfile, isLocalAddress);
-				if (this.dstMacRuleTable.contains(dstMac.getValue())) {
+				if (this.dstMacRuleTable.containsKey(dstMac.getValue())) {
 					LOG.info("dst mac rule already installed in table 1");
 					return;
 				}
+				// Broadcast notification for mappings.
 				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 
 				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
 
-				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
+				if (isLocalAddress) {
+					this.unclassifiedMacAddresses.add(dstMac);
+				}
 
-				// TODO -- IDS support.
-				// boolean hasMudProfile = this.sdnmudProvider.hasMudProfile(mudUri.getValue());
-				// this.classifyAddress(dstMac,
-				// this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
+				isQuarantened = this.isQuarantene(dstMac);
+				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQuarantened,
+						mudUri.getValue(), node);
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
 				this.mudRelatedPacketInCounter++;
 				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
 				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 						&& this.isLocalAddress(nodeId, dstIp);
-				if (this.dstMacRuleTable.contains(dstMac.getValue())) {
+				if (this.dstMacRuleTable.containsKey(dstMac.getValue())) {
 					LOG.info("already installed in table 1");
 					return;
 				}
-				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, mudUri.getValue(), node);
-				// TODO -- IDS support.
-				// this.classifyAddress(dstMac,
-				// this.sdnmudProvider.hasMudProfile(mudUri.getValue()), isLocalAddress);
+				boolean isQurarantene = this.isQuarantene(dstMac);
+				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurarantene,
+						mudUri.getValue(), node);
+				// Broadcast notifications for mappings seen at the switch.
 
 			} else if (tableId == sdnmudProvider.getSdnmudRulesTable()) {
 				this.mudRelatedPacketInCounter++;
@@ -649,7 +649,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								// Add it to the resolution cache of the MudFlows installer
 								LOG.info("Name " + record.getName());
 								LOG.info("Address " + inetAddress.getHostAddress());
-								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,record.getName().toString(true), inetAddress.getHostAddress());
+								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,
+										record.getName().toString(true), inetAddress.getHostAddress());
 								sdnmudProvider.getMudFlowsInstaller().fixupNameResolution(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
 							}
@@ -658,11 +659,37 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.error("Could not resolve the DNS answer ", e);
 					}
 
+				} else if (cookie.equals(SdnMudConstants.DROP_FLOW_COOKIE)) {
+					LOG.info("Saw an ACL violation - device is misbehaving.");
+					// TBD -- generate event and send to update service.
+					if (dropRuleTable.contains(srcMac)) {
+						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
+						return;
+					}
+					this.dropRuleTable.add(srcMac);
+					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+					// Now override the flow so we don't keep getting notifications
+					sdnmudProvider.getMudFlowsInstaller()
+							.installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
+					// broadcast the ACE violation so that the listener knows to get and install new
+					// firmware.
+					this.broadcastAceViolation(srcMac, mudUri);
+					// Start a timer so we will be interrupted again after this period of time.
+					// We don't want to keep getting interrupted
+					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
 				}
 
 			}
 
 		}
+	}
+	
+	public BigInteger getSrcMetadata(String macAddress) {
+		return this.srcMetadataMap.get(macAddress);
+	}
+	
+	public BigInteger getDstMetadata(String macAddress) {
+		return this.dstMetadataMap.get(macAddress);
 	}
 
 }

@@ -106,18 +106,6 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 					this.uriToMacs.put(uri, macs);
 				}
 
-				/*
-				for (InstanceIdentifier<FlowCapableNode> node : sdnmudProvider.getNodes()) {
-					if (sdnmudProvider.isCpeNode(IdUtils.getNodeUri(node))) {
-						String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
-						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
-								sdnmudProvider.getDstDeviceManufacturerStampTable(), null, mac);
-						flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX;
-						sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, flowIdStr,
-								sdnmudProvider.getSrcDeviceManufacturerStampTable(), mac, null);
-					}
-				}*/
-
 				macs.add(mac);
 			}
 
@@ -138,6 +126,11 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	public void clearState() {
 		this.macToUri.clear();
 		this.uriToMacs.clear();
+	}
+
+	public Map<Uri,HashSet<MacAddress>> getMapping() {
+		return this.uriToMacs;
+		
 	}
 
 }

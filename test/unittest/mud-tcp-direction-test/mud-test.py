@@ -383,6 +383,10 @@ if __name__ == '__main__':
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
     
+    cmd = ['sudo','pkill','dnsmasq']
+    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc.wait()
+
     # Pkill dnsmasq. We will start one up later on h3
     if os.path.exists("/tmp/dnsmasq.pid"):
     	f = open('/tmp/dnsmasq.pid')

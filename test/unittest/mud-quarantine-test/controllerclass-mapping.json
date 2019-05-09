@@ -1,0 +1,22 @@
+{
+"controllerclass-mapping" :  {
+    "switch-id" : "openflow:1",
+    "controller" : [
+    	{
+         	"uri" :  "urn:ietf:params:mud:dns",
+         	"address-list" : [ "10.0.0.5" ]
+     	},
+    	{
+         	"uri" :  "urn:ietf:params:mud:ntp",
+         	"address-list" : [ "10.0.0.4" ]
+     	},
+    	{
+         	"uri" :  "urn:ietf:params:mud:dhcp",
+         	"address-list" : [ "10.0.0.6" ]
+     	}
+   ],
+   "local-networks": [ "10.0.0.0/24" ],
+   "local-networks-excluded-hosts" : ["10.0.0.8"],
+   "wireless":false
+ }
+}

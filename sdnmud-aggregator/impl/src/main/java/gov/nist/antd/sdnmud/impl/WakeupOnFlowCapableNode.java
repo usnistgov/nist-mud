@@ -274,6 +274,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.getMudFlowsInstaller().removeDnsMatch(nodePath);
 		// Remove the cache entry from namelookup cache
 		this.sdnmudProvider.getNameResolutionCache().removeCacheLookup(nodePath);
+		// Remove the installed flows from the cache.
+		this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(nodePath);
 	}
 
 }

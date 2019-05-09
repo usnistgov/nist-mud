@@ -1,6 +1,6 @@
 
-mkdir -p ../../sdnmud-aggregator/karaf/target/assembly/etc/mudprofiles/
 target=../../sdnmud-aggregator/karaf/target/assembly/etc/mudprofiles
+mkdir -p $target
 rm  $target/*
 cp mud-local-and-same-mfg-test/mudfile-local-and-same-mfg-test.json  $target
 cp mud-local-and-same-mfg-test1/mudfile-local-and-same-mfg-test1.json  $target
@@ -12,3 +12,4 @@ cp mud-model-test/mudfile-model-test.json $target
 cp mud-same-mfg-scale-test/mudfile-same-mfg-scale-test.json $target
 cp mud-controllerclass-test/mudfile-controllerclass-test.json $target
 cp mud-dns-test/mudfile-dns-test.json $target
+cp mud-quarantine-test/mudfile-quarantine-test.json $target

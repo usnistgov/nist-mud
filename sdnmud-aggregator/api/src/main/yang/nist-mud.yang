@@ -1,0 +1,57 @@
+module nist-mud {
+  yang-version 1.1;
+  namespace "urn:ietf:params:xml:ns:yang:nist-mud";
+  prefix nist-mud;
+
+  import ietf-mud {
+    prefix ietf-mud;
+  }
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+
+  import ietf-access-control-list {
+    prefix acl;
+  }
+
+  organization
+    "NIST";
+  contact
+    "mranga@nist.gov";
+
+  description
+      "Experimental MUD extensions for device quarantine. This is based on the following
+       https://tools.ietf.org/html/draft-richardson-shg-mud-quarantined-access-00
+       ";
+
+  revision 2019-04-28 {
+    description
+      "Softer handling of MUD ACEs";
+  }
+
+
+
+
+  augment "/ietf-mud:mud" {
+    description
+      "Adds leaf nodes appropriate MUD usage in the
+       Secure Home Gateway";
+
+    container quarantined-device-policy {
+      description
+        " List of strings that identify the device ACEs 
+          that should NOT be disabled when the device is under
+          quarantene. A quarantene is signalled when the device
+          voiolates its MUD policy file.
+         ";
+         list enabled-ace-names {
+          leaf ace-name {
+             type leafref {
+                 path "/acl:acls/acl:acl/acl:aces/acl:ace/acl:name";
+             }
+           }
+       }
+    }
+  }
+}

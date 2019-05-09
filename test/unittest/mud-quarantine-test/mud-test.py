@@ -20,6 +20,9 @@ from mininet.log import setLogLevel
 import unittest
 import re
 import os
+import signal
+
+
 
 
 #########################################################
@@ -33,8 +36,30 @@ class TestAccess(unittest.TestCase) :
     def setUp(self):
         pass
 
+    def unquarantene(self):
+         global controller_addr
+         try:
+            innerMap = {}
+            argmap = {}
+            innerMap["device-mac-address"] = "00:00:00:00:00:b1"
+            argmap["input"] = innerMap
+            jsonStr = json.dumps(argmap, indent=4)
+            url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:unquarantine"
+            headers= {"Content-Type":"application/json"}
+            r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
+         except OSError:
+            pass
+    
+    def printQuarantineMacs(self):
+    	url =  "http://127.0.0.1:8181/restconf/operations/sdnmud:get-quarantine-macs"
+    	headers= {"Content-Type":"application/json"}
+    	r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    	response = json.loads(r.content)
+    	print(json.dumps(response,indent=4))
+       
     def tearDown(self):
-	time.sleep(5)
+         print "TEAR DOWN"
+         unquarantene()
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -42,50 +67,44 @@ class TestAccess(unittest.TestCase) :
         pieces = retval.group(0).split('=')
         rc = pieces[1].split(']')[0]
         return rc
-    
-    def testNonIotHostHttpGetExpectPass(self):
-        h4 = hosts[3]
-        result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 2 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-    def testUdpSameManPingExpectPass(self) :
-        print "pinging a same manufacturer peer -- this should succeed with MUD"
+    def testContactLocalHostFromPrinterExpectFail(self):
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
-        self.assertTrue(int(result) > 0, "expect successful ping")
+        result = h1.cmdPrint("wget 10.0.0.3  --no-cache --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
+        time.sleep(5)
+        printQuarantineMacs()
+        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is None, "Expecting a failed get -- device quarantine")
+        unquarantene()
+        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is not None, "Expecting a successful -- device unquarantened")
 
-    def testUdpControllerPingExpectPass(self) :
-        print "pinging UDP controller -- this should succeed with MUD"
+
+    def testContactPrinterFromLocalHostExpectPass(self):
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8002 --host 10.0.0.7 --client --quiet")
-        self.assertTrue(int(result) > 0, "expect successful ping")
+        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
 
-    def testLocalNetPingExpectPass(self) :
-        print "pinging a local network peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
+    def testContactPrinterFromRouterHostExpectFail(self):
+        h8 = hosts[7]
+        result = h8.cmdPrint("wget 10.0.0.1 --no-cache --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
+        # this is not the device's fault, so don't quratntene
+        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) is not None, "Expecting a successful -- device unquarantened")
+
+    def testContactExternalHostFromPrinterExpectPass(self):
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
-        self.assertTrue(int(result) > 0, "expect successful ping")
+        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after --tries 2 http://www.nist.local:800")
+        print ("result " + str(result))
+        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
 
-    def testUdpPingExpectFail(self):
-        print "pinging a non-mud peer -- this should fail with MUD"
-        h1 = hosts[0]
-        # prime flow table
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
-        self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
+    def tearDown(self):
+        time.sleep(5)
 
-    def testHttpGetExpectPass(self):
-        print "wgetting from a non-mud -- this should succeed with MUD"
-        h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
-        print "result = ",result
-        # Check to see if the result was successful.
-        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-    def testHttpGetExpectFail(self):
-        print "Wgetting from antd.local -- this should fail with MUD"
-        # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+
 
 
 
@@ -95,11 +114,10 @@ class TestAccess(unittest.TestCase) :
 
 def cli():
     global net,c1,s1,s2,s3
-    global h1,h2,h3,h4,h5,h6,h7,h8,h9,h10
+    global hosts
     cli = CLI( net )
-    h1.terminate()
-    h2.terminate()
-    h3.terminate()
+    for h in hosts:
+        h.terminate()
     net.stop()
 
 
@@ -117,7 +135,6 @@ def setupTopology(controller_addr):
 
     # h1: IOT Device.
     # h2 : StatciDHCPD
-    # h3 : router / NAT
     # h4 : Non IOT device.
 
     h1 = net.addHost('h1')
@@ -190,16 +207,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:31","h1-eth0")
-    h2.setMAC("00:00:00:00:00:32","h2-eth0")
-    h3.setMAC("00:00:00:00:00:33","h3-eth0")
-    h4.setMAC("00:00:00:00:00:34","h4-eth0")
-    h5.setMAC("00:00:00:00:00:35","h5-eth0")
-    h6.setMAC("00:00:00:00:00:36","h6-eth0")
-    h7.setMAC("00:00:00:00:00:37","h7-eth0")
-    h8.setMAC("00:00:00:00:00:38","h8-eth0")
-    h9.setMAC("00:00:00:00:00:39","h9-eth0")
-    h10.setMAC("00:00:00:00:00:3A","h10-eth0")
+    h1.setMAC("00:00:00:00:00:b1","h1-eth0")
+    h2.setMAC("00:00:00:00:00:b2","h2-eth0")
+    h3.setMAC("00:00:00:00:00:b3","h3-eth0")
+    h4.setMAC("00:00:00:00:00:b4","h4-eth0")
+    h5.setMAC("00:00:00:00:00:b5","h5-eth0")
+    h6.setMAC("00:00:00:00:00:b6","h6-eth0")
+    h7.setMAC("00:00:00:00:00:b7","h7-eth0")
+    h8.setMAC("00:00:00:00:00:b8","h8-eth0")
+    h9.setMAC("00:00:00:00:00:b9","h9-eth0")
+    h10.setMAC("00:00:00:00:00ba","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -233,12 +250,7 @@ def setupTopology(controller_addr):
     # h9 is our fake host. It runs our "internet" web server.
     h9.cmdPrint('ifconfig h9-eth0 203.0.113.13 netmask 255.255.255.0')
     # Start a web server there.
-    h9.cmdPrint('python ../util/http-server.py -H 203.0.113.13&')
 
-    # h10 is our second fake host. It runs another internet web server that we cannot reach
-    h10.cmdPrint('ifconfig h10-eth0 203.0.113.14 netmask 255.255.255.0')
-    # Start a web server there.
-    h10.cmdPrint('python ../util/http-server.py -H 203.0.113.14&')
 
 
     # Start dnsmasq (our dns server).
@@ -246,51 +258,19 @@ def setupTopology(controller_addr):
 
     # Set up our router routes.
     h8.cmdPrint('ip route add 203.0.113.13/32 dev h8-eth1')
-    h8.cmdPrint('ip route add 203.0.113.14/32 dev h8-eth1')
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
-    
 
-    #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    h2.cmdPrint("python ../util/udpping.py --port 4000 --server &")
-    h4.cmdPrint("python ../util/udpping.py --port 4000 --server &")
-    # h5 is a localhost peer.
-    h5.cmdPrint("python ../util/udpping.py --port 8000 --server &")
-    # h7 is the controller peer.
-    h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
-    
-    net.waitConnected()
 
+    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
+        h1.cmdPrint('python -m SimpleHTTPServer 80&')
+        h9.cmdPrint('python -m SimpleHTTPServer 800&')
+        #h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
+        #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
+    
 
     print "*********** System ready *********"
-    return net
 
-
-def clean_mud_rules(controller_addr) :
-    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
-    headers= {"Content-Type":"application/json"}
-    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
-    print r
-
-def fixupResolvConf():
-    # prepending 10.0.0.5 -- we want to go through our name resolution
-    found = False
-    with open("/etc/resolv.conf") as f :
-	content = f.readlines() 
-        found = False
-        for line in content:
-	    if line.find("10.0.0.5") != -1:
-		found = True
-		break
-
-    print("10.0.0.5 not found in resolv.conf")
-    if not found :
-        original_data = None
-        with open("/etc/resolv.conf") as f :
-	    original_data = f.read()
-	with open("/etc/resolv.conf.save","w") as f:
-            f.write(original_data)
-	with open("/etc/resolv.conf","w") as f:
-	    f.write("nameserver 10.0.0.5\n" + original_data)
+    #net.stop()
 
 def startTestServer(host):
     """
@@ -302,13 +282,45 @@ def startTestServer(host):
     proc = subprocess.Popen(cmd,shell=True, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)  
     print "test server started"
 
+def fixupResolvConf():
+    # prepending 10.0.0.5 -- we want to go through our name resolution
+    found = False
+    with open("/etc/resolv.conf") as f :
+	content = f.readlines() 
+        found = False
+        for line in content:
+	    if "10.0.0.5" in content:
+		found = True
+		break
+
+    if not found :
+        print("10.0.0.5 not found in resolv.conf")
+        original_data = None
+        with open("/etc/resolv.conf") as f :
+	    original_data = f.read()
+	with open("/etc/resolv.conf.save","w") as f:
+	     f.write(original_data)
+	with open("/etc/resolv.conf","w") as f:
+	     f.write("nameserver 10.0.0.5\n")
+
+def clean_mud_rules(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:clear-mud-rules"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
+def get_quarantine_macs(controller_addr) :
+    url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:get-quarantine-macs"
+    headers= {"Content-Type":"application/json"}
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'))
+    print r
+
 if __name__ == '__main__':
     setLogLevel( 'info' )
     parser = argparse.ArgumentParser()
     # defaults to the address assigned to my VM
     parser.add_argument("-c",help="Controller host address",default=os.environ.get("CONTROLLER_ADDR"))
-    parser.add_argument("-d",help="Public DNS address (check your resolv.conf)",default="10.0.4.3")
-    parser.add_argument("-f",help="Config file",default="sdnmud-config.json")
+    parser.add_argument("-f",help="Config file",default=os.environ.get("SDNMUD_CONFIG"))
 
     parser.set_defaults(test=False)
 
@@ -316,13 +328,11 @@ if __name__ == '__main__':
     controller_addr = args.c
     test = args.test
     cfgfile = args.f
+    if cfgfile is None:
+       cfgfile = "sdnmud-config.json"
 
 
     cmd = ['sudo','mn','-c']
-    proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    proc.wait()
-
-    cmd = ['sudo','pkill','dnsmasq']
     proc = subprocess.Popen(cmd,shell=False, stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     proc.wait()
     
@@ -338,18 +348,12 @@ if __name__ == '__main__':
 
     print("IMPORTANT : append 10.0.0.5 to resolv.conf")
 
-    fixupResolvConf()
-
-    net = setupTopology(controller_addr)
     clean_mud_rules(controller_addr)
 
-
     headers= {"Content-Type":"application/json"}
-    for (configfile,suffix) in { 
-        (cfgfile, "sdnmud:sdnmud-config"),
-        ("device-association.json","nist-mud-device-association:mapping"),
-        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping")
-	}:
+    for (configfile,suffix) in { ("device-association-printer.json","nist-mud-device-association:mapping"),
+        ("controllerclass-mapping.json","nist-mud-controllerclass-mapping:controllerclass-mapping"),
+        (cfgfile, "sdnmud:sdnmud-config")} :
         data = json.load(open(configfile))
         print "configfile", configfile
         url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
@@ -357,13 +361,19 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    print "uploaded mud rules ", str(r)
-    net.pingAll(timeout=1)
+    fixupResolvConf()
+    setupTopology(controller_addr)
+    net.pingAll(1)
     h1.cmdPrint("nslookup www.nist.local")
     h1.cmdPrint("nslookup www.antd.local")
+    # Set up the servers.
+    h3.cmdPrint("python -m SimpleHTTPServer 80&")
+    h1.cmdPrint("python -m SimpleHTTPServer 80&")
+    h9.cmdPrint('python -m SimpleHTTPServer 800&')
+
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
-        #clean_mud_rules(controller_addr)
     else:
         cli()
 

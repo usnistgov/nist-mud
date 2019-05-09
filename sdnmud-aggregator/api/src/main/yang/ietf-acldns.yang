@@ -63,12 +63,6 @@ module ietf-acldns {
         "domain name to be matched against.";
     }
 
-    leaf update-url {
-      type boolean; 
-      description
-        "Do not block this URL when device is quarantened (use for device firmware update).";
-    }
-
   }
 
   augment "/acl:acls/acl:acl/acl:aces/acl:ace/acl:matches"

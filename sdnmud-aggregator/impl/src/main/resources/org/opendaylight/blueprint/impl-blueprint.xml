@@ -28,12 +28,21 @@
         interface = "org.opendaylight.controller.sal.core.api.model.SchemaService" 
 	 	odl:type="default" />
 
+    <reference id="notificationPublishService"
+        interface="org.opendaylight.controller.md.sal.binding.api.NotificationPublishService"
+        odl:type="default" 
+     />
+
     <reference id="bindingNormalizedNodeSerializer"
         interface = "org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer"
-	 	odl:type="default" />
+        odl:type="default" 
+     />
 
 	<odl:rpc-service id="salFlowService"
     interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
+
+	<odl:rpc-service id="flowStatisticsService"
+        interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService" />
 
 
 	<odl:rpc-service id="packetProcessingService"
@@ -55,10 +64,12 @@
 		<argument ref="dataBroker" />
         <argument ref="sdnmudConfig" />
 		<argument ref="salFlowService" />
+        <argument ref="flowStatisticsService" />
 		<argument ref="packetProcessingService" />
 		<argument ref="packetNotificationService" />
 		<argument ref="domDataBroker" />
 		<argument ref="schemaService" />
+        <argument ref="notificationPublishService" />
 		<argument ref="bindingNormalizedNodeSerializer" />
         <argument ref="rpcRegistry" />
 	</bean>

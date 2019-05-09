@@ -64,8 +64,22 @@ At the karaf prompt
 
      karaf> feature:install features-sdnmud
 
-Will install the sdn mud feature. Next, configure it (see below) and connect your SDN-enabled switches.
-to the controller at port 6653.  Your switches should support OpenFlow 1.5.
+Will install the sdn mud feature (see below for configuration details).
+Open port 6653 on your controller stack for tcp access so your switches
+can connect.
+
+Opendaylight uses port 8181 for REST API so you'll want to make sure
+nothing is using that port and open up the port using UFW if you want
+to access the REST api from outside the controller machine.
+
+Check if the feature is running by doing the following:
+
+      karaf> feature:list | grep sdnmud
+      features-sdnmud                                 | 0.1.0            | x        | Started     | features-sdnmud                                 | ODL :: gov.nist.antd :: features-sdnmud
+      odl-sdnmud-api                                  | 0.1.0            |          | Started     | odl-sdnmud-api                                  | OpenDaylight :: sdnmud :: API [Karaf Feature]
+      odl-sdnmud                                      | 0.1.0            |          | Started     | odl-sdnmud-0.1.0                                | OpenDaylight :: sdnmud :: Impl [Karaf Feature]
+
+Note: Your switches should support OpenFlow 1.5. Detailed configuration information is presented next.
 
 ### SYSTEM CONFIGURATION DETAIL ###
 
