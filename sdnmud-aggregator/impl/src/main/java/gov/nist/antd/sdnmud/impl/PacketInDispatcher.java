@@ -112,14 +112,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	// assigned.
 	private HashSet<MacAddress> unclassifiedMacAddresses = new HashSet<MacAddress>();
 
-	private HashMap<String,BigInteger> srcMetadataMap = new HashMap<String,BigInteger>();
-	
+	private HashMap<String, BigInteger> srcMetadataMap = new HashMap<String, BigInteger>();
+
 	// Set of Mac addresses for which a source mac classification rule exists
-	private HashMap<String,BigInteger> srcMacRuleTable = new HashMap<String,BigInteger>();
-	
-	private HashMap<String,BigInteger> dstMetadataMap = new HashMap<String,BigInteger>();
+	private HashMap<String, BigInteger> srcMacRuleTable = new HashMap<String, BigInteger>();
+
+	private HashMap<String, BigInteger> dstMetadataMap = new HashMap<String, BigInteger>();
 	// Set of mac addresses for which a dst mac classification rule exists
-	private HashMap<String,BigInteger> dstMacRuleTable = new HashMap<String,BigInteger>();
+	private HashMap<String, BigInteger> dstMacRuleTable = new HashMap<String, BigInteger>();
 	// Flow rules in the first two tables -- these can be cleared via an API
 	private HashSet<Flow> flowTable = new HashSet<Flow>();
 	// The set of mac addresses that were seen when a packet was dropped.
@@ -248,7 +248,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			List<MacAddress> macAddressList = new ArrayList<MacAddress>();
 			Collection<MacAddress> mappedAddresses = map.get(uri);
 			for (MacAddress macAddr : mappedAddresses) {
-				if (srcMacRuleTable.containsKey(macAddr.getValue()) || dstMacRuleTable.containsKey(macAddr.getValue())) {
+				if (srcMacRuleTable.containsKey(macAddr.getValue())
+						|| dstMacRuleTable.containsKey(macAddr.getValue())) {
 					macAddressList.add(macAddr);
 				}
 			}
@@ -410,7 +411,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		flowTable.add(flow);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 		this.srcMetadataMap.put(srcMac.getValue(), metadata);
-		this.srcMacRuleTable.put(srcMac.getValue(),metadata);
+		this.srcMacRuleTable.put(srcMac.getValue(), metadata);
 		timer.schedule(new SrcMacAddressTimerTask(srcMac),
 				sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout() / 2 * 1000);
 		// Classification state has changed -- broadcast it.
@@ -447,7 +448,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				sdnmudProvider.getDstDeviceManufacturerStampTable(), flowId, flowCookie, timeout).build();
 		flowTable.add(flow);
 		this.dstMetadataMap.put(dstMac.getValue(), metadata);
-		this.dstMacRuleTable.put(dstMac.getValue(),metadata);
+		this.dstMacRuleTable.put(dstMac.getValue(), metadata);
 		// Supress further notification processing for CacheTimeout/2 seconds (keeps the
 		// switch from flooding the controller)
 		this.timer.schedule(new DstMacAddressTimerTask(dstMac),
@@ -666,28 +667,43 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					this.dropRuleTable.add(srcMac);
 					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-					// Now override the flow so we don't keep getting notifications
-					sdnmudProvider.getMudFlowsInstaller()
-							.installGoToDropTableOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
-					// broadcast the ACE violation so that the listener knows to get and install new
-					// firmware.
-					this.broadcastAceViolation(srcMac, mudUri);
-					// Start a timer so we will be interrupted again after this period of time.
-					// We don't want to keep getting interrupted
-					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+					if (!mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
+						this.dropRuleTable.add(srcMac);
+						this.broadcastAceViolation(srcMac, mudUri);
+						// Start a timer so we will be interrupted again after this period of time.
+						// We don't want to keep getting interrupted
+						timer.schedule(new DropRuleTableTimerTask(srcMac),
+								SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+					}
+				} else if (cookie.equals(SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE)) {
+					LOG.info("Saw a TCP SYN ACL violation");
+					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+					// TBD -- generate event and send to update service.
+					if (dropRuleTable.contains(srcMac)) {
+						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
+						return;
+					}
+					if (!mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
+						this.dropRuleTable.add(srcMac);
+						this.broadcastAceViolation(srcMac, mudUri);
+						timer.schedule(new DropRuleTableTimerTask(srcMac),
+								SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+					}
+
 				}
 
 			}
 
 		}
 	}
-	
+
 	public BigInteger getSrcMetadata(String macAddress) {
 		return this.srcMetadataMap.get(macAddress);
 	}
-	
+
 	public BigInteger getDstMetadata(String macAddress) {
 		return this.dstMetadataMap.get(macAddress);
 	}

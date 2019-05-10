@@ -181,7 +181,7 @@ public class MudFlowsInstaller {
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
 		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aceName);
-		FlowCookie flowCookie = IdUtils.createFlowCookie("syn-flag-check");
+		FlowCookie flowCookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
 		FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
 				metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
 				sdnmudProvider.getSdnmudRulesTable(), priority, sdnmudProvider.getDropTable(), fid, flowCookie, 0);
@@ -369,7 +369,7 @@ public class MudFlowsInstaller {
 	 * @param dropFlowUri
 	 */
 	private void installGoToDropTableAndSendToControllerOnSrcModelMetadataMatchFlow(String mudUri,
-			InstanceIdentifier<FlowCapableNode> node) {
+			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
 		FlowId flowId = IdUtils.createFlowId(mudUri);
@@ -377,13 +377,15 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = metadata;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableAndSendToControllerFlow(flowCookie, metadata,
-				metadataMask, flowId, sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask,
+				metadataMask, flowId, sdnmudProvider.getSdnmudRulesTable(), priority,
+				newMetadata, newMetadataMask,
 				sdnmudProvider.getDropTable(), 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
 	private void installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(String mudUri,
-			InstanceIdentifier<FlowCapableNode> node) {
+			InstanceIdentifier<FlowCapableNode> node, int priority) {
+		// TODO -- pass priority in here
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK.or(SdnMudConstants.SRC_QUARANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.SRC_QUARANTENE_FLAG);
 		FlowId flowId = IdUtils.createFlowId(mudUri);
@@ -392,7 +394,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
 				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
-				SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY, 0);
+				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 	
@@ -432,8 +434,9 @@ public class MudFlowsInstaller {
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
+	
 	private void installGoToDropTableOnDstModelMetadataMatchFlow(String mudUri,
-			InstanceIdentifier<FlowCapableNode> node) {
+			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
 		FlowId flowId = IdUtils.createFlowId(mudUri);
@@ -442,7 +445,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
 				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
-				SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY + 1, 0);
+				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
@@ -529,7 +532,6 @@ public class MudFlowsInstaller {
 			String aceName, Matches matches, MatchesType matchesType, List<Ipv4Address> addresses, boolean isEnabledOnQ) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		String authority = IdUtils.getAuthority(mudUri);
 
 		Short protocol = getProtocol(matches);
 
@@ -802,7 +804,8 @@ public class MudFlowsInstaller {
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (checkDirectionInitiated) {
 			flowId = IdUtils.createFlowId(mudUri + "/" + aceName);
-			this.registerTcpSynFlagCheck(flowId, flowCookie, node, metadata, metadataMask, srcPort, destinationPort, priority + 1);
+			FlowCookie cookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
+			this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, srcPort, destinationPort, priority + 1);
 		}
 	}
 
@@ -988,15 +991,21 @@ public class MudFlowsInstaller {
 		try {
 			Uri mudUri = mud.getMudUrl();
 			HashSet<String> enabledAceNames = new HashSet<String>();
+			boolean hasQuarantineDevicePolicy;
 
 			if (mud.getAugmentation(Mud1.class) != null) {
 				QuarantinedDevicePolicy qdp = mud.getAugmentation(Mud1.class).getQuarantinedDevicePolicy();
 				if (qdp != null) {
+					hasQuarantineDevicePolicy = true;
 					List<EnabledAceNames> aceNames = qdp.getEnabledAceNames();
 					for (EnabledAceNames aceName : aceNames) {
 						enabledAceNames.add(aceName.getAceName());
 					}
+				} else {
+					hasQuarantineDevicePolicy = false;
 				}
+			} else {
+				hasQuarantineDevicePolicy = false;
 			}
 
 			if (sdnmudProvider.getControllerClassMap(cpeNodeId) == null) {
@@ -1042,13 +1051,16 @@ public class MudFlowsInstaller {
 				 * packet flows that will drop the packet if a MUD rule does not match.
 				 */
 
-				if (!enabledAceNames.isEmpty()) {
-					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node);
+				if (hasQuarantineDevicePolicy) {
+					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node,SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 					this.installGoToDropTableOnQuranteneDstMetadataMatchFlow(mudUri.getValue(),node);
 					
 				}
-				this.installGoToDropTableAndSendToControllerOnSrcModelMetadataMatchFlow(mudUri.getValue(), node);
-				this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node);
+				
+				// If the packet is quarantined already it will hit this rule first.
+				this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(),node,SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY + 1);
+				this.installGoToDropTableAndSendToControllerOnSrcModelMetadataMatchFlow(mudUri.getValue(), node,SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY);
+				this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node, SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY);
 
 				/*
 				 * Fetch and install the MUD ACLs. First install the "from-device" rules.
@@ -1195,6 +1207,8 @@ public class MudFlowsInstaller {
 		return true;
 
 	}
+
+	
 
 	/**
 	 * Clear out all the mud rules from all nodes that we know about. This is used

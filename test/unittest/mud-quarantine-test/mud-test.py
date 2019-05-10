@@ -34,28 +34,10 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
+	unquarantene()
         pass
 
-    def unquarantene(self):
-         global controller_addr
-         try:
-            innerMap = {}
-            argmap = {}
-            innerMap["device-mac-address"] = "00:00:00:00:00:b1"
-            argmap["input"] = innerMap
-            jsonStr = json.dumps(argmap, indent=4)
-            url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:unquarantine"
-            headers= {"Content-Type":"application/json"}
-            r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
-         except OSError:
-            pass
     
-    def printQuarantineMacs(self):
-    	url =  "http://127.0.0.1:8181/restconf/operations/sdnmud:get-quarantine-macs"
-    	headers= {"Content-Type":"application/json"}
-    	r = requests.post(url,headers=headers , auth=('admin', 'admin'))
-    	response = json.loads(r.content)
-    	print(json.dumps(response,indent=4))
        
     def tearDown(self):
          print "TEAR DOWN"
@@ -69,39 +51,21 @@ class TestAccess(unittest.TestCase) :
         return rc
 
     def testContactLocalHostFromPrinterExpectFail(self):
+        time.sleep(3)
         h1 = hosts[0]
+	h3 = hosts[2]
+	h4 = hosts[3]
+        result = h4.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
+        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
         result = h1.cmdPrint("wget 10.0.0.3  --no-cache --timeout 10 --tries 2 --delete-after")
         self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
         time.sleep(5)
-        printQuarantineMacs()
         result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
         self.assertTrue(re.search("100",result) is None, "Expecting a failed get -- device quarantine")
         unquarantene()
         result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
         self.assertTrue(re.search("100",result) is not None, "Expecting a successful -- device unquarantened")
 
-
-    def testContactPrinterFromLocalHostExpectPass(self):
-        h1 = hosts[0]
-        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
-        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
-
-    def testContactPrinterFromRouterHostExpectFail(self):
-        h8 = hosts[7]
-        result = h8.cmdPrint("wget 10.0.0.1 --no-cache --timeout 10 --tries 2 --delete-after")
-        self.assertTrue(re.search("100",result) is None, "Expecting a failed get")
-        # this is not the device's fault, so don't quratntene
-        result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
-        self.assertTrue(re.search("100",result) is not None, "Expecting a successful -- device unquarantened")
-
-    def testContactExternalHostFromPrinterExpectPass(self):
-        h1 = hosts[0]
-        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after --tries 2 http://www.nist.local:800")
-        print ("result " + str(result))
-        self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
-
-    def tearDown(self):
-        time.sleep(5)
 
 
 
@@ -120,6 +84,19 @@ def cli():
         h.terminate()
     net.stop()
 
+def unquarantene():
+    global controller_addr
+    try:
+       innerMap = {}
+       argmap = {}
+       innerMap["device-mac-address"] = "00:00:00:00:00:B1"
+       argmap["input"] = innerMap
+       jsonStr = json.dumps(argmap, indent=4)
+       url =  "http://" + controller_addr + ":8181/restconf/operations/sdnmud:unquarantine"
+       headers= {"Content-Type":"application/json"}
+       r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
+    except OSError:
+       print "Error in unquarantine"
 
 def setupTopology(controller_addr):
     global net,c1,s1,s2,s3

@@ -567,7 +567,7 @@ public class FlowUtils {
 	}
 	
 	static FlowBuilder createMetadataMatchGoToTableAndSendToControllerFlow(FlowCookie flowCookie, BigInteger metadata,
-			BigInteger metadataMask, FlowId flowId, Short tableId, BigInteger newMetadata, BigInteger newMetadataMask,
+			BigInteger metadataMask, FlowId flowId, Short tableId, int priority,BigInteger newMetadata, BigInteger newMetadataMask,
 			Short targetTableId, int duration) {
 		LOG.info("FlowUtils: createMetadataMatchGoToTableAndSendToController " + flowCookie.getValue().toString(16) + " metadata "
 				+ metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId " + tableId
@@ -583,7 +583,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchGoToTable").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(priority).setBufferId(OFConstants.ANY)
 				.setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -1001,6 +1001,7 @@ public class FlowUtils {
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
+		FlowUtils.addSendPacketToControllerInstruction(instructions);
 		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
 		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
 		// newMetadataMask);
@@ -1028,6 +1029,7 @@ public class FlowUtils {
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
+		FlowUtils.addSendPacketToControllerInstruction(instructions);
 		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
 		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
 		// newMetadataMask);
