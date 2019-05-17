@@ -14,8 +14,8 @@
     <property name="checkstyle.header.file" value="/home/mranga/eclipse-workspace/.metadata/.plugins/org.eclipse.core.resources/.projects/sdnmud-impl/com.basistech.m2e.code.quality.checkstyleConfigurator/checkstyle-header-default.txt"/>
   </local-check-config>
   <fileset name="java-sources-check-license" enabled="true" check-config-name="maven-checkstyle-plugin check-license" local="true">
-    <file-match-pattern match-pattern="^src/test/java.*\/.*\.java" include-pattern="true"/>
-    <file-match-pattern match-pattern="^src/test/java.*\/.*\.xtend" include-pattern="true"/>
+    <file-match-pattern match-pattern="^src/test/java/.*\/.*\.java" include-pattern="true"/>
+    <file-match-pattern match-pattern="^src/test/java/.*\/.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java/.*\/.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java/.*\/.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>
@@ -26,8 +26,8 @@
     <file-match-pattern match-pattern="^src/main/java.*.*thrift/gen/.*\.java" include-pattern="false"/>
   </fileset>
   <fileset name="java-sources-default" enabled="true" check-config-name="maven-checkstyle-plugin default" local="true">
-    <file-match-pattern match-pattern="^src/test/java.*\/.*\.java" include-pattern="true"/>
-    <file-match-pattern match-pattern="^src/test/java.*\/.*\.xtend" include-pattern="true"/>
+    <file-match-pattern match-pattern="^src/test/java/.*\/.*\.java" include-pattern="true"/>
+    <file-match-pattern match-pattern="^src/test/java/.*\/.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java/.*\/.*\.java" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/main/java/.*\/.*\.xtend" include-pattern="true"/>
     <file-match-pattern match-pattern="^src/test/java.*org/opendaylight/yang/gen/.*" include-pattern="false"/>

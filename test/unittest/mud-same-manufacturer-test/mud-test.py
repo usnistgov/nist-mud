@@ -344,6 +344,7 @@ if __name__ == '__main__':
         print "response ", r
 
     net.pingAll(1)
+    fixupResolvConf()
     h1.cmdPrint("nslookup www.nist.local")
     h1.cmdPrint("nslookup www.antd.local")
 

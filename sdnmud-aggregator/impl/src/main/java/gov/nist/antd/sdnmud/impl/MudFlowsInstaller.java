@@ -398,8 +398,8 @@ public class MudFlowsInstaller {
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 	
-	private void installGoToDropTableOnQuranteneDstMetadataMatchFlow(String mudUri,
-			InstanceIdentifier<FlowCapableNode> node) {
+	private void installGoToDropTableOnQuaranteneDstModelMetadataMatchFlow(String mudUri,
+			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK.or(SdnMudConstants.DST_QURANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.DST_QUARANTENE_FLAG);
 		FlowId flowId = IdUtils.createFlowId(mudUri);
@@ -408,7 +408,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
 				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
-				SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY, 0);
+				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
@@ -1053,7 +1053,7 @@ public class MudFlowsInstaller {
 
 				if (hasQuarantineDevicePolicy) {
 					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node,SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY);
-					this.installGoToDropTableOnQuranteneDstMetadataMatchFlow(mudUri.getValue(),node);
+					this.installGoToDropTableOnQuaranteneDstModelMetadataMatchFlow(mudUri.getValue(),node, SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 					
 				}
 				

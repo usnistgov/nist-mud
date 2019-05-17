@@ -49,17 +49,21 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.ControllerclassMapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.controllerclass.mapping.rev170915.controllerclass.mapping.Controller;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevices;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuarantineDevice;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.OpendaylightFlowStatisticsService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.OpendaylightDirectStatisticsService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.Nodes;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.OpendaylightInventoryListener;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.meter.service.rev130918.SalMeterService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.openflow.protocol.rev130731.OpenflowProtocolService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.packet.service.rev130709.PacketProcessingService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.nist.mud.file.cache.rev170915.MudCache;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.table.service.rev131026.SalTableService;
 import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
@@ -170,8 +174,11 @@ public class SdnmudProvider {
 
 	private ListenerRegistration<QuaranteneDevicesListener> quaranteneDevicesListenerRegistration;
 
+	private OpendaylightDirectStatisticsService directStatisticsService;
+
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			OpendaylightFlowStatisticsService flowStatisticsService,
+			OpendaylightDirectStatisticsService directStatisticsService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
 			DOMDataBroker domDataBroker, SchemaService schemaService, NotificationPublishService notificationPublishService,
 			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer, RpcProviderRegistry rpcProviderRegistry) {
@@ -188,8 +195,10 @@ public class SdnmudProvider {
 		this.rpcProviderRegistry = rpcProviderRegistry;
 		this.flowService = flowService;
 		this.flowStatisticsService = flowStatisticsService;
+		this.directStatisticsService = directStatisticsService;
+		//this.flowStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightFlowStatisticsService.class);
+		//this.directStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightDirectStatisticsService.class);
 		this.sdnmudConfig = sdnmudConfig;
-		
 		if (sdnmudConfig.getDropRuleTable() < sdnmudConfig.getTableStart() + 4) {
 			LOG.error("Drop rule table is incorrectly specified");
 			throw new RuntimeException("Error in config file -- please check defaults. Drop rule table is too small.");
@@ -224,8 +233,8 @@ public class SdnmudProvider {
 		return InstanceIdentifier.create(MudCache.class);
 	}
 	
-	private static InstanceIdentifier<QuaranteneDevices> getQuaranteneDevicesWildCardPath() {
-		return InstanceIdentifier.create(QuaranteneDevices.class);
+	private static InstanceIdentifier<QuarantineDevice> getQuaranteneDevicesWildCardPath() {
+		return InstanceIdentifier.create(QuarantineDevice.class);
 	}
 
 	/**
@@ -284,8 +293,8 @@ public class SdnmudProvider {
 		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
 		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
 
-		final InstanceIdentifier<QuaranteneDevices> quaranteneDevicesWildCardPath = getQuaranteneDevicesWildCardPath();
-		final DataTreeIdentifier<QuaranteneDevices> quaranteneDevicesId  = new DataTreeIdentifier<QuaranteneDevices>(LogicalDatastoreType.CONFIGURATION,
+		final InstanceIdentifier<QuarantineDevice> quaranteneDevicesWildCardPath = getQuaranteneDevicesWildCardPath();
+		final DataTreeIdentifier<QuarantineDevice> quaranteneDevicesId  = new DataTreeIdentifier<QuarantineDevice>(LogicalDatastoreType.CONFIGURATION,
 				quaranteneDevicesWildCardPath);
 		this.quaranteneDevicesListener = new QuaranteneDevicesListener(this);
 		this.quaranteneDevicesListenerRegistration = this.dataBroker.registerDataTreeChangeListener(quaranteneDevicesId, quaranteneDevicesListener);
@@ -565,6 +574,10 @@ public class SdnmudProvider {
 	public SchemaService getSchemaService() {
 		return this.schemaService;
 	}
+	
+	public OpendaylightDirectStatisticsService getDirectStatisticsService() {
+		return this.directStatisticsService;
+	}
 
 	/**
 	 * Add Aces for a given acl name scoped to a MUD URI.
@@ -614,15 +627,6 @@ public class SdnmudProvider {
 			map.put(name, addresses);
 		}
 
-	
-		
-        /*
-		if (controllerMapping.getRouterMacAddresses() != null) {
-			for (MacAddress macAddress : controllerMapping.getRouterMacAddresses()) {
-				this.routerMacAddresses.add(macAddress.getValue());
-			}
-		}
-        */
 
 		this.configStateChanged++;
 
@@ -692,12 +696,6 @@ public class SdnmudProvider {
 	public short getBroadcastRuleTable() {
 		return this.sdnmudConfig.getBroadcastRuleTable().shortValue();
 	}
-
-    /*
-	public HashSet<String> getRouterMacAddresses() {
-		return this.routerMacAddresses;
-	}
-    */
 
 	public MudFileFetcher getMudFileFetcher() {
 		return mudFileFetcher;

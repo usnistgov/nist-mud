@@ -84,7 +84,7 @@ public class FlowCommitWrapper {
 		}
 		return true;
 	}
-
+	
 	public boolean flowExists(String flowIdPrefix, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
 		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey(tableId));
 		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()

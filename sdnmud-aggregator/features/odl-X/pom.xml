@@ -85,14 +85,12 @@
             <classifier>features</classifier>
         </dependency>
 
-
         <dependency>
             <groupId>org.opendaylight.controller</groupId>
             <artifactId>odl-mdsal-broker</artifactId>
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
-
 
 		<dependency>
 			<groupId>org.opendaylight.genius</groupId>
@@ -108,6 +106,7 @@
             <type>xml</type>
             <classifier>sdnmud-config</classifier>
         </dependency>
+        
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>sdnmud-impl</artifactId>

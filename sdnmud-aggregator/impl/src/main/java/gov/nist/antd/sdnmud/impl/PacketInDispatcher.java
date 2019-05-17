@@ -61,8 +61,8 @@ import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.MappingNotificationBuilder;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevices;
-import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuaranteneDevicesBuilder;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuarantineDevice;
+import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuarantineDeviceBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.ace.violation.notification.AceViolationInfoBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.MappingInfoBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.mapping.notification.mapping.info.MappingInfoList;
@@ -289,30 +289,15 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		aceViolationInfoBuilder.setMudUrl(mudUri);
 		aceViolationNotificationBulder.setAceViolationInfo(aceViolationInfoBuilder.build());
 		sdnmudProvider.getNotificationPublishService().offerNotification(aceViolationNotificationBulder.build());
-		// Put the device into our quarantene database.
-		QuaranteneDevices qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
-		if (qd != null) {
-			List<MacAddress> quranteneMacs = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices()
-					.getQuranteneMacs();
-			if (!quranteneMacs.contains(srcMac)) {
-				quranteneMacs.add(srcMac);
-				InstanceIdentifier<QuaranteneDevices> qId = InstanceIdentifier.builder(QuaranteneDevices.class).build();
-				ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-
-				tx.merge(LogicalDatastoreType.CONFIGURATION, qId, qd);
-				tx.submit();
-			}
-		} else {
-			QuaranteneDevicesBuilder qb = new QuaranteneDevicesBuilder();
-			ArrayList<MacAddress> macs = new ArrayList<MacAddress>();
-			macs.add(srcMac);
-			qb.setQuranteneMacs(macs);
-			InstanceIdentifier<QuaranteneDevices> qId = InstanceIdentifier.builder(QuaranteneDevices.class).build();
+		QuarantineDevice quarantineDevices = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
+		if (!quarantineDevices.getQurantineMac().contains(srcMac)) {
+			quarantineDevices.getQurantineMac().add(srcMac);
+			InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
 			ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-			tx.merge(LogicalDatastoreType.CONFIGURATION, qId, qb.build());
+			tx.put(LogicalDatastoreType.CONFIGURATION, qId, quarantineDevices);
 			tx.submit();
 		}
-		clearMfgModelRules();
+		
 
 	}
 
@@ -372,8 +357,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices() == null) {
 			return false;
 		} else {
-			return this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices().getQuranteneMacs()
-					.contains(macAddress);
+			return this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices().getQurantineMac().contains(macAddress);
 		}
 	}
 
@@ -461,7 +445,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	/**
 	 *
 	 */
-	public void clearMfgModelRules() {
+	public synchronized void clearMfgModelRules() {
 		LOG.info("Clear mfgModelRules");
 
 		for (String nodeId : sdnmudProvider.getMudCpeNodeIds()) {
@@ -475,6 +459,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.flowTable.clear();
 		this.srcMacRuleTable.clear();
 		this.dstMacRuleTable.clear();
+		this.srcMetadataMap.clear();
+		this.dstMetadataMap.clear();
 
 	}
 
@@ -668,7 +654,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						return;
 					}
 					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-					if (!mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+					if (true || !mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
 						this.dropRuleTable.add(srcMac);
 						this.broadcastAceViolation(srcMac, mudUri);
@@ -685,7 +671,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					if (!mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+					if (true || !mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
 							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
 						this.dropRuleTable.add(srcMac);
 						this.broadcastAceViolation(srcMac, mudUri);

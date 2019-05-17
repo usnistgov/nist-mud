@@ -60,11 +60,11 @@ module nist-mud-device-association {
     uses device-mapping;
   }
 
-  container quarantene-devices {
+  container quarantine-device {
       description
         "List of MAC addresses of devices under
          quarantene";
-      leaf-list qurantene-macs {
+      leaf-list qurantine-mac {
           type yang:mac-address;
           description
             "Mac address of device marked as quarantene";

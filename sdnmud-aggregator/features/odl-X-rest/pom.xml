@@ -44,6 +44,15 @@
             <type>xml</type>
             <classifier>features</classifier>
         </dependency>
+           <!--
+            <dependency>
+                <groupId>org.opendaylight.openflowplugin</groupId>
+                <artifactId>odl-openflowplugin-flow-services</artifactId>
+			    <type>xml</type>
+                <version>0.5.1</version>
+                <classifier>features</classifier>
+            </dependency>
+            -->
     </dependencies>
 
 </project>

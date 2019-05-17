@@ -70,11 +70,6 @@
             <artifactId>sal-schema-service</artifactId>
 		</dependency>
 
-		<dependency>
-			<groupId>org.opendaylight.openflowplugin.model</groupId>
-			<artifactId>model-flow-service</artifactId>
-			<scope>compile</scope>
-		</dependency>
 
 		<dependency>
 			<groupId>org.opendaylight.openflowplugin.model</groupId>
@@ -82,6 +77,15 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.opendaylight.openflowplugin.model</groupId>
+			<artifactId>model-flow-service</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.opendaylight.openflowplugin.model</groupId>
+			<artifactId>model-flow-statistics</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.opendaylight.mdsal.model</groupId>
@@ -104,6 +108,11 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<dependency>
+			<groupId>org.opendaylight.openflowplugin</groupId>
+			<artifactId>openflowplugin-impl</artifactId>
+			<scope>compile</scope>
+		</dependency>
 
 		<dependency>
 			<!-- https://nexus.opendaylight.org/content/repositories/public/org/opendaylight/genius/mdsalutil-api/ -->

@@ -63,6 +63,7 @@ class TestAccess(unittest.TestCase) :
         result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
         self.assertTrue(re.search("100",result) is None, "Expecting a failed get -- device quarantine")
         unquarantene()
+        time.sleep(3)
         result = h3.cmdPrint("wget 10.0.0.1 --no-cache  --timeout 10 --tries 2 --delete-after")
         self.assertTrue(re.search("100",result) is not None, "Expecting a successful -- device unquarantened")
 

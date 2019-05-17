@@ -157,25 +157,6 @@ module sdnmud {
   }
 
 
-
-
-    rpc unquarantine {
-      input {
-         leaf device-mac-address {
-                description 
-                    "Remove the device from quarantine. Qurarantine state is persistent.";
-                type yang:mac-address;
-          }
-        }
-        output {
-           leaf success {
-                description 
-                    " The device was found in the quarantene database and removed ";
-                type boolean;
-          }
-       }
-    }
-
     rpc get-quarantine-macs {
         description
             "get the list of mac addresses that are quarantined";
@@ -188,7 +169,39 @@ module sdnmud {
         }
     }
 
+    rpc unquarantine {
+       description
+           "Remove the given MAC address from the quarantine database";
+       input {
+             leaf device-mac-address {
+                description 
+                 "The quearantine mac to delete";
+              type yang:mac-address;
+            }
+        }
+    }
+
+    rpc unquarantine-all {
+        description
+            "Remove all mac addresses from the quarantine database";
+
+    }
+
+    rpc quarantine {
+       description
+            "Add the given MAC address to the quarantine database";
+       input {
+           leaf device-mac-address {
+              description 
+                 "The MAC address to quarantine";
+              type yang:mac-address;
+            }
+        }
+    }
+
   rpc get-mud-metadata-mapping {
+    description
+         "Get the Metadata mapping in human readable form";
     input {
         leaf metadata-and-mask {
             description 
@@ -252,7 +265,7 @@ module sdnmud {
 
 rpc get-src-mac-classification {
     description
-        "Get the classification label for src mac";
+        "Get the classification label for src mac in human readable form.";
 
     input {
         leaf mac-address {
@@ -297,7 +310,7 @@ rpc get-src-mac-classification {
 
 rpc get-dst-mac-classification {
     description
-        "Get the classification label for src mac";
+        "Get the classification label for dst mac in human readable form.";
 
     input {
         leaf mac-address {
@@ -420,8 +433,15 @@ rpc get-dst-mac-classification {
 
             leaf flow-id {
                 description 
-                    "Priority";
+                    "Flow ID";
                 type string;
+            }
+
+            leaf flow-name {
+                 description
+                     "Flow descriptive name";
+                 type string;
+
             }
     
             leaf table-id {

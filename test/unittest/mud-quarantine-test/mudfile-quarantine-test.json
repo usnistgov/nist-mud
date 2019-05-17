@@ -2,7 +2,7 @@
 {
   "ietf-mud:mud": {
     "mud-version": 1,
-    "mud-url": "https://local-networks-test.nist.local/super1",
+    "mud-url": "https://quarantine-test.nist.local/super1",
     "last-update": "2019-04-18T18:58:19+00:00",
     "cache-validity": 48,
     "is-supported": true,

@@ -65,44 +65,28 @@ class TestAccess(unittest.TestCase) :
 
     def testTcpGetExpectPass(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
-	time.sleep(5)
-        #result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
     def testTcpGetExpectFail(self):
-        h1 = hosts[0]
         h2 = hosts[1]
-        h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8010 &")
-        time.sleep(2)
         result = h2.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8010 -B")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
 
-    def testUdpManufacturerPingExpectPass(self) :
-        print "pinging a manufacturer peer -- this should succeed with MUD"
-        h2 = hosts[1]
-    	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
-        self.assertTrue(int(result) > 0, "*** expect successful ping ****")
+    #def testUdpManufacturerPingExpectPass(self) :
+    #    print "pinging a manufacturer peer -- this should succeed with MUD"
+    #    result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet")
+    #    self.assertTrue(int(result) > 0, "*** expect successful ping ****")
 
     def testUdpManufacturerPingExpectPass1(self) :
         print "pinging from a  manufacturer peer -- this should succeed with MUD"
-        h2 = hosts[1]
-        h1 = hosts[0]
-    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client  --bind --npings 20 --quiet")
-        self.assertTrue(int(result) > 0, "expect successful ping")
+        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client --bind  --npings 20 --quiet")
+        self.assertTrue(int(result) > 0, "expect successful ping -- ping same mfg. peer.")
 
     def testUdpManufacturerPingExpectFail(self) :
-        print "pinging a manufacturer peer -- this fail with MUD"
-        h3 = hosts[2]
-    	h3.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        h1 = hosts[0]
+        print "pinging a manufacturer peer -- this fail with MUD (on local nw not same mfg.)"
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
-        self.assertTrue(int(result) == 0, "expect unsuccessful ping")
+        self.assertTrue(int(result) == 0, "expect unsuccessful ping -- (on local nw not same mfg.)")
 
     def tearDown(self):
         time.sleep(5)
@@ -267,12 +251,14 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-    	#h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	#h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	#h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
-    	#h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
+    #h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    #h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8010 -T 120 &")
+    h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 -T 120 &")
+    #h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
+    #h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
     
 
 

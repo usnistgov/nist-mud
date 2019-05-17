@@ -238,6 +238,26 @@ public class FlowUtils {
 		instructions.add(gotoTableInstruction);
 		return instructions;
 	}
+	
+	private static List<Instruction> addGoToTableInstruction(List<Instruction> instructions, short targetTable, BigInteger metadata,
+			BigInteger metadataMask	) {
+		WriteMetadataBuilder wmb = new WriteMetadataBuilder();
+		wmb.setMetadata(metadata);
+		wmb.setMetadataMask(metadataMask);
+		WriteMetadataCaseBuilder wmcb = new WriteMetadataCaseBuilder().setWriteMetadata(wmb.build());
+
+		Instruction maskInstruction = new InstructionBuilder().setOrder(instructions.size())
+				.setKey(new InstructionKey(getInstructionKey())).setInstruction(wmcb.build()).build();
+
+		instructions.add(maskInstruction);
+		Instruction gotoTableInstruction = new InstructionBuilder()
+				.setInstruction(new GoToTableCaseBuilder()
+						.setGoToTable(new GoToTableBuilder().setTableId(targetTable).build()).build())
+				.setKey(new InstructionKey(getInstructionKey())).setOrder(instructions.size()).build();
+
+		instructions.add(gotoTableInstruction);
+		return instructions;
+	}
 
 	private static List<Instruction> addWriteMetadataInstruction(List<Instruction> instructions, BigInteger metadata,
 			BigInteger metadataMask) {
@@ -1002,7 +1022,7 @@ public class FlowUtils {
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addSendPacketToControllerInstruction(instructions);
-		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId, metadata,metadataMask);
 		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
 		// newMetadataMask);
 		InstructionsBuilder isb = new InstructionsBuilder();
@@ -1030,9 +1050,8 @@ public class FlowUtils {
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addSendPacketToControllerInstruction(instructions);
-		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
-		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
-		// newMetadataMask);
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId, metadata, metadataMask);
+		
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
