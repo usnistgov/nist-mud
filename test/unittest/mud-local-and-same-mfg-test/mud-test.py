@@ -82,13 +82,13 @@ class TestAccess(unittest.TestCase) :
         result = h1.cmdPrint("ping 10.0.0.3 -c 10 -q")
         self.assertTrue(re.search("100",result) is None, "Expecting a successful ping")
 
-    def testHttpGetExpectFail(self):
+    def testHttpGetExpectPass(self):
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
 
-    def testHttpGetExpectPass(self):
+    def testHttpGetExpectFail(self):
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.antd.local:443 --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("OK",result) is  None, "Expecting a failed get")

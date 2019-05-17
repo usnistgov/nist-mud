@@ -48,42 +48,27 @@ class TestAccess(unittest.TestCase) :
 
     def testTcpGetExpectPass(self):
         h1 = hosts[0]
-        h3 = hosts[2]
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
-	time.sleep(2)
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
 
     def testTcpGetExpectFail(self):
-        h1 = hosts[0]
         h2 = hosts[1]
         h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8010 &")
-        time.sleep(2)
+        time.sleep(3)
         result = h2.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8010")
         self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        time.sleep(5)
 
     def testUdpManufacturerPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
-        h2 = hosts[1]
-    	h2.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client --quiet ")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.2 --client  --bind --quiet ")
         print ("result " + str(result))
         self.assertTrue(int(result) >= 0, "expect successful ping")
 
-    def testUdpManufacturerPingExpectPass1(self) :
-        print "pinging a same manufacturer peer -- this should succeed with MUD"
-        h2 = hosts[1]
-        h1 = hosts[0]
-    	h1.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
-        time.sleep(2)
-        result = self.runAndReturnOutput(h2, "python ../util/udpping.py --port 8008 --host 10.0.0.1 --client --quiet")
-        self.assertTrue(int(result) >= 0, "expect successful ping")
 
     def testUdpManufacturerPingExpectFail(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
-        h3 = hosts[2]
-    	h3.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet ")
         self.assertTrue(int(result) <= 1, "expect unsuccessful ping")
@@ -248,10 +233,9 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-    	h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    	h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
+    h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 -T 100 &")
     
     # Start the IDS on node 8
 
