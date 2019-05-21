@@ -27,6 +27,7 @@
 		<dluxapps.version>0.6.1</dluxapps.version>
 		<genius.version>0.3.1</genius.version>
 		<configfile.directory>etc/opendaylight/karaf</configfile.directory>
+        <openflowplugin.version>0.5.1</openflowplugin.version>
 	</properties>
 
 
@@ -60,6 +61,15 @@
                 <type>pom</type>
 			    <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.opendaylight.openflowplugin</groupId>
+                <artifactId>openflowplugin-artifacts</artifactId>
+                <type>pom</type>
+                <version>${openflowplugin.version}</version>
+                <scope>import</scope>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
@@ -70,6 +80,22 @@
             <type>jar</type>
         </dependency>
 
+          <dependency>
+              <groupId>org.opendaylight.openflowplugin</groupId>
+              <artifactId>openflowplugin-impl</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.opendaylight.openflowplugin</groupId>
+              <artifactId>openflowplugin-api</artifactId>
+          </dependency>
+          <dependency>
+              <groupId>org.opendaylight.openflowplugin</groupId>
+              <artifactId>openflowplugin</artifactId>
+          </dependency>
+           <dependency>
+                <groupId>org.opendaylight.openflowplugin</groupId>
+                <artifactId>openflowplugin-blueprint-config</artifactId>
+           </dependency>
 
 
         <dependency>

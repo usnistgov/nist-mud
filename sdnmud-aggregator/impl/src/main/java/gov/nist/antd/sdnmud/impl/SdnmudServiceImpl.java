@@ -42,9 +42,11 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.G
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowsStatisticsFromAllFlowTablesInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.get.aggregate.flow.statistics.from.flow.table._for.given.match.output.AggregatedFlowStatistics;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearMudRulesOutput;
@@ -330,9 +332,10 @@ public class SdnmudServiceImpl implements SdnmudService {
 					
                   /*  
                    * This refuses to work. Need to fix.
-                   *
+                   */
 					try {
-						NodeRef nodeRef = new NodeRef(node);
+						  InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
+						NodeRef nodeRef = new NodeRef(outNode);
 
 						GetFlowStatisticsInputBuilder inputBuilder = new GetFlowStatisticsInputBuilder();
 
@@ -356,14 +359,17 @@ public class SdnmudServiceImpl implements SdnmudService {
 					}
 						
 					GetAllFlowsStatisticsFromAllFlowTablesInputBuilder ib = new GetAllFlowsStatisticsFromAllFlowTablesInputBuilder();
-					ib.setNode(new NodeRef(node));
+ 
+					  InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
+						NodeRef nodeRef = new NodeRef(outNode);
+
 					
 					try {
 						sdnmudProvider.getFlowStatisticsService().getAllFlowsStatisticsFromAllFlowTables(ib.build()).get();
 					} catch (InterruptedException | ExecutionException e) {
 						LOG.error("Exception in getting stats ", e);
 					}
-					*/
+					
                     
 					frBuilder.setFlowId(flow.getId().getValue());
 					frBuilder.setTableId(Long.valueOf(flow.getTableId()));
