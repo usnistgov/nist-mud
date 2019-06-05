@@ -23,11 +23,13 @@
  */
 package gov.nist.antd.sdnmud.impl;
 
+import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
@@ -35,6 +37,9 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,6 +58,8 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	private Map<String, Uri> macToUri = new HashMap<String, Uri>();
 
 	private Map<Uri, HashSet<MacAddress>> uriToMacs = new HashMap<Uri, HashSet<MacAddress>>();
+
+	private Set<MacAddress> blockedAddressTable = new HashSet<MacAddress>();
 
 	private static final Logger LOG = LoggerFactory.getLogger(MappingDataStoreListener.class);
 
@@ -77,21 +84,38 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 		for (DataTreeModification<Mapping> change : collection) {
 			Mapping mapping = change.getRootNode().getDataAfter();
 			List<MacAddress> macAddresses = mapping.getDeviceId();
+
 			// For testing purposes we support file: URIs so this may not actually
 			// be the same as the URI in the mud profile.
 			Uri uri = mapping.getMudUrl();
 			LOG.info("mudUri = " + uri.getValue());
 			String uriStr = sdnmudProvider.getMudFileFetcher().fetchAndInstallMudFile(uri.getValue());
-			if (uriStr == null) {
-				LOG.error("FAILED to get the MUD file from the manufacturer. Installing classification rules ONLY ");
-				if (uri.getValue().startsWith("file://")) {
-					// File URI specified but file is not found.
-					LOG.error("Invalid MUD file " + uri.getValue());
-					return;
+			if (uriStr == null && sdnmudProvider.getSdnmudConfig().isBlockMacOnMudProfileFailure()) {
+				// Find the MAC address that was added. There should only be one MAC
+				// address added but we could not retrieve or verify the associated MUD profile.
+				// so we need to put the device in a blocked state (this is done on "packet In
+				// event").
+				LOG.error("Failed to verify or fetch MUD profile -- blocking the device uri = " + uri.getValue());
+				for (MacAddress macAddress : macAddresses) {
+					// block the mac address if a mapping has not yet been defined.
+					if (!macToUri.containsKey(macAddress.getValue())) {
+						this.blockedAddressTable.add(macAddress);
+					}
 				}
-				// What to do when mud file cannot be retrieved?
-				// TOOD -- configuration option is needed here.
+				sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+				return;
 			} else {
+				boolean found = false;
+				for (MacAddress macAddress : macAddresses) {
+					if (this.blockedAddressTable.contains(macAddress)) {
+						this.blockedAddressTable.remove(macAddress);
+						found = true;
+					}
+				}
+
+				if (found) {
+					sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+				}
 				uri = new Uri(uriStr);
 			}
 
@@ -126,11 +150,16 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	public void clearState() {
 		this.macToUri.clear();
 		this.uriToMacs.clear();
+		this.blockedAddressTable.clear();
 	}
 
-	public Map<Uri,HashSet<MacAddress>> getMapping() {
+	public Map<Uri, HashSet<MacAddress>> getMapping() {
 		return this.uriToMacs;
-		
+
+	}
+
+	public boolean isBlocked(MacAddress mac) {
+		return this.blockedAddressTable.contains(mac);
 	}
 
 }

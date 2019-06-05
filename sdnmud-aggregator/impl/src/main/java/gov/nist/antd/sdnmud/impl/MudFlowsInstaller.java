@@ -48,6 +48,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev1901
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.mud.grouping.FromDevicePolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.mud.grouping.ToDevicePolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev190304.port.range.or.operator.port.range.or.operator.Operator;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.mud.QuarantinedDevicePolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.mud.quarantined.device.policy.EnabledAceNames;
@@ -923,6 +924,26 @@ public class MudFlowsInstaller {
 				flowCookie, flowId);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
+	
+	public void installDropBlockedMacFlows(InstanceIdentifier<FlowCapableNode> node) {
+		String nodeId = IdUtils.getNodeUri(node);
+		FlowCookie flowCookie = SdnMudConstants.BLOCK_DST_MAC_FLOW_COOKIE;
+		FlowId flowId = IdUtils.createFlowId(nodeId);
+		BigInteger metadata = SdnMudConstants.DST_MAC_BLOCKED_MASK;
+		BigInteger metadataMask = SdnMudConstants.DST_MAC_BLOCKED_FLAG;
+		int priority = SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY;
+		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, sdnmudProvider.getSdnmudRulesTable(), 
+				sdnmudProvider.getDropTable(),priority, flowId, flowCookie);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+		
+		flowCookie = SdnMudConstants.BLOCK_SRC_MAC_FLOW_COOKIE;
+		flowId = IdUtils.createFlowId(nodeId);
+		metadata = SdnMudConstants.SRC_MAC_BLOCKED_MASK;
+		metadataMask = SdnMudConstants.SRC_MAC_BLOCKED_FLAG;
+		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, sdnmudProvider.getSdnmudRulesTable(), 
+				sdnmudProvider.getDropTable(),priority,flowId, flowCookie);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+	}
 
 	public void installAllowToDnsAndNtpFlowRules(InstanceIdentifier<FlowCapableNode> node) {
 		String nodeId = IdUtils.getNodeUri(node);
@@ -956,13 +977,14 @@ public class MudFlowsInstaller {
 				.shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
 						.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
 								.shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
+		int priority = SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 2;
 
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK);
 
 		FlowId flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
 		FlowCookie flowCookie = IdUtils.createFlowCookie("metadata-match-go-to-next");
 		short tableId = sdnmudProvider.getSdnmudRulesTable();
-		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, flowId,
+		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, (short) (tableId + 1), priority, flowId,
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
@@ -972,7 +994,7 @@ public class MudFlowsInstaller {
 				.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
 						.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
-		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, flowId, flowCookie);
+		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, (short) (tableId + 1), priority, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
 	}
@@ -1231,5 +1253,7 @@ public class MudFlowsInstaller {
 		this.nameResolutionCache.clear();
 		LOG.info("clearMudRules: done cleaning mud rules");
 	}
+
+	
 
 }

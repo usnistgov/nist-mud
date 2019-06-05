@@ -10,6 +10,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -134,53 +135,56 @@ public class MudFileFetcher {
 		}
 	}
 
+	private boolean verifyCertificateChain(Certificate[] certs) throws CertificateException {
+
+		int n = certs.length;
+		for (int i = 0; i < n - 1; i++) {
+			
+			X509Certificate cert = (X509Certificate) certs[i];
+			cert.checkValidity();
+			X509Certificate issuer = (X509Certificate) certs[i + 1];
+			if (cert.getIssuerX500Principal().equals(issuer.getSubjectX500Principal()) == false) {
+				return false;
+			}
+			try {
+				cert.verify(issuer.getPublicKey());
+			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+				return false;
+			}
+		}
+		X509Certificate last = (X509Certificate) certs[n - 1];
+		// if self-signed, verify the final cert
+		// TODO -- check if this is in our CA store.
+		LOG.error("VALIDATION CODE SHOULD GO HERE -- this accepts ALL certificates");
+		if (last.getIssuerX500Principal().equals(last.getSubjectX500Principal())) {
+			try {
+				last.verify(last.getPublicKey());
+			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+				return false;
+			}
+		}
+
+		return true;
+
+	}
+
 	private int doHttpGet(String url, byte[] data) throws NoSuchAlgorithmException, KeyStoreException,
 			KeyManagementException, ClientProtocolException, IOException {
 		SSLContextBuilder builder = new SSLContextBuilder();
 
-		/*
-		 * DUMMY Host Name verifier for testing purposes
-		 */
-
-		X509HostnameVerifier hv = new X509HostnameVerifier () {
-			@Override
-			public boolean verify(String urlHostName, SSLSession session) {
-				return true;
-			}
-
-			@Override
-			public void verify(String host, SSLSocket ssl) throws IOException {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void verify(String host, X509Certificate cert) throws SSLException {
-				// TODO Auto-generated method stub
-				
-			}
-
-			@Override
-			public void verify(String host, String[] cns, String[] subjectAlts) throws SSLException {
-				// TODO Auto-generated method stub
-				
-			}
-
-		};
+		// TODO -- this is for testing purposes.
+		X509HostnameVerifier hv = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
 
 		if (sdnmudConfig.isTrustSelfSignedCert()) {
 			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
 		} else {
-
 			TrustStrategy trustStrategy = new TrustStrategy() {
 				@Override
-				public boolean isTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-					LOG.error("VALIDATION CODE SHOULD GO HERE -- this accepts ALL certificates");
-					// TODO -- verify the certificate chain.
-					return true;
+				public boolean isTrusted(X509Certificate[] certs, String authType) throws CertificateException {
+					return verifyCertificateChain(certs);
 				}
 			};
-			
+
 			builder.loadTrustMaterial(null, trustStrategy);
 		}
 
@@ -288,11 +292,11 @@ public class MudFileFetcher {
 				int cacheTimeout = ((Long) ietfMud.get("cache-validity")).intValue();
 
 				LOG.info("mud-signature " + mudSignatureUrl);
-				if ( mudSignatureUrl == null && fileFetchedFromHttps) {
+				if (mudSignatureUrl == null && fileFetchedFromHttps) {
 					LOG.error("File verification failed -- no mud signature URL is given protocol " + protocol);
 					return null;
 				}
-		
+
 				if (mudSignatureUrl != null && fileFetchedFromHttps) {
 
 					// Allocate a buffer to fetch the signature.
@@ -318,6 +322,16 @@ public class MudFileFetcher {
 						LOG.error("Certificate not found in keystore -- not installing mud profile");
 						return null;
 					}
+					
+					((X509Certificate)cert).checkValidity();
+						
+					Certificate[] certs = keystore.getCertificateChain(manufacturer);
+                    
+					if ( !verifyCertificateChain(certs)) {
+						LOG.error("Certificate chain verification failed");
+						return null;
+					}
+					
 					PublicKey publicKey = cert.getPublicKey();
 					String algorithm = publicKey.getAlgorithm();
 					Signature sig = Signature.getInstance("SHA256withRSA");
@@ -331,7 +345,7 @@ public class MudFileFetcher {
 						LOG.info("Signature verification succeeded");
 					}
 
-				} 
+				}
 
 				if (fileFetchedFromHttps) {
 					LOG.info("Write to Cache here ");

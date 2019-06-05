@@ -65,13 +65,13 @@ class TestAccess(unittest.TestCase) :
 
     def testTcpGetExpectPass(self):
         h1 = hosts[0]
-        result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
-        self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")
+        result = h1.cmdPrint("wget 10.0.0.3:8010 --timeout 20")
+        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
     def testTcpGetExpectFail(self):
         h2 = hosts[1]
-        result = h2.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8010 -B")
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        result = h2.cmdPrint("wget 10.0.0.3:8010 --timeout 20")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
     #def testUdpManufacturerPingExpectPass(self) :
     #    print "pinging a manufacturer peer -- this should succeed with MUD"
@@ -253,10 +253,6 @@ def setupTopology(controller_addr):
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     #h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
     #h2.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
-    h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8010 -T 120 &")
-    h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 -T 120 &")
     #h1.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.1 -T 10000 -C &")
     #h3.cmdPrint("python ../util/tcp-server.py -P 8010 -H 10.0.0.3 -T 10000 -C &")
     
@@ -337,7 +333,17 @@ if __name__ == '__main__':
 
     headers= {"Content-Type":"application/json"}
     for (configfile,suffix) in {
-        (cfgfile, "sdnmud:sdnmud-config"),
+        (cfgfile, "sdnmud:sdnmud-config") } :
+        data = json.load(open(configfile))
+        print "configfile", configfile
+        url = "http://" + controller_addr + ":8181/restconf/config/" + suffix
+        print "url ", url
+        r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
+        print "response ", r
+
+    time.sleep(10)
+
+    for (configfile,suffix) in {
         ("device-association-hairbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toothbrush.json","nist-mud-device-association:mapping"),
         ("device-association-toaster.json","nist-mud-device-association:mapping"),
@@ -353,6 +359,10 @@ if __name__ == '__main__':
     net.pingAll(1)
     h1.cmdPrint("nslookup www.nist.local")
     h1.cmdPrint("nslookup www.antd.local")
+    h3.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h1.cmdPrint("python ../util/udpping.py --port 8008 --server &")
+    h1.cmdPrint("python ../util/http-server.py -H 10.0.0.1 -P 8010&")
+    h3.cmdPrint("python ../util/http-server.py -H 10.0.0.3 -P 8010&")
 
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :

@@ -84,7 +84,7 @@ public class FlowCommitWrapper {
 		}
 		return true;
 	}
-	
+
 	public boolean flowExists(String flowIdPrefix, short tableId, InstanceIdentifier<FlowCapableNode> flowNodeIdent) {
 		InstanceIdentifier<Table> tableInstanceId = flowNodeIdent.child(Table.class, new TableKey(tableId));
 		CheckedFuture<Optional<Table>, ReadFailedException> commitFuture = dataBrokerService.newReadOnlyTransaction()
@@ -184,6 +184,22 @@ public class FlowCommitWrapper {
 		for (FlowKey flowKey : flowKeys) {
 			deleteFlow(flowKey, table, flowCapableNode);
 		}
+
+		if (flowTable.get(flowCapableNode) != null) {
+			ArrayList<Flow> newFlowEntries = new ArrayList<Flow>();
+
+			for (Flow flow : flowTable.get(flowCapableNode)) {
+				if (!flow.getId().getValue().startsWith(uriPrefix)) {
+					newFlowEntries.add(flow);
+				}
+			}
+			if (! newFlowEntries.isEmpty()) {
+				flowTable.put(flowCapableNode, newFlowEntries);
+			} else {
+				flowTable.remove(flowCapableNode);
+			}
+		} 
+
 	}
 
 	synchronized public void deleteFlows(InstanceIdentifier<FlowCapableNode> flowCapableNode) {
@@ -198,8 +214,7 @@ public class FlowCommitWrapper {
 		}
 	}
 
-	public List<Flow> getFlows(
-			InstanceIdentifier<FlowCapableNode> node) {
+	public List<Flow> getFlows(InstanceIdentifier<FlowCapableNode> node) {
 		return flowTable.get(node);
 	}
 

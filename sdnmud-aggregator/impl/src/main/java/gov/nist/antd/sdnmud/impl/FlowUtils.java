@@ -708,6 +708,7 @@ public class FlowUtils {
 		addGoToTableInstruction(instructions, destinationTableId);
 		isb.setInstruction(instructions);
 
+		
 		flowBuilder.setMatch(match).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
@@ -1076,12 +1077,10 @@ public class FlowUtils {
 	 * @return
 	 */
 	public static FlowBuilder createMetadataMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
-			short tableId, FlowId flowId, FlowCookie flowCookie) {
+			short tableId, short targetTableId, int priority, FlowId flowId, FlowCookie flowCookie) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
-
-		short targetTableId = (short) (tableId + 1);
 
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
@@ -1092,7 +1091,7 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 2).setBufferId(OFConstants.ANY)
+				.setPriority(priority).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;

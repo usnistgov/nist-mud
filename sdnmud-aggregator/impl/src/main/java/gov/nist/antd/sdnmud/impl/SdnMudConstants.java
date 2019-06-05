@@ -45,116 +45,112 @@ interface SdnMudConstants {
 	// Well known classes.
 	String DNS_SERVER_URI = "urn:ietf:params:mud:dns";
 	String NTP_SERVER_URI = "urn:ietf:params:mud:ntp";
+
+
+	// Split the metadata in two. Top half for src.
+	static final int SRC_MANUFACTURER_SHIFT = 32;
+	static final BigInteger SRC_MANUFACTURER_MASK = BigInteger.valueOf(0xFFF).shiftLeft(SRC_MANUFACTURER_SHIFT); //12 bits for src manufacturer
 	
+	static final int SRC_MODEL_SHIFT = SRC_MANUFACTURER_MASK.bitLength();
+	static final BigInteger SRC_MODEL_MASK = BigInteger.valueOf(0xFFF).shiftLeft(SRC_MODEL_SHIFT);
 	
-	//"FFF0000000000000"
-	//"000FFF0000000000"
-	//"000000F000000000"
-	//"0000000F00000000"
-	//"00000000F0000000"
-	//"000000000F000000"
-	//"0000000000FFF000"
-	//"0000000000000FFF"
-
-	// The mask for Manufacturer and model.
-	BigInteger SRC_MANUFACTURER_MASK = new BigInteger("FFF0000000000000", 16);
-	int SRC_MANUFACTURER_SHIFT =                         "0000000000000".length() * 4;
-
-	BigInteger SRC_MODEL_MASK = new BigInteger      ( "000FFF0000000000", 16);
-	int SRC_MODEL_SHIFT =                                   "0000000000".length() * 4;
-
-	BigInteger DST_MANUFACTURER_MASK = new BigInteger("0000000000000FFF", 16);
-	int DST_MANUFACTURER_SHIFT = 0;
-
-	BigInteger DST_MODEL_MASK = new BigInteger       ("0000000000FFF000", 16);
-	int DST_MODEL_SHIFT =                                          "000".length() * 4;
-
-    BigInteger SRC_NETWORK_MASK =      new BigInteger("0000000F00000000", 16);
-	int SRC_NETWORK_FLAGS_SHIFT =                             "00000000".length() * 4;
-	BigInteger LOCAL_SRC_NETWORK_FLAG =  BigInteger.valueOf(1L << SRC_NETWORK_FLAGS_SHIFT);
-
-	BigInteger DST_NETWORK_MASK =   new BigInteger   ("00000000F0000000", 16);
-	int DST_NETWORK_FLAGS_SHIFT =                              "0000000".length() * 4;
-	BigInteger LOCAL_DST_NETWORK_FLAG = BigInteger.valueOf(1L <<DST_NETWORK_FLAGS_SHIFT);
+	static final int SRC_NETWORK_FLAGS_SHIFT = SRC_MODEL_MASK.bitLength();
+	static final BigInteger LOCAL_SRC_NETWORK_FLAG = BigInteger.valueOf(1L).shiftLeft(SRC_NETWORK_FLAGS_SHIFT);
+	static final BigInteger SRC_NETWORK_MASK = LOCAL_SRC_NETWORK_FLAG;
 	
-	BigInteger SRC_QUARANTENE_MASK =  new BigInteger("000000F000000000", 16);
-	int SRC_QUARANTENE_MASK_SHIFT =                         "000000000".length() * 4;
-	BigInteger SRC_QUARANTENE_FLAG = BigInteger.valueOf(1L << SRC_QUARANTENE_MASK_SHIFT);
+	static final int SRC_QUARANTENE_MASK_SHIFT = SRC_NETWORK_MASK.bitLength();
+	static final BigInteger SRC_QUARANTENE_FLAG = BigInteger.valueOf(1L).shiftLeft(SRC_QUARANTENE_MASK_SHIFT);
+	// ONE bit for src quarantine mask.
+	static final BigInteger SRC_QUARANTENE_MASK = SRC_QUARANTENE_FLAG;
 	
-	BigInteger DST_QURANTENE_MASK =   new BigInteger   ("000000000F000000", 16);
-    int DST_QUARANTENE_FLAGS_SHIFT =                              "000000".length() * 4;
-	BigInteger DST_QUARANTENE_FLAG = BigInteger.valueOf(1L << DST_QUARANTENE_FLAGS_SHIFT);
+	static final int SRC_MAC_BLOCKED_MASK_SHIFT = SRC_QUARANTENE_MASK.bitLength();
+	static final BigInteger SRC_MAC_BLOCKED_FLAG = BigInteger.valueOf(1L).shiftLeft(SRC_MAC_BLOCKED_MASK_SHIFT);
+	static final BigInteger SRC_MAC_BLOCKED_MASK = SRC_MAC_BLOCKED_FLAG;
 
 
+	static final BigInteger DST_MANUFACTURER_MASK = BigInteger.valueOf(0xFFF); // 12 bits for dst manufacturer.
+	static final int DST_MANUFACTURER_SHIFT = 0;
+	
+	static final int DST_MODEL_SHIFT = DST_MANUFACTURER_MASK.bitLength();
+	static final BigInteger DST_MODEL_MASK = BigInteger.valueOf(0xFFF).shiftLeft(DST_MODEL_SHIFT);
+	
+	static final int DST_NETWORK_FLAGS_SHIFT = DST_MODEL_MASK.bitLength();
+	static final BigInteger LOCAL_DST_NETWORK_FLAG = BigInteger.valueOf(1L).shiftLeft(DST_NETWORK_FLAGS_SHIFT);
+	static final BigInteger DST_NETWORK_MASK = LOCAL_DST_NETWORK_FLAG;
+	
+	static final int DST_QUARANTENE_FLAGS_SHIFT = DST_NETWORK_MASK.bitLength();
+	static final BigInteger DST_QUARANTENE_FLAG = BigInteger.valueOf(1L).shiftLeft(DST_QUARANTENE_FLAGS_SHIFT);
+	static final BigInteger DST_QURANTENE_MASK = DST_QUARANTENE_FLAG;
+	
+	static final int DST_MAC_BLOCKED_MASK_SHIFT = DST_QURANTENE_MASK.bitLength();
+	static final BigInteger DST_MAC_BLOCKED_FLAG = BigInteger.valueOf(1L).shiftLeft(DST_MAC_BLOCKED_MASK_SHIFT);
+	static final BigInteger DST_MAC_BLOCKED_MASK = DST_MAC_BLOCKED_FLAG;
 
 	// Classification for UNKNOWN packet ( initial value before lookup )
-	String UNKNOWN = "UNKNOWN";
+	static final String UNKNOWN = "UNKNOWN";
 
 	// Cookie for unclassified flow rule.
-	String UNCLASSIFIED = "UNCLASSIFIED";
+	static final String UNCLASSIFIED = "UNCLASSIFIED";
 	// Flow URIs.
-	String NONE = "NONE";
-	String DROP = "drop";
-	String REMOTE = "remote";
-	String LOCAL = "local";
-
+	static final String NONE = "NONE";
+	static final String DROP = "drop";
+	
 	// Well known cookies.
-	FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils.createFlowCookie("send-to-controller-flow-cookie");
+	static final FlowCookie SEND_TO_CONTROLLER_FLOW_COOKIE = IdUtils.createFlowCookie("send-to-controller-flow-cookie");
 
-	FlowCookie SEND_TCP_PACKET_TO_CONTROLLER_FLOW_COOKIE = IdUtils
+	static final FlowCookie SEND_TCP_PACKET_TO_CONTROLLER_FLOW_COOKIE = IdUtils
 			.createFlowCookie("send-tcp-packet-to-controller-flow-cookie");
 
-	FlowCookie BYPASS_DHCP_FLOW_COOKIE = IdUtils.createFlowCookie("bypass-dhcp-flow-cookie");
+	static final FlowCookie BYPASS_DHCP_FLOW_COOKIE = IdUtils.createFlowCookie("bypass-dhcp-flow-cookie");
 
-	FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = IdUtils
+	static final FlowCookie SRC_MANUFACTURER_STAMP_FLOW_COOKIE = IdUtils
 			.createFlowCookie("stamp-src-mac-manufacturer-model-flow-cookie");
 
-	FlowCookie DROP_FLOW_COOKIE = IdUtils.createFlowCookie("DROP");
-	
-	FlowCookie GOTO_NEXT_FLOW_COOKIE = IdUtils.createFlowCookie("GOTO_NEXT_FLOW_COOKIE");
+	static final FlowCookie DROP_FLOW_COOKIE = IdUtils.createFlowCookie("DROP");
 
-	FlowCookie UNCLASSIFIED_FLOW_COOKIE = IdUtils.createFlowCookie(UNCLASSIFIED);
+	static final FlowCookie GOTO_NEXT_FLOW_COOKIE = IdUtils.createFlowCookie("GOTO_NEXT_FLOW_COOKIE");
 
-	FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = IdUtils.createFlowCookie("src-local-network-flow-cookie");
+	static final FlowCookie UNCLASSIFIED_FLOW_COOKIE = IdUtils.createFlowCookie(UNCLASSIFIED);
 
-	FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = IdUtils
+	static final FlowCookie SRC_LOCALNETWORK_MASK_FLOW_COOKIE = IdUtils.createFlowCookie("src-local-network-flow-cookie");
+
+	static final FlowCookie DST_MANUFACTURER_MODEL_FLOW_COOKIE = IdUtils
 			.createFlowCookie("stamp-dst-mac-manufactuer-model-flow-cookie");
-	
 
-	FlowCookie FROM_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.FromDevice.getName());
-	FlowCookie TO_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.ToDevice.getName());
+	static final FlowCookie FROM_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.FromDevice.getName());
+	static final FlowCookie TO_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.ToDevice.getName());
 
-	FlowCookie DH_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-request-flow-cookie");
-	FlowCookie  DNS_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dns-request-flow-cookie");
-	FlowCookie  DNS_RESPONSE_FLOW_COOKIE = IdUtils.createFlowCookie("dns-response-flow-cookie");
-	FlowCookie DEFAULT_MUD_FLOW_COOKIE = IdUtils.createFlowCookie("default-mud-flow-cookie");
-	FlowCookie TCP_SYN_MATCH_CHECK_COOKIE = IdUtils.createFlowCookie("tcp-syn-match-check");
-
+	static final FlowCookie DH_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-request-flow-cookie");
+	static final FlowCookie DNS_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dns-request-flow-cookie");
+	static final FlowCookie DNS_RESPONSE_FLOW_COOKIE = IdUtils.createFlowCookie("dns-response-flow-cookie");
+	static final FlowCookie DEFAULT_MUD_FLOW_COOKIE = IdUtils.createFlowCookie("default-mud-flow-cookie");
+	static final FlowCookie TCP_SYN_MATCH_CHECK_COOKIE = IdUtils.createFlowCookie("tcp-syn-match-check");
+	static final FlowCookie BLOCK_SRC_MAC_FLOW_COOKIE = IdUtils.createFlowCookie("blocked-src-mac-flow-cookie");
+	static final FlowCookie BLOCK_DST_MAC_FLOW_COOKIE = IdUtils.createFlowCookie("blocked-dst-mac-flow-cookie");
 
 	// Cache timeout for network and model stamping flow rules.
-	int ETHERTYPE_LLDP = 0x88cc;
-	BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF", 16);
+	static final int ETHERTYPE_LLDP = 0x88cc;
+	static final BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF", 16);
 
-	String DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/";
+	static final String DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/";
 
-	String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
+	static final String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
 
-	boolean IMPLEMENT_MODEL_ACLS = false;
+	//boolean IMPLEMENT_MODEL_ACLS = false;
 	// TODO -- set this in the config file.
-	int DROP_RULE_TIMEOUT = 120;
-	
+	static final int DROP_RULE_TIMEOUT = 120;
+
 	// Flow table priorities.
-		public static final Integer BASE_PRIORITY = 30;
-		public static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
+	static final Integer BASE_PRIORITY = 30;
+	static final Integer SEND_PACKET_TO_CONTROLLER_PRIORITY = 0;
 
-		// Flow entry for dropping flows on a match.
-		public static final Integer MAX_PRIORITY = BASE_PRIORITY + 25;
-		public static final Integer MATCHED_GOTO_ON_QUARANTENE_PRIORITY = BASE_PRIORITY + 20;
-		public static final Integer MATCHED_DROP_ON_QUARANTINE_PRIORITY = BASE_PRIORITY + 15;
-		public static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
-		public static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
-		public static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
-		public static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
-
+	// Flow entry for dropping flows on a match.
+	static final Integer MAX_PRIORITY = BASE_PRIORITY + 25;
+	static final Integer MATCHED_GOTO_ON_QUARANTENE_PRIORITY = BASE_PRIORITY + 20;
+	static final Integer MATCHED_DROP_ON_QUARANTINE_PRIORITY = BASE_PRIORITY + 15;
+	static final Integer MATCHED_GOTO_FLOW_PRIORITY = BASE_PRIORITY + 10;
+	static final Integer MATCHED_DROP_PACKET_FLOW_PRIORITY = BASE_PRIORITY + 5;
+	static final Integer UNCONDITIONAL_GOTO_PRIORITY = BASE_PRIORITY;
+	static final Integer UNCONDITIONAL_DROP_PRIORITY = BASE_PRIORITY;
 
 }

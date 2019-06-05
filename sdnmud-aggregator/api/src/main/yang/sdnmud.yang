@@ -37,6 +37,7 @@ module sdnmud {
                 "Certification authority (CA) certificates for verifying MUD profile.";
       }
 
+
       leaf key-pass {
             type string;
             default "changeit";
@@ -76,9 +77,8 @@ module sdnmud {
            type boolean;
            default "true";
            description
-                "Whether or not to trust MUD profiles that are self signed. This is for DEBUGGING ONLY 
+                "Whether or not to trust Certs that are self signed. This is for DEBUGGING ONLY 
                 self signed Certs should not be trusted under normal circumstances";
-
       }
 
       leaf relaxed-acl {
@@ -87,6 +87,14 @@ module sdnmud {
            description
               "Fowrard packet before installing classification rules - this reduces the packet drop and allows
                for continued operation when controller is not connected. Warn operator if ACL violated.";
+      }
+
+      leaf block-mac-on-mud-profile-failure {
+           type boolean;
+           default "true";
+           description
+                "Block the mac address if the mud file does not install 
+                (i.e. on signature verification failure or failure to fetch the mud profile)";
       }
 
 
@@ -304,6 +312,12 @@ rpc get-src-mac-classification {
                 type boolean;
             }
 
+            leaf src-blocked-flag {
+                description 
+                     "Blocked due to mud profile failure";
+                type boolean;
+            }
+
     }
 
 }
@@ -345,6 +359,11 @@ rpc get-dst-mac-classification {
             leaf dst-quarantine-flag {
                 description 
                      "Qurarantene flag networks match";
+                type boolean;
+            }
+            leaf dst-blocked-flag {
+                description 
+                     "Blocked due to MUD profile failure";
                 type boolean;
             }
 

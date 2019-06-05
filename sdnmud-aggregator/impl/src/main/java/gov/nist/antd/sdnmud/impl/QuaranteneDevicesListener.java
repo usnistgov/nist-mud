@@ -37,7 +37,9 @@ public class QuaranteneDevicesListener implements DataTreeChangeListener<Quarant
 		LOG.info("QuaranteneDevicesListener: onDataTreeChanged" + changes.size());
 
 		for (DataTreeModification<QuarantineDevice> change : changes) {
+			if (change.getRootNode() != null) {
 				quarantineDevices = change.getRootNode().getDataAfter();
+			}
 		}
 		sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
 	}

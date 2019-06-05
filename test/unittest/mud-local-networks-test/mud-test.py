@@ -79,7 +79,7 @@ class TestAccess(unittest.TestCase) :
 
     def testContactExternalHostFromPrinterExpectPass(self):
         h1 = hosts[0]
-        result = h1.cmdPrint("wget --no-cache -O foo.html --delete-after --tries 2 http://www.nist.local:800")
+        result = h1.cmdPrint("wget www.nist.local:800 --no-cache -O foo.html --delete-after --tries 2")
         print ("result " + str(result))
         self.assertTrue(re.search("100",result) != None, "Expecting a successful get")
 
@@ -244,11 +244,6 @@ def setupTopology(controller_addr):
     h8.cmdPrint('ifconfig h8-eth1 203.0.113.1 netmask 255.255.255.0')
 
 
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h1.cmdPrint('python -m SimpleHTTPServer 80&')
-        h9.cmdPrint('python -m SimpleHTTPServer 800&')
-        #h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
-        #h3.cmdPrint("python tcp-server.py -H 10.0.0.3 -P 80 -T 1000 -C &")
     
 
     print "*********** System ready *********"

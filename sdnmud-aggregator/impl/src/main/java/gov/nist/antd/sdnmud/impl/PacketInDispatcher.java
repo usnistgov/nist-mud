@@ -297,7 +297,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			tx.put(LogicalDatastoreType.CONFIGURATION, qId, quarantineDevices);
 			tx.submit();
 		}
-		
 
 	}
 
@@ -357,29 +356,33 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		if (this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices() == null) {
 			return false;
 		} else {
-			return this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices().getQurantineMac().contains(macAddress);
+			return this.sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices().getQurantineMac()
+					.contains(macAddress);
 		}
 	}
 
 	private void installSrcMacMatchStampManufacturerModelFlowRules(MacAddress srcMac, boolean isLocalAddress,
-			boolean isQurantened, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
+			boolean isQurantened, boolean isBlocked, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 		String manufacturer = IdUtils.getAuthority(mudUri);
 		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
 		int modelId = IdUtils.getModelId(mudUri);
 		int localAddressFlag = isLocalAddress ? 1 : 0;
 
 		int quaranteneFlag = isQurantened ? 1 : 0;
+		int blockedFlag = isBlocked ? 1 : 0;
 
 		LOG.debug("installStampSrcManufacturerModelFlowRules : dstMac = " + srcMac.getValue() + " isLocalAddress "
 				+ "isQuarantine " + isQurantened + isLocalAddress + " mudUri " + mudUri);
 
-		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT)
+		BigInteger metadata = (BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
 				.or(BigInteger.valueOf(localAddressFlag).shiftLeft(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(blockedFlag).shiftLeft(SdnMudConstants.SRC_MAC_BLOCKED_MASK_SHIFT))
 				.or(BigInteger.valueOf(quaranteneFlag).shiftLeft(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT))
 				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.SRC_MODEL_SHIFT));
 
 		BigInteger metadataMask = SdnMudConstants.SRC_MANUFACTURER_MASK.or(SdnMudConstants.SRC_MODEL_MASK)
-				.or(SdnMudConstants.SRC_NETWORK_MASK).or(SdnMudConstants.SRC_QUARANTENE_MASK);
+				.or(SdnMudConstants.SRC_NETWORK_MASK).or(SdnMudConstants.SRC_QUARANTENE_MASK)
+				.or(SdnMudConstants.SRC_MAC_BLOCKED_MASK);
 
 		FlowCookie flowCookie = SdnMudConstants.SRC_MANUFACTURER_STAMP_FLOW_COOKIE;
 
@@ -404,24 +407,29 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	}
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
-			boolean isQurarantened, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
+			boolean isQurarantened, boolean isBlocked, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
 
 		String manufacturer = IdUtils.getAuthority(mudUri);
 		int manufacturerId = IdUtils.getManfuacturerId(manufacturer);
 		int modelId = IdUtils.getModelId(mudUri);
 		int isLocalAddressFlag = isLocalAddress ? 1 : 0;
 		int isQurantenedFlag = isQurarantened ? 1 : 0;
+		int isBlockedFlag = isBlocked ? 1 : 0;
 
-		LOG.debug("installStampDstManufacturerModelFlowRules : dstMac = " + dstMac.getValue() + " isLocalAddress "
-				+ isLocalAddress + " isQuarantened " + isQurarantened + " mudUri " + mudUri);
+		LOG.info("installStampDstManufacturerModelFlowRules : dstMac = " + dstMac.getValue() + " isLocalAddress "
+				+ isLocalAddress + " isQuarantened " + isQurarantened + " isBlocked " + isBlocked + " mudUri " + mudUri
+				+ " mfgId " + manufacturerId + " modelId " + modelId);
 
-		BigInteger metadata = BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
-				.or(BigInteger.valueOf(isQurantenedFlag).shiftLeft(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT))
-				.or(BigInteger.valueOf(isLocalAddressFlag).shiftLeft(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT))
-				.or(BigInteger.valueOf(modelId).shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
+		BigInteger metadata = BigInteger.valueOf(manufacturerId << SdnMudConstants.DST_MANUFACTURER_SHIFT)
+				.or(BigInteger.valueOf(modelId << SdnMudConstants.DST_MODEL_SHIFT))
+				.or(BigInteger.valueOf(isBlockedFlag << SdnMudConstants.DST_MAC_BLOCKED_MASK_SHIFT))
+				.or(BigInteger.valueOf(isQurantenedFlag << SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT))
+				.or(BigInteger.valueOf(isLocalAddressFlag << SdnMudConstants.DST_NETWORK_FLAGS_SHIFT));
+
 		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 		BigInteger metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK)
-				.or(SdnMudConstants.DST_NETWORK_MASK).or(SdnMudConstants.DST_QURANTENE_MASK);
+				.or(SdnMudConstants.DST_NETWORK_MASK).or(SdnMudConstants.DST_QURANTENE_MASK)
+				.or(SdnMudConstants.DST_MAC_BLOCKED_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
 		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
@@ -536,56 +544,53 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			if (tableId == sdnmudProvider.getSrcDeviceManufacturerStampTable()) {
 				// Keeps track of the number of packets seen at controller.
 				this.mudRelatedPacketInCounter++;
-				if (srcMacRuleTable.containsKey(srcMac.getValue())) {
-					// Rule is in cache so we dont bother
-					LOG.info("already installed -- returning");
-					return;
+				if (!srcMacRuleTable.containsKey(srcMac.getValue())) {
+					boolean isQuarantened = this.isQuarantene(srcMac);
+					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(srcMac);
+					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+
+					boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+							&& this.isLocalAddress(nodeId, srcIp);
+
+					installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, isQuarantened, isBlocked,
+							mudUri.getValue(), node);
+
+					if (isLocalAddress) {
+						this.unclassifiedMacAddresses.add(srcMac);
+					}
 				}
-
-				boolean isQuarantened = this.isQuarantene(srcMac);
-				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-
-				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
-						&& this.isLocalAddress(nodeId, srcIp);
-
-				installSrcMacMatchStampManufacturerModelFlowRules(srcMac, isLocalAddress, isQuarantened,
-						mudUri.getValue(), node);
-
-				if (isLocalAddress) {
-					this.unclassifiedMacAddresses.add(dstMac);
+				
+				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
+					// Broadcast notification for mappings.
+					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+					boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+							&& this.isLocalAddress(nodeId, dstIp);
+					if (isLocalAddress) {
+						this.unclassifiedMacAddresses.add(dstMac);
+					}
+					boolean isQuarantened = this.isQuarantene(dstMac);
+					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
+					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQuarantened, isBlocked,
+							mudUri.getValue(), node);
 				}
-
-				if (this.dstMacRuleTable.containsKey(dstMac.getValue())) {
-					LOG.info("dst mac rule already installed in table 1");
-					return;
-				}
-				// Broadcast notification for mappings.
-				mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-
-				isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
-						&& this.isLocalAddress(nodeId, dstIp);
-
-				if (isLocalAddress) {
-					this.unclassifiedMacAddresses.add(dstMac);
-				}
-
-				isQuarantened = this.isQuarantene(dstMac);
-				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQuarantened,
-						mudUri.getValue(), node);
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
 				this.mudRelatedPacketInCounter++;
-				Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
-				boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
-						&& this.isLocalAddress(nodeId, dstIp);
-				if (this.dstMacRuleTable.containsKey(dstMac.getValue())) {
-					LOG.info("already installed in table 1");
-					return;
+				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
+					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
+					boolean isLocalAddress = mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
+							&& this.isLocalAddress(nodeId, dstIp);
+					if (this.dstMacRuleTable.containsKey(dstMac.getValue())) {
+						LOG.info("already installed in table 1");
+						return;
+					}
+					boolean isQurarantene = this.isQuarantene(dstMac);
+					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
+
+					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurarantene, isBlocked,
+							mudUri.getValue(), node);
+					// Broadcast notifications for mappings seen at the switch.
 				}
-				boolean isQurarantene = this.isQuarantene(dstMac);
-				installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurarantene,
-						mudUri.getValue(), node);
-				// Broadcast notifications for mappings seen at the switch.
 
 			} else if (tableId == sdnmudProvider.getSdnmudRulesTable()) {
 				this.mudRelatedPacketInCounter++;
@@ -654,15 +659,12 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						return;
 					}
 					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-					if (true || !mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
-							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
-						this.dropRuleTable.add(srcMac);
-						this.broadcastAceViolation(srcMac, mudUri);
-						// Start a timer so we will be interrupted again after this period of time.
-						// We don't want to keep getting interrupted
-						timer.schedule(new DropRuleTableTimerTask(srcMac),
-								SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
-					}
+					this.dropRuleTable.add(srcMac);
+					this.broadcastAceViolation(srcMac, mudUri);
+					// Start a timer so we will be interrupted again after this period of time.
+					// We don't want to keep getting interrupted
+					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+
 				} else if (cookie.equals(SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE)) {
 					LOG.info("Saw a TCP SYN ACL violation");
 					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
@@ -671,13 +673,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					if (true || !mudUri.getValue().equals(SdnMudConstants.UNCLASSIFIED)
-							&& !mudUri.getValue().equals(SdnMudConstants.UNKNOWN)) {
-						this.dropRuleTable.add(srcMac);
-						this.broadcastAceViolation(srcMac, mudUri);
-						timer.schedule(new DropRuleTableTimerTask(srcMac),
-								SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
-					}
+					this.dropRuleTable.add(srcMac);
+					this.broadcastAceViolation(srcMac, mudUri);
+					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
 
 				}
 

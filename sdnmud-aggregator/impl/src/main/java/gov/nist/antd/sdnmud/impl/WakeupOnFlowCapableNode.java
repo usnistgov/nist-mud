@@ -195,6 +195,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		try {
 
 			MudFlowsInstaller mudFlowsInstaller = sdnmudProvider.getMudFlowsInstaller();
+			mudFlowsInstaller.installDropBlockedMacFlows(nodePath);
 			mudFlowsInstaller.installPermitPacketsToFromDhcp(nodePath);
 			mudFlowsInstaller.installAllowToDnsAndNtpFlowRules(nodePath);
 			if (sdnmudProvider.getSdnmudConfig().isRelaxedAcl()) {

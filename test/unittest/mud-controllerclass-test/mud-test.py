@@ -51,7 +51,7 @@ class TestAccess(unittest.TestCase) :
     def testUdpSameManPingExpectPass(self) :
         print "pinging a same manufacturer peer -- this should succeed with MUD"
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet --bind")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpControllerPingExpectPass(self) :
@@ -356,6 +356,8 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
+	if suffix == "sdnmud:sdnmud-config" :
+		time.sleep(10)
 
     print "uploaded mud rules ", str(r)
     net.pingAll(timeout=1)

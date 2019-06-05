@@ -90,394 +90,399 @@ import com.google.common.util.concurrent.Futures;
  */
 public class SdnmudServiceImpl implements SdnmudService {
 
-	private static final Logger LOG = LoggerFactory.getLogger(SdnmudServiceImpl.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SdnmudServiceImpl.class);
 
-	class CompletedFuture<T> implements Future<T> {
-		private final T result;
+    class CompletedFuture<T> implements Future<T> {
+        private final T result;
 
-		public CompletedFuture(final T result) {
-			this.result = result;
-		}
+        public CompletedFuture(final T result) {
+            this.result = result;
+        }
 
-		@Override
-		public boolean cancel(final boolean b) {
-			return false;
-		}
+        @Override
+        public boolean cancel(final boolean b) {
+            return false;
+        }
 
-		@Override
-		public boolean isCancelled() {
-			return false;
-		}
+        @Override
+        public boolean isCancelled() {
+            return false;
+        }
 
-		@Override
-		public boolean isDone() {
-			return true;
-		}
+        @Override
+        public boolean isDone() {
+            return true;
+        }
 
-		@Override
-		public T get() throws InterruptedException, ExecutionException {
-			return this.result;
-		}
+        @Override
+        public T get() throws InterruptedException, ExecutionException {
+            return this.result;
+        }
 
-		@Override
-		public T get(final long l, final TimeUnit timeUnit)
-				throws InterruptedException, ExecutionException, TimeoutException {
-			return get();
-		}
+        @Override
+        public T get(final long l, final TimeUnit timeUnit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return get();
+        }
 
-	}
+    }
 
-	private SdnmudProvider sdnmudProvider;
+    private SdnmudProvider sdnmudProvider;
 
-	public SdnmudServiceImpl(SdnmudProvider sdnmudProvider) {
-		this.sdnmudProvider = sdnmudProvider;
-	}
+    public SdnmudServiceImpl(SdnmudProvider sdnmudProvider) {
+        this.sdnmudProvider = sdnmudProvider;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
-	 * rev170915.SdnmudService#getPacketCount()
-	 */
-	@Override
-	public Future<RpcResult<GetPacketCountOutput>> getPacketCount() {
-		GetPacketCountOutputBuilder gpcob = new GetPacketCountOutputBuilder();
-		gpcob.setPacketCount(Long.valueOf(sdnmudProvider.getPacketInDispatcher().getPacketInCount(false)));
-		gpcob.setMudPacketCount(Long.valueOf(sdnmudProvider.getPacketInDispatcher().getMudPacketInCount(false)));
-		RpcResult<GetPacketCountOutput> result = RpcResultBuilder.success(gpcob).build();
-		return new CompletedFuture<RpcResult<GetPacketCountOutput>>(result);
-	}
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
+     * rev170915.SdnmudService#getPacketCount()
+     */
+    @Override
+    public Future<RpcResult<GetPacketCountOutput>> getPacketCount() {
+        GetPacketCountOutputBuilder gpcob = new GetPacketCountOutputBuilder();
+        gpcob.setPacketCount(Long.valueOf(sdnmudProvider.getPacketInDispatcher().getPacketInCount(false)));
+        gpcob.setMudPacketCount(Long.valueOf(sdnmudProvider.getPacketInDispatcher().getMudPacketInCount(false)));
+        RpcResult<GetPacketCountOutput> result = RpcResultBuilder.success(gpcob).build();
+        return new CompletedFuture<RpcResult<GetPacketCountOutput>>(result);
+    }
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
-	 * rev170915.SdnmudService#clearPacketCount()
-	 */
-	@Override
-	public Future<RpcResult<ClearPacketCountOutput>> clearPacketCount() {
-		ClearPacketCountOutputBuilder cpcob = new ClearPacketCountOutputBuilder();
-		sdnmudProvider.getPacketInDispatcher().clearPacketInCount();
-		cpcob.setSuccess(true);
-		RpcResult<ClearPacketCountOutput> result = RpcResultBuilder.success(cpcob).build();
-		return new CompletedFuture<RpcResult<ClearPacketCountOutput>>(result);
-	}
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
+     * rev170915.SdnmudService#clearPacketCount()
+     */
+    @Override
+    public Future<RpcResult<ClearPacketCountOutput>> clearPacketCount() {
+        ClearPacketCountOutputBuilder cpcob = new ClearPacketCountOutputBuilder();
+        sdnmudProvider.getPacketInDispatcher().clearPacketInCount();
+        cpcob.setSuccess(true);
+        RpcResult<ClearPacketCountOutput> result = RpcResultBuilder.success(cpcob).build();
+        return new CompletedFuture<RpcResult<ClearPacketCountOutput>>(result);
+    }
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
-	 * rev170915.SdnmudService#clearCache()
-	 */
-	@Override
-	public Future<RpcResult<ClearCacheOutput>> clearCache() {
+    /*
+     * (non-Javadoc)
+     *
+     * @see org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.
+     * rev170915.SdnmudService#clearCache()
+     */
+    @Override
+    public Future<RpcResult<ClearCacheOutput>> clearCache() {
 
-		ClearCacheOutputBuilder cpcob = new ClearCacheOutputBuilder();
-		sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
-		cpcob.setSuccess(true);
-		RpcResult<ClearCacheOutput> result = RpcResultBuilder.success(cpcob).build();
-		return new CompletedFuture<RpcResult<ClearCacheOutput>>(result);
-	}
+        ClearCacheOutputBuilder cpcob = new ClearCacheOutputBuilder();
+        sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+        cpcob.setSuccess(true);
+        RpcResult<ClearCacheOutput> result = RpcResultBuilder.success(cpcob).build();
+        return new CompletedFuture<RpcResult<ClearCacheOutput>>(result);
+    }
 
-	@Override
-	public Future<RpcResult<ClearMudRulesOutput>> clearMudRules() {
-		ClearMudRulesOutputBuilder cmrob = new ClearMudRulesOutputBuilder();
-		sdnmudProvider.clearMudRules();
-		sdnmudProvider.getMudFlowsInstaller().clearMudRules();
-		sdnmudProvider.getStateChangeScanner().clearState();
-		sdnmudProvider.getMappingDataStoreListener().clearState();
+    @Override
+    public Future<RpcResult<ClearMudRulesOutput>> clearMudRules() {
+        ClearMudRulesOutputBuilder cmrob = new ClearMudRulesOutputBuilder();
+        sdnmudProvider.clearMudRules();
+        sdnmudProvider.getMudFlowsInstaller().clearMudRules();
+        sdnmudProvider.getStateChangeScanner().clearState();
+        sdnmudProvider.getMappingDataStoreListener().clearState();
 
-		cmrob.setSuccess(true);
-		RpcResult<ClearMudRulesOutput> result = RpcResultBuilder.success(cmrob).build();
-		return new CompletedFuture<RpcResult<ClearMudRulesOutput>>(result);
-	}
+        cmrob.setSuccess(true);
+        RpcResult<ClearMudRulesOutput> result = RpcResultBuilder.success(cmrob).build();
+        return new CompletedFuture<RpcResult<ClearMudRulesOutput>>(result);
+    }
 
-	@Override
-	public Future<RpcResult<GetMudUnmappedAddressesOutput>> getMudUnmappedAddresses() {
-		GetMudUnmappedAddressesOutputBuilder guaob = new GetMudUnmappedAddressesOutputBuilder();
-		ArrayList<String> addrList = new ArrayList<String>();
-		for (MacAddress mac : sdnmudProvider.getPacketInDispatcher().getUnclassifiedMacAddresses()) {
-			addrList.add(mac.getValue());
-		}
-		guaob.setUnmappedDeviceAddresses(addrList);
-		RpcResult<GetMudUnmappedAddressesOutput> result = RpcResultBuilder.success(guaob).build();
-		return new CompletedFuture<RpcResult<GetMudUnmappedAddressesOutput>>(result);
-	}
+    @Override
+    public Future<RpcResult<GetMudUnmappedAddressesOutput>> getMudUnmappedAddresses() {
+        GetMudUnmappedAddressesOutputBuilder guaob = new GetMudUnmappedAddressesOutputBuilder();
+        ArrayList<String> addrList = new ArrayList<String>();
+        for (MacAddress mac : sdnmudProvider.getPacketInDispatcher().getUnclassifiedMacAddresses()) {
+            addrList.add(mac.getValue());
+        }
+        guaob.setUnmappedDeviceAddresses(addrList);
+        RpcResult<GetMudUnmappedAddressesOutput> result = RpcResultBuilder.success(guaob).build();
+        return new CompletedFuture<RpcResult<GetMudUnmappedAddressesOutput>>(result);
+    }
 
-	@Override
-	public Future<RpcResult<GetMudMetadataMappingOutput>> getMudMetadataMapping(GetMudMetadataMappingInput input) {
-		String mm = input.getMetadataAndMask();
-		String[] pieces = mm.split("/");
-		String m = pieces[0].substring(2);
-		String mask = pieces[1].substring(2);
+    @Override
+    public Future<RpcResult<GetMudMetadataMappingOutput>> getMudMetadataMapping(GetMudMetadataMappingInput input) {
+        String mm = input.getMetadataAndMask();
+        String[] pieces = mm.split("/");
+        String m = pieces[0].substring(2);
+        String mask = pieces[1].substring(2);
 
-		BigInteger metadata = new BigInteger(m, 16);
-		BigInteger metadataMask = new BigInteger(mask, 16);
-		BigInteger maskedMetadata = metadata.and(metadataMask);
-		long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
-				.shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
-		long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
-				.shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
-		long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK).shiftRight(SdnMudConstants.SRC_MODEL_SHIFT)
-				.longValue();
-		long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK).shiftRight(SdnMudConstants.DST_MODEL_SHIFT)
-				.longValue();
-		long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
-				.shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
-		long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
-				.shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
-		long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
-				.shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
-		long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
-				.shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
-		GetMudMetadataMappingOutputBuilder outputBuilder = new GetMudMetadataMappingOutputBuilder();
-		if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
-			outputBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
-		}
-		if (metadataMask.and(SdnMudConstants.DST_MANUFACTURER_MASK).longValue() != 0) {
-			outputBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
-		}
-		if (metadataMask.and(SdnMudConstants.SRC_MODEL_MASK).longValue() != 0) {
-			outputBuilder.setSrcModel(IdUtils.getModel((int) srcModelId));
-		}
-		if (metadataMask.and(SdnMudConstants.DST_MODEL_MASK).longValue() != 0) {
-			outputBuilder.setDstModel(IdUtils.getModel((int) dstModelId));
-		}
-		if (metadataMask.and(SdnMudConstants.SRC_NETWORK_MASK).longValue() != 0) {
-			outputBuilder.setDstLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
-		}
-		if (metadataMask.and(SdnMudConstants.DST_NETWORK_MASK).longValue() != 0) {
-			outputBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag > 0 ? true : false);
-		}
-		if (metadataMask.and(SdnMudConstants.SRC_QUARANTENE_MASK).longValue() != 0) {
-			outputBuilder.setSrcQuarantineFlag(srcQuarantineFlag > 0 ? true : false);
-		}
-		if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
-			outputBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
-		}
-		RpcResult<GetMudMetadataMappingOutput> result = RpcResultBuilder.success(outputBuilder).build();
-		return new CompletedFuture<RpcResult<GetMudMetadataMappingOutput>>(result);
+        BigInteger metadata = new BigInteger(m, 16);
+        BigInteger metadataMask = new BigInteger(mask, 16);
+        BigInteger maskedMetadata = metadata.and(metadataMask);
+        long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
+                .shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
+        long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
+                .shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
+        long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK).shiftRight(SdnMudConstants.SRC_MODEL_SHIFT)
+                .longValue();
+        long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK).shiftRight(SdnMudConstants.DST_MODEL_SHIFT)
+                .longValue();
+        long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
+                .shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
+        long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
+                .shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
+        long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
+                .shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
+        long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
+                .shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
+        GetMudMetadataMappingOutputBuilder outputBuilder = new GetMudMetadataMappingOutputBuilder();
+        if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
+            outputBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
+        }
+        if (metadataMask.and(SdnMudConstants.DST_MANUFACTURER_MASK).longValue() != 0) {
+            outputBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
+        }
+        if (metadataMask.and(SdnMudConstants.SRC_MODEL_MASK).longValue() != 0) {
+            outputBuilder.setSrcModel(IdUtils.getModel((int) srcModelId));
+        }
+        if (metadataMask.and(SdnMudConstants.DST_MODEL_MASK).longValue() != 0) {
+            outputBuilder.setDstModel(IdUtils.getModel((int) dstModelId));
+        }
+        if (metadataMask.and(SdnMudConstants.SRC_NETWORK_MASK).longValue() != 0) {
+            outputBuilder.setDstLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
+        }
+        if (metadataMask.and(SdnMudConstants.DST_NETWORK_MASK).longValue() != 0) {
+            outputBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag > 0 ? true : false);
+        }
+        if (metadataMask.and(SdnMudConstants.SRC_QUARANTENE_MASK).longValue() != 0) {
+            outputBuilder.setSrcQuarantineFlag(srcQuarantineFlag > 0 ? true : false);
+        }
+        if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
+            outputBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
+        }
+        RpcResult<GetMudMetadataMappingOutput> result = RpcResultBuilder.success(outputBuilder).build();
+        return new CompletedFuture<RpcResult<GetMudMetadataMappingOutput>>(result);
 
-	}
+    }
 
-	@Override
-	public Future<RpcResult<GetQuarantineMacsOutput>> getQuarantineMacs() {
-		GetQuarantineMacsOutputBuilder outputBuilder = new GetQuarantineMacsOutputBuilder();
-		List<MacAddress> quarantineAddresses = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices()
-				.getQurantineMac();
-		outputBuilder.setMacAddresses(quarantineAddresses);
-		RpcResult<GetQuarantineMacsOutput> result = RpcResultBuilder.success(outputBuilder).build();
-		return new CompletedFuture<RpcResult<GetQuarantineMacsOutput>>(result);
-	}
+    @Override
+    public Future<RpcResult<GetQuarantineMacsOutput>> getQuarantineMacs() {
+        GetQuarantineMacsOutputBuilder outputBuilder = new GetQuarantineMacsOutputBuilder();
+        List<MacAddress> quarantineAddresses = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices()
+                .getQurantineMac();
+        outputBuilder.setMacAddresses(quarantineAddresses);
+        RpcResult<GetQuarantineMacsOutput> result = RpcResultBuilder.success(outputBuilder).build();
+        return new CompletedFuture<RpcResult<GetQuarantineMacsOutput>>(result);
+    }
 
-	@Override
-	public Future<RpcResult<GetFlowRulesOutput>> getFlowRules(GetFlowRulesInput input) {
-		Uri mudUrl = input.getMudUrl();
-		Uri switchId = input.getSwitchId();
-		FlowCommitWrapper flowCommitWrapper = this.sdnmudProvider.getFlowCommitWrapper();
-		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId.getValue());
-		Collection<Flow> flows = flowCommitWrapper.getFlows(node);
+    @Override
+    public Future<RpcResult<GetFlowRulesOutput>> getFlowRules(GetFlowRulesInput input) {
+        Uri mudUrl = input.getMudUrl();
+        Uri switchId = input.getSwitchId();
+        FlowCommitWrapper flowCommitWrapper = this.sdnmudProvider.getFlowCommitWrapper();
+        InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId.getValue());
+        Collection<Flow> flows = flowCommitWrapper.getFlows(node);
 
-		GetFlowRulesOutputBuilder outputBuilder = new GetFlowRulesOutputBuilder();
-		ArrayList<FlowRule> flowRules = new ArrayList<FlowRule>();
+        GetFlowRulesOutputBuilder outputBuilder = new GetFlowRulesOutputBuilder();
+        ArrayList<FlowRule> flowRules = new ArrayList<FlowRule>();
 
-		if (flows != null) {
-			for (Flow flow : flows) {
-				if (flow.getId().getValue().startsWith(mudUrl.getValue())) {
-					FlowRuleBuilder frBuilder = new FlowRuleBuilder();
-					BigInteger metadata = flow.getMatch().getMetadata().getMetadata();
-					BigInteger metadataMask = flow.getMatch().getMetadata().getMetadataMask();
-					BigInteger maskedMetadata = metadata.and(metadataMask);
-					long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
-							.shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
-					long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
-							.shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
-					long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK)
-							.shiftRight(SdnMudConstants.SRC_MODEL_SHIFT).longValue();
-					long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK)
-							.shiftRight(SdnMudConstants.DST_MODEL_SHIFT).longValue();
-					long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
-							.shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
-					long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
-							.shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
-					long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
-							.shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
-					long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
-							.shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
-					if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
-						frBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
-					}
-					if (metadataMask.and(SdnMudConstants.DST_MANUFACTURER_MASK).longValue() != 0) {
-						frBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
-					}
-					if (metadataMask.and(SdnMudConstants.SRC_MODEL_MASK).longValue() != 0) {
-						frBuilder.setSrcModel(IdUtils.getModel((int) srcModelId));
-					}
-					if (metadataMask.and(SdnMudConstants.DST_MODEL_MASK).longValue() != 0) {
-						frBuilder.setDstModel(IdUtils.getModel((int) dstModelId));
-					}
-					if (metadataMask.and(SdnMudConstants.SRC_NETWORK_MASK).longValue() != 0) {
-						frBuilder.setDstLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
-					}
-					if (metadataMask.and(SdnMudConstants.DST_NETWORK_MASK).longValue() != 0) {
-						frBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag > 0 ? true : false);
-					}
-					if (metadataMask.and(SdnMudConstants.SRC_QUARANTENE_MASK).longValue() != 0) {
-						frBuilder.setSrcQuarantineFlag(srcQuarantineFlag > 0 ? true : false);
-					}
-					if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
-						frBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
-					}
-					
-					
-                  /*  
-                   * This refuses to work. Need to fix.
-                   */
-					try {
-						  InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
-						NodeRef nodeRef = new NodeRef(outNode);
-
-						GetFlowStatisticsInputBuilder inputBuilder = new GetFlowStatisticsInputBuilder();
-
-						inputBuilder.setFlowName(flow.getFlowName());
-						inputBuilder.setMatch(flow.getMatch());
-						inputBuilder.setTableId(flow.getTableId());
-						inputBuilder.setInstructions(flow.getInstructions());
-						inputBuilder.setNode(nodeRef);
-			
-
-
-						GetFlowStatisticsOutput output = sdnmudProvider.getDirectStatisticsService()
-								.getFlowStatistics(inputBuilder.build()).get().getResult();
-						LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
-						for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
-							frBuilder.setPacketCount(fmaplist.getPacketCount().getValue());
-							frBuilder.setByteCount(fmaplist.getByteCount().getValue());
-						}
-					} catch (Exception ex) {
-						LOG.error("Exception getting flow stats ", ex);
-					}
-						
-					GetAllFlowsStatisticsFromAllFlowTablesInputBuilder ib = new GetAllFlowsStatisticsFromAllFlowTablesInputBuilder();
- 
-					  InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
-						NodeRef nodeRef = new NodeRef(outNode);
-
-					
-					try {
-						sdnmudProvider.getFlowStatisticsService().getAllFlowsStatisticsFromAllFlowTables(ib.build()).get();
-					} catch (InterruptedException | ExecutionException e) {
-						LOG.error("Exception in getting stats ", e);
-					}
-					
+        if (flows != null) {
+            for (Flow flow : flows) {
+                if (flow.getId().getValue().startsWith(mudUrl.getValue())) {
+                    FlowRuleBuilder frBuilder = new FlowRuleBuilder();
+                    BigInteger metadata = flow.getMatch().getMetadata().getMetadata();
+                    BigInteger metadataMask = flow.getMatch().getMetadata().getMetadataMask();
+                    BigInteger maskedMetadata = metadata.and(metadataMask);
+                    long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
+                            .shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
+                    long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
+                            .shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
+                    long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK)
+                            .shiftRight(SdnMudConstants.SRC_MODEL_SHIFT).longValue();
+                    long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK)
+                            .shiftRight(SdnMudConstants.DST_MODEL_SHIFT).longValue();
+                    long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
+                            .shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
+                    long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
+                            .shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
+                    long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
+                            .shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
+                    long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
+                            .shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
+                    if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
+                        frBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
+                    }
+                    if (metadataMask.and(SdnMudConstants.DST_MANUFACTURER_MASK).longValue() != 0) {
+                        frBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
+                    }
+                    if (metadataMask.and(SdnMudConstants.SRC_MODEL_MASK).longValue() != 0) {
+                        frBuilder.setSrcModel(IdUtils.getModel((int) srcModelId));
+                    }
+                    if (metadataMask.and(SdnMudConstants.DST_MODEL_MASK).longValue() != 0) {
+                        frBuilder.setDstModel(IdUtils.getModel((int) dstModelId));
+                    }
+                    if (metadataMask.and(SdnMudConstants.SRC_NETWORK_MASK).longValue() != 0) {
+                        frBuilder.setDstLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
+                    }
+                    if (metadataMask.and(SdnMudConstants.DST_NETWORK_MASK).longValue() != 0) {
+                        frBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag > 0 ? true : false);
+                    }
+                    if (metadataMask.and(SdnMudConstants.SRC_QUARANTENE_MASK).longValue() != 0) {
+                        frBuilder.setSrcQuarantineFlag(srcQuarantineFlag > 0 ? true : false);
+                    }
+                    if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
+                        frBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
+                    }
                     
-					frBuilder.setFlowId(flow.getId().getValue());
-					frBuilder.setTableId(Long.valueOf(flow.getTableId()));
-					//frBuilder.setFlowRule(flow.toString());
-					frBuilder.setFlowName(flow.getFlowName());
-					flowRules.add(frBuilder.build());
+                    
+                    try {
+                        InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
+                        NodeRef nodeRef = new NodeRef(outNode);
 
-				}
-			}
-		}
-		outputBuilder.setFlowRule(flowRules);
-		RpcResult<GetFlowRulesOutput> result = RpcResultBuilder.success(outputBuilder).build();
-		return new CompletedFuture<RpcResult<GetFlowRulesOutput>>(result);
+                        GetFlowStatisticsInputBuilder inputBuilder = new GetFlowStatisticsInputBuilder();
 
-	}
+                        inputBuilder.setFlowName(flow.getFlowName());
+                        inputBuilder.setMatch(flow.getMatch());
+                        inputBuilder.setTableId(flow.getTableId());
+                        inputBuilder.setInstructions(flow.getInstructions());
+                        inputBuilder.setNode(nodeRef);
+            
 
-	@Override
-	public Future<RpcResult<GetDstMacClassificationOutput>> getDstMacClassification(
-			GetDstMacClassificationInput input) {
-		String macAddress = input.getMacAddress().getValue();
-		BigInteger maskedMetadata = this.sdnmudProvider.getPacketInDispatcher().getDstMetadata(macAddress);
 
-		GetDstMacClassificationOutputBuilder outputBuilder = new GetDstMacClassificationOutputBuilder();
-		if (maskedMetadata != null) {
-			long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
-					.shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
-			long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK)
-					.shiftRight(SdnMudConstants.DST_MODEL_SHIFT).longValue();
-			long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
-					.shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
-			long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
-					.shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
-			outputBuilder.setMetadata(maskedMetadata.toString(16));
-			outputBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag != 0 ? true : false);
-			outputBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
-			outputBuilder.setDstQuarantineFlag(dstQuranteneFlag == 0 ? false : true);
-			outputBuilder.setDstModel(new Uri(IdUtils.getModel((int) dstModelId)));
-		}
-		RpcResult<GetDstMacClassificationOutput> result = RpcResultBuilder.success(outputBuilder).build();
-		return new CompletedFuture<RpcResult<GetDstMacClassificationOutput>>(result);
-	}
+                        GetFlowStatisticsOutput output = sdnmudProvider.getDirectStatisticsService()
+                                .getFlowStatistics(inputBuilder.build()).get().getResult();
+                        LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
+                        for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
+                            frBuilder.setPacketCount(fmaplist.getPacketCount().getValue());
+                            frBuilder.setByteCount(fmaplist.getByteCount().getValue());
+                        }
+                    } catch (Exception ex) {
+                        LOG.error("Exception getting flow stats ", ex);
+                    }
+                        
+					/*
+					 * GetAllFlowsStatisticsFromAllFlowTablesInputBuilder ib = new
+					 * GetAllFlowsStatisticsFromAllFlowTablesInputBuilder();
+					 * 
+					 * InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
+					 * NodeRef nodeRef = new NodeRef(outNode);
+					 * 
+					 * 
+					 * try { sdnmudProvider.getFlowStatisticsService().
+					 * getAllFlowsStatisticsFromAllFlowTables(ib.build()).get(); } catch
+					 * (InterruptedException | ExecutionException e) {
+					 * LOG.error("Exception in getting stats ", e); }
+					 */
+                    
+                    
+                    frBuilder.setFlowId(flow.getId().getValue());
+                    frBuilder.setTableId(Long.valueOf(flow.getTableId()));
+                    //frBuilder.setFlowRule(flow.toString());
+                    frBuilder.setFlowName(flow.getFlowName());
+                    flowRules.add(frBuilder.build());
 
-	@Override
-	public Future<RpcResult<GetSrcMacClassificationOutput>> getSrcMacClassification(
-			GetSrcMacClassificationInput input) {
-		String macAddress = input.getMacAddress().getValue();
-		BigInteger maskedMetadata = this.sdnmudProvider.getPacketInDispatcher().getSrcMetadata(macAddress);
+                }
+            }
+        }
+        outputBuilder.setFlowRule(flowRules);
+        RpcResult<GetFlowRulesOutput> result = RpcResultBuilder.success(outputBuilder).build();
+        return new CompletedFuture<RpcResult<GetFlowRulesOutput>>(result);
 
-		GetSrcMacClassificationOutputBuilder outputBuilder = new GetSrcMacClassificationOutputBuilder();
-		if (maskedMetadata != null) {
-			long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
-					.shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
-			long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK)
-					.shiftRight(SdnMudConstants.SRC_MODEL_SHIFT).longValue();
-			long srcQuranteneFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
-					.shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
-			long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
-					.shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
+    }
 
-			outputBuilder.setMetadata(maskedMetadata.toString(16));
-			outputBuilder.setSrcLocalNetworksFlag(srcLocalNetworksFlag != 0 ? true : false);
-			outputBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
-			outputBuilder.setSrcQuarantineFlag(srcQuranteneFlag == 0 ? false : true);
-			outputBuilder.setSrcModel(new Uri(IdUtils.getModel((int) srcModelId)));
-		}
-		RpcResult<GetSrcMacClassificationOutput> result = RpcResultBuilder.success(outputBuilder).build();
-		return new CompletedFuture<RpcResult<GetSrcMacClassificationOutput>>(result);
-	}
+    @Override
+    public Future<RpcResult<GetDstMacClassificationOutput>> getDstMacClassification(
+            GetDstMacClassificationInput input) {
+        String macAddress = input.getMacAddress().getValue();
+        BigInteger maskedMetadata = this.sdnmudProvider.getPacketInDispatcher().getDstMetadata(macAddress);
 
-	@Override
-	public Future<RpcResult<Void>> quarantine(QuarantineInput input) {
-		MacAddress srcMac = input.getDeviceMacAddress();
-		QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
-		if (!qd.getQurantineMac().contains(srcMac)) {
-			qd.getQurantineMac().add(srcMac);
-			InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
-			ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-			// PUT not merge -- override existing value.
-			tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
-			tx.submit();
-		}
-		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
-	}
+        GetDstMacClassificationOutputBuilder outputBuilder = new GetDstMacClassificationOutputBuilder();
+        if (maskedMetadata != null) {
+            long dstManufacturerId = maskedMetadata.and(SdnMudConstants.DST_MANUFACTURER_MASK)
+                    .shiftRight(SdnMudConstants.DST_MANUFACTURER_SHIFT).longValue();
+            long dstModelId = maskedMetadata.and(SdnMudConstants.DST_MODEL_MASK)
+                    .shiftRight(SdnMudConstants.DST_MODEL_SHIFT).longValue();
+            long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
+                    .shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
+            long dstLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.DST_NETWORK_MASK)
+                    .shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
+            long dstBlockedFlag = maskedMetadata.and(SdnMudConstants.DST_MAC_BLOCKED_MASK).shiftRight(SdnMudConstants.DST_MAC_BLOCKED_MASK_SHIFT).longValue();
+            
+            outputBuilder.setMetadata(maskedMetadata.toString(16));
+            outputBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag != 0 ? true : false);
+            outputBuilder.setDstManufacturer(IdUtils.getManufacturer((int) dstManufacturerId));
+            outputBuilder.setDstQuarantineFlag(dstQuranteneFlag == 0 ? false : true);
+            outputBuilder.setDstBlockedFlag( dstBlockedFlag == 0 ? false : true);
+            outputBuilder.setDstModel(new Uri(IdUtils.getModel((int) dstModelId)));
+        }
+        RpcResult<GetDstMacClassificationOutput> result = RpcResultBuilder.success(outputBuilder).build();
+        return new CompletedFuture<RpcResult<GetDstMacClassificationOutput>>(result);
+    }
 
-	@Override
-	public Future<RpcResult<Void>> unquarantine(UnquarantineInput input) {
-		MacAddress srcMac = input.getDeviceMacAddress();
-		QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
-		if (qd.getQurantineMac().contains(srcMac)) {
-			qd.getQurantineMac().remove(srcMac);
-			InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
-			ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-			tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
-			tx.submit();
-		}
-		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+    @Override
+    public Future<RpcResult<GetSrcMacClassificationOutput>> getSrcMacClassification(
+            GetSrcMacClassificationInput input) {
+        String macAddress = input.getMacAddress().getValue();
+        BigInteger maskedMetadata = this.sdnmudProvider.getPacketInDispatcher().getSrcMetadata(macAddress);
 
-	}
+        GetSrcMacClassificationOutputBuilder outputBuilder = new GetSrcMacClassificationOutputBuilder();
+        if (maskedMetadata != null) {
+            long srcManufacturerId = maskedMetadata.and(SdnMudConstants.SRC_MANUFACTURER_MASK)
+                    .shiftRight(SdnMudConstants.SRC_MANUFACTURER_SHIFT).longValue();
+            long srcModelId = maskedMetadata.and(SdnMudConstants.SRC_MODEL_MASK)
+                    .shiftRight(SdnMudConstants.SRC_MODEL_SHIFT).longValue();
+            long srcQuranteneFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
+                    .shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
+            long srcLocalNetworksFlag = maskedMetadata.and(SdnMudConstants.SRC_NETWORK_MASK)
+                    .shiftRight(SdnMudConstants.SRC_NETWORK_FLAGS_SHIFT).longValue();
+            long srcBlockedFlag = maskedMetadata.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK).shiftRight(SdnMudConstants.SRC_MAC_BLOCKED_MASK_SHIFT).longValue();
 
-	@Override
-	public Future<RpcResult<Void>> unquarantineAll() {
-		QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
-		qd.getQurantineMac().clear();
-		InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
-		ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-		tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
-		tx.submit();
-		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
-	}
+            
+            outputBuilder.setMetadata(maskedMetadata.toString(16));
+            outputBuilder.setSrcLocalNetworksFlag(srcLocalNetworksFlag != 0 ? true : false);
+            outputBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
+            outputBuilder.setSrcQuarantineFlag(srcQuranteneFlag == 0 ? false : true);
+            outputBuilder.setSrcBlockedFlag( srcBlockedFlag == 0 ? false : true);
+            outputBuilder.setSrcModel(new Uri(IdUtils.getModel((int) srcModelId)));
+        }
+        RpcResult<GetSrcMacClassificationOutput> result = RpcResultBuilder.success(outputBuilder).build();
+        return new CompletedFuture<RpcResult<GetSrcMacClassificationOutput>>(result);
+    }
+
+    @Override
+    public Future<RpcResult<Void>> quarantine(QuarantineInput input) {
+        MacAddress srcMac = input.getDeviceMacAddress();
+        QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
+        if (!qd.getQurantineMac().contains(srcMac)) {
+            qd.getQurantineMac().add(srcMac);
+            InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
+            ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+            // PUT not merge -- override existing value.
+            tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
+            tx.submit();
+        }
+        return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+    }
+
+    @Override
+    public Future<RpcResult<Void>> unquarantine(UnquarantineInput input) {
+        MacAddress srcMac = input.getDeviceMacAddress();
+        QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
+        if (qd.getQurantineMac().contains(srcMac)) {
+            qd.getQurantineMac().remove(srcMac);
+            InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
+            ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+            tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
+            tx.submit();
+        }
+        return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+
+    }
+
+    @Override
+    public Future<RpcResult<Void>> unquarantineAll() {
+        QuarantineDevice qd = sdnmudProvider.getQuaranteneDevicesListener().getQuaranteneDevices();
+        qd.getQurantineMac().clear();
+        InstanceIdentifier<QuarantineDevice> qId = InstanceIdentifier.builder(QuarantineDevice.class).build();
+        ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+        tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
+        tx.submit();
+        return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+    }
 
 }
