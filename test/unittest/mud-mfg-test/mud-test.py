@@ -65,12 +65,12 @@ class TestAccess(unittest.TestCase) :
 
     def testTcpGetExpectPass(self):
         h1 = hosts[0]
-        result = h1.cmdPrint("wget 10.0.0.3:8010 --timeout 20")
+        result = h1.cmdPrint("wget 10.0.0.3:8010 --timeout 20 --tries 2")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
     def testTcpGetExpectFail(self):
         h2 = hosts[1]
-        result = h2.cmdPrint("wget 10.0.0.3:8010 --timeout 20")
+        result = h2.cmdPrint("wget 10.0.0.3:8010 --timeout 20 --tries 2")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
     #def testUdpManufacturerPingExpectPass(self) :

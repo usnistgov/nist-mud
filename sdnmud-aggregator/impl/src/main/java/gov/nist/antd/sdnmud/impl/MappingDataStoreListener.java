@@ -90,34 +90,44 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			Uri uri = mapping.getMudUrl();
 			LOG.info("mudUri = " + uri.getValue());
 			String uriStr = sdnmudProvider.getMudFileFetcher().fetchAndInstallMudFile(uri.getValue());
-			if (uriStr == null && sdnmudProvider.getSdnmudConfig().isBlockMacOnMudProfileFailure()) {
-				// Find the MAC address that was added. There should only be one MAC
-				// address added but we could not retrieve or verify the associated MUD profile.
-				// so we need to put the device in a blocked state (this is done on "packet In
-				// event").
-				LOG.error("Failed to verify or fetch MUD profile -- blocking the device uri = " + uri.getValue());
-				for (MacAddress macAddress : macAddresses) {
-					// block the mac address if a mapping has not yet been defined.
-					if (!macToUri.containsKey(macAddress.getValue())) {
-						this.blockedAddressTable.add(macAddress);
-					}
-				}
-				sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
-				return;
-			} else {
-				boolean found = false;
-				for (MacAddress macAddress : macAddresses) {
-					if (this.blockedAddressTable.contains(macAddress)) {
-						this.blockedAddressTable.remove(macAddress);
-						found = true;
-					}
-				}
+			if (uriStr == null) {
+				if (sdnmudProvider.getSdnmudConfig().isBlockMacOnMudProfileFailure()) {
 
-				if (found) {
+					// Find the MAC address that was added. There should only be one MAC
+					// address added but we could not retrieve or verify the associated MUD profile.
+					// so we need to put the device in a blocked state (this is done on "packet In
+					// event").
+					LOG.error("Failed to verify or fetch MUD profile -- blocking the device uri = " + uri.getValue());
+					for (MacAddress macAddress : macAddresses) {
+						// block the mac address if a mapping has not yet been defined.
+						if (!macToUri.containsKey(macAddress.getValue())) {
+							this.blockedAddressTable.add(macAddress);
+						}
+					}
 					sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					return;
+				} else {
+					if (uri.getValue().startsWith("file://")) {
+						LOG.error("Cannot find file in cache");
+						return;
+					}
 				}
-				uri = new Uri(uriStr);
+			} else {
+			   uri = new Uri(uriStr);
 			}
+
+			boolean found = false;
+			for (MacAddress macAddress : macAddresses) {
+				if (this.blockedAddressTable.contains(macAddress)) {
+					this.blockedAddressTable.remove(macAddress);
+					found = true;
+				}
+			}
+
+			if (found) {
+				sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+			}
+			
 
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {
