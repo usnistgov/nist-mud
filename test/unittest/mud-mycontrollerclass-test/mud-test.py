@@ -74,7 +74,7 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
 
     def testHttpGetExpectPass(self):
-        print "wgetting from a non-mud -- this should succeed with MUD"
+        print "wgetting mud device -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
         print "result = ",result

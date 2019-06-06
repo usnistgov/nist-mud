@@ -4,6 +4,7 @@
         "key-pass" : "changeit",
         "trust-self-signed-cert" : true,
         "mfg-id-rule-cache-timeout":600,
-	    "relaxed-acl" : false
+        "relaxed-acl" : false,
+        "block-mac-on-mud-profile-failure": false
   }
 }
