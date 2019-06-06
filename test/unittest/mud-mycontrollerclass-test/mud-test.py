@@ -43,27 +43,48 @@ class TestAccess(unittest.TestCase) :
         rc = pieces[1].split(']')[0]
         return rc
     
+    def testNonIotHostHttpGetExpectPass(self):
+        h4 = hosts[3]
+        result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 2 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
+
+    def testUdpSameManPingExpectPass(self) :
+        print "pinging a same manufacturer peer -- this should succeed with MUD"
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.2 --client --quiet --bind")
+        self.assertTrue(int(result) > 0, "expect successful ping")
+
+    def testUdpControllerPingExpectPass(self) :
+        print "pinging UDP controller -- this should succeed with MUD"
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8002 --host 10.0.0.7 --client --quiet")
+        self.assertTrue(int(result) > 0, "expect successful ping")
+
+    def testLocalNetPingExpectPass(self) :
+        print "pinging a local network peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
+        h1 = hosts[0]
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+        self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpPingExpectFail(self):
         print "pinging a non-mud peer -- this should fail with MUD"
         h1 = hosts[0]
         # prime flow table
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.7 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect failed UDP pings from MUD host to local UDP server.")
 
     def testHttpGetExpectPass(self):
-        print "wgetting from controller"
+        print "wgetting from a non-mud -- this should succeed with MUD"
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://10.0.0.7 --timeout 20  --tries 1 -O foo.html --delete-after")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
         print "result = ",result
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-
     def testHttpGetExpectFail(self):
         print "Wgetting from antd.local -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
+        result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
 
 
@@ -169,16 +190,16 @@ def setupTopology(controller_addr):
     # Clean up any traces of the previous invocation (for safety)
 
 
-    h1.setMAC("00:00:00:00:00:b1","h1-eth0")
-    h2.setMAC("00:00:00:00:00:b2","h2-eth0")
-    h3.setMAC("00:00:00:00:00:b3","h3-eth0")
-    h4.setMAC("00:00:00:00:00:b4","h4-eth0")
-    h5.setMAC("00:00:00:00:00:b5","h5-eth0")
-    h6.setMAC("00:00:00:00:00:b6","h6-eth0")
-    h7.setMAC("00:00:00:00:00:b7","h7-eth0")
-    h8.setMAC("00:00:00:00:00:b8","h8-eth0")
-    h9.setMAC("00:00:00:00:00:b9","h9-eth0")
-    h10.setMAC("00:00:00:00:00:bA","h10-eth0")
+    h1.setMAC("00:00:00:00:00:31","h1-eth0")
+    h2.setMAC("00:00:00:00:00:32","h2-eth0")
+    h3.setMAC("00:00:00:00:00:33","h3-eth0")
+    h4.setMAC("00:00:00:00:00:34","h4-eth0")
+    h5.setMAC("00:00:00:00:00:35","h5-eth0")
+    h6.setMAC("00:00:00:00:00:36","h6-eth0")
+    h7.setMAC("00:00:00:00:00:37","h7-eth0")
+    h8.setMAC("00:00:00:00:00:38","h8-eth0")
+    h9.setMAC("00:00:00:00:00:39","h9-eth0")
+    h10.setMAC("00:00:00:00:00:3A","h10-eth0")
 
     
     # Set up a routing rule on h2 to route packets via h3
@@ -230,8 +251,12 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    h7.cmdPrint("python ../util/udpping.py --port 4000 --server &")
-    h7.cmdPrint('python ../util/http-server.py -H 10.0.0.7&')
+    h2.cmdPrint("python ../util/udpping.py --port 4000 --server &")
+    h4.cmdPrint("python ../util/udpping.py --port 4000 --server &")
+    # h5 is a localhost peer.
+    h5.cmdPrint("python ../util/udpping.py --port 8000 --server &")
+    # h7 is the controller peer.
+    h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
     
     net.waitConnected()
 

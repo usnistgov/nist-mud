@@ -1,0 +1,9 @@
+{
+ "mapping":
+   { 
+     "device-id": [ "00:00:00:00:00:31",
+		    "00:00:00:00:00:32",
+		    "00:00:00:00:00:33" ],
+     "mud-url": "file://mudfile-mycontrollerclass-test.json"
+   }
+}

@@ -10,6 +10,7 @@ cp mud-local-networks-test/mudfile-local-networks-test.json $target
 cp mud-tcp-direction-test/mudfile-tcp-direction-test.json $target
 cp mud-model-test/mudfile-model-test.json $target
 cp mud-same-mfg-scale-test/mudfile-same-mfg-scale-test.json $target
+cp mud-mycontrollerclass-test/mudfile-mycontrollerclass-test.json $target
 cp mud-controllerclass-test/mudfile-controllerclass-test.json $target
 cp mud-dns-test/mudfile-dns-test.json $target
 cp mud-quarantine-test/mudfile-quarantine-test.json $target

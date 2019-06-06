@@ -15,7 +15,7 @@
          	"address-list" : [ "10.0.0.6" ]
      	},
         {
-    		"uri": "https://controller.nist.local",
+    		"uri": "https://mycontrollerclass-test.nist.local/super1",
 		    "address-list" : [ "10.0.0.7" ]
         }
    ],
