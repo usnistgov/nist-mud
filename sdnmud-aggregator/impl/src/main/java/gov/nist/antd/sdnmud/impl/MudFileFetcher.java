@@ -324,13 +324,14 @@ public class MudFileFetcher {
 					}
 					
 					((X509Certificate)cert).checkValidity();
-						
-					Certificate[] certs = keystore.getCertificateChain(manufacturer);
+					
+					
+					/*Certificate[] certs = keystore.getCertificateChain(manufacturer);
                     
 					if ( !verifyCertificateChain(certs)) {
 						LOG.error("Certificate chain verification failed");
 						return null;
-					}
+					}*/
 					
 					PublicKey publicKey = cert.getPublicKey();
 					String algorithm = publicKey.getAlgorithm();
