@@ -123,6 +123,19 @@
 			<scope>compile</scope>
 		</dependency>
 
+        <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcpkix-jdk15on</artifactId>
+		  <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+          <groupId>org.bouncycastle</groupId>
+          <artifactId>bcprov-jdk15on</artifactId>
+		  <scope>compile</scope>
+       </dependency>
+
+
 		<dependency>
 			<groupId>org.opendaylight.controller</groupId>
 			<artifactId>liblldp</artifactId>

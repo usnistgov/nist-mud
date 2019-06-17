@@ -92,6 +92,13 @@ public class DhcpOfferPacket extends DhcpPacket {
         addTlv(buffer, DHCP_DNS_SERVER, mDnsServers);
         addTlvEnd(buffer);
     }
+    
+    /**
+     * Retrieve lease time
+     */
+    public Integer getLeaseTime() {
+    	return this.mLeaseTime;
+    }
 
     /**
      * Notifies the state machine of the OFFER packet parameters.

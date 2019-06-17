@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.reflect.Type;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -14,11 +15,22 @@ import java.security.NoSuchProviderException;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
+import java.security.cert.CertPathBuilder;
+import java.security.cert.CertStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.PKIXCertPathBuilderResult;
+import java.security.cert.TrustAnchor;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,6 +50,19 @@ import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.conn.ssl.X509HostnameVerifier;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.bouncycastle.cert.X509CertificateHolder;
+import org.bouncycastle.cert.jcajce.JcaCertStoreBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cms.CMSException;
+import org.bouncycastle.cms.CMSProcessableByteArray;
+import org.bouncycastle.cms.CMSSignedData;
+import org.bouncycastle.cms.SignerId;
+import org.bouncycastle.cms.SignerInformation;
+import org.bouncycastle.cms.SignerInformationStore;
+import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.operator.OperatorCreationException;
+import org.bouncycastle.util.Store;
 import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.mdsal.common.api.TransactionCommitFailedException;
@@ -139,7 +164,7 @@ public class MudFileFetcher {
 
 		int n = certs.length;
 		for (int i = 0; i < n - 1; i++) {
-			
+
 			X509Certificate cert = (X509Certificate) certs[i];
 			cert.checkValidity();
 			X509Certificate issuer = (X509Certificate) certs[i + 1];
@@ -211,6 +236,103 @@ public class MudFileFetcher {
 
 	}
 
+	boolean verifySignature(byte[] mudfileData, byte[] signature)
+			throws CMSException, OperatorCreationException, CertificateException {
+
+		CMSProcessableByteArray cmsBa = new CMSProcessableByteArray(mudfileData);
+		CMSSignedData cms = new CMSSignedData(cmsBa, signature);
+		Store<X509CertificateHolder> store = cms.getCertificates();
+		SignerInformationStore signers = cms.getSignerInfos();
+		Collection<SignerInformation> c = signers.getSigners();
+		Iterator<SignerInformation> it = c.iterator();
+		while (it.hasNext()) {
+			SignerInformation signer = (SignerInformation) it.next();
+			Collection certCollection = store.getMatches(signer.getSID());
+			Iterator certIt = certCollection.iterator();
+			X509CertificateHolder certHolder = (X509CertificateHolder) certIt.next();
+			X509Certificate cert = new JcaX509CertificateConverter().setProvider("BC").getCertificate(certHolder);
+			cert.checkValidity();
+			if (signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider("BC").build(cert))) {
+				LOG.info("verified");
+				return true;
+			}
+		}
+		LOG.error("Signature verification failed");
+		return false;
+	}
+	
+	
+	private PublicKey checkCertPath(SignerId signerId, Store<X509CertificateHolder> certs)
+	        throws IOException, GeneralSecurityException
+	    {
+	        CertStore store = new JcaCertStoreBuilder().setProvider("BC").addCertificates(certs).build();
+
+	        CertPathBuilder pathBuilder = CertPathBuilder.getInstance("PKIX","BC");
+	        X509CertSelector targetConstraints = new X509CertSelector();
+
+	        targetConstraints.setIssuer(signerId.getIssuer().getEncoded());
+	        targetConstraints.setSerialNumber(signerId.getSerialNumber());
+	        
+	        String cacertHome = sdnmudConfig.getCaCerts();
+			if (!cacertHome.startsWith("/")) {
+				cacertHome = System.getProperty("java.home") + "/" + cacertHome;
+			}
+			LOG.debug("cacertHome = " + cacertHome);
+			FileInputStream is = new FileInputStream(cacertHome);
+			String keyPass = sdnmudConfig.getKeyPass();
+			LOG.debug("keyPass = " + keyPass);
+			KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+			LOG.debug("keystore = " + keystore);
+			keystore.load(is, keyPass.toCharArray());
+			Enumeration<String> aliases = keystore.aliases();
+			HashSet<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
+			while(aliases.hasMoreElements()) {
+				String alias = aliases.nextElement();
+				X509Certificate cert = (X509Certificate) keystore.getCertificate(alias);
+				trustAnchors.add(new TrustAnchor(cert,null));
+			}
+	        
+	        PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+
+	        params.addCertStore(store);
+	        params.setRevocationEnabled(false);            // TODO: CRLs?
+
+	        return pathBuilder.build(params).getCertPath().getCertificates().get(0).getPublicKey();
+	    }
+
+	private boolean verifySignatureP7S(byte[] mudfileData, byte[] signature)
+			throws CMSException, OperatorCreationException, IOException, GeneralSecurityException {
+
+		CMSProcessableByteArray cmsBa = new CMSProcessableByteArray(mudfileData);
+		CMSSignedData cms = new CMSSignedData(cmsBa, signature);
+		Store<X509CertificateHolder> store = cms.getCertificates();
+
+		SignerInformationStore signers = cms.getSignerInfos();
+		Collection<SignerInformation> c = signers.getSigners();
+		Iterator<SignerInformation> it = c.iterator();
+		while (it.hasNext()) {
+			SignerInformation signer = (SignerInformation) it.next();
+			Collection<X509CertificateHolder>  certCollection = store.getMatches(signer.getSID());
+			if (certCollection.size() == 0 ) {
+				LOG.error("Impossible to find a cert using signer ID " + signer.getSID());
+				return false;
+			}
+			Iterator<X509CertificateHolder> certIt = certCollection.iterator();
+			X509CertificateHolder certHolder = certIt.next();
+			X509Certificate cert = new JcaX509CertificateConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getCertificate(certHolder);
+			cert.checkValidity();
+			SignerId signerId = signer.getSID();
+			PublicKey result = this.checkCertPath(signerId, store);
+			
+			if (signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(result))) {
+				LOG.error("verification success");
+				return true;
+			}
+		}
+		LOG.error("Signature verification failed");
+		return false;
+	}
+	
 	public String fetchAndInstallMudFile(String mudUrl) {
 		LOG.info("MUD URL = " + mudUrl);
 		try {
@@ -304,48 +426,13 @@ public class MudFileFetcher {
 					int bytesRead = this.doHttpGet(mudSignatureUrl, buffer);
 					LOG.debug("read " + bytesRead + " bytes");
 					byte[] signature = Arrays.copyOf(buffer, bytesRead);
-					String manufacturer = IdUtils.getAuthority(mudUrl);
 
-					String cacertHome = sdnmudConfig.getCaCerts();
-					if (!cacertHome.startsWith("/")) {
-						cacertHome = System.getProperty("java.home") + "/" + cacertHome;
-					}
-					LOG.debug("cacertHome = " + cacertHome);
-					FileInputStream is = new FileInputStream(cacertHome);
-					String keyPass = sdnmudConfig.getKeyPass();
-					LOG.debug("keyPass = " + keyPass);
-					KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-					LOG.debug("keystore = " + keystore);
-					keystore.load(is, keyPass.toCharArray());
-					Certificate cert = keystore.getCertificate(manufacturer);
-					if (cert == null) {
-						LOG.error("Certificate not found in keystore -- not installing mud profile");
+				
+					if (! verifySignatureP7S(mudfileData, signature) ) {
 						return null;
 					}
 					
-					((X509Certificate)cert).checkValidity();
-					
-					
-					/*Certificate[] certs = keystore.getCertificateChain(manufacturer);
-                    
-					if ( !verifyCertificateChain(certs)) {
-						LOG.error("Certificate chain verification failed");
-						return null;
-					}*/
-					
-					PublicKey publicKey = cert.getPublicKey();
-					String algorithm = publicKey.getAlgorithm();
-					Signature sig = Signature.getInstance("SHA256withRSA");
-					sig.initVerify(publicKey);
-					sig.update(mudfileData);
-					LOG.debug("Signature = " + sig + " algorithm = " + algorithm);
-					if (!sig.verify(signature)) {
-						LOG.error("Signature verification failed -- " + " need to alert the admin or block device.");
-						return null;
-					} else {
-						LOG.info("Signature verification succeeded");
-					}
-
+				
 				}
 
 				if (fileFetchedFromHttps) {
@@ -366,9 +453,9 @@ public class MudFileFetcher {
 
 			}
 
-		} catch (IOException | NoSuchAlgorithmException | KeyStoreException | KeyManagementException
-				| TransactionCommitFailedException | ReadFailedException | CertificateException | SchemaSourceException
-				| YangSyntaxErrorException | SignatureException | InvalidKeyException ex) {
+		} catch (IOException | TransactionCommitFailedException | ReadFailedException | SchemaSourceException
+				| YangSyntaxErrorException | OperatorCreationException
+				| CMSException | GeneralSecurityException ex) {
 			LOG.error("Error fetching MUD file -- not installing", ex);
 			return null;
 		}

@@ -75,7 +75,7 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful  get")
         h5 = hosts[4]
         print "Ping a localhost on port 8000 -- should succeed wit MUD"
-        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python udpping.py --port 8000 --host 10.0.0.2 --client --quiet")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
 
@@ -249,7 +249,7 @@ def setupTopology(controller_addr):
     h2.cmdPrint("python udpping.py --port 4000 --server &")
     h4.cmdPrint("python udpping.py --port 4000 --server &")
     # h5 is a localhost peer.
-    h5.cmdPrint("python udpping.py --port 8000 --server &")
+    h2.cmdPrint("python udpping.py --port 8000 --server &")
     # h7 is the controller peer.
     h7.cmdPrint("python udpping.py --port 8002 --server &")
     

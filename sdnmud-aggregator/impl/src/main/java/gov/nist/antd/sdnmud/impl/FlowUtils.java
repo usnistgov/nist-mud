@@ -717,7 +717,7 @@ public class FlowUtils {
 
 	}
 
-	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId) {
+	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId, boolean sendToController) {
 
 		LOG.info("createPermitPacketsFromDhcpServerFlow ");
 
@@ -729,7 +729,12 @@ public class FlowUtils {
 
 		Match match = matchBuilder.build();
 		short destinationTableId = (short) (tableId + 1);
-		InstructionsBuilder isb = createGoToNextTableInstruction(destinationTableId);
+		InstructionsBuilder isb = new InstructionsBuilder();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		if (sendToController)
+			addSendPacketToControllerInstruction(instructions);
+		addGoToTableInstruction(instructions, destinationTableId);
+		isb.setInstruction(instructions);
 		flowBuilder.setMatch(match).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));

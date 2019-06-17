@@ -31,20 +31,21 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCo
 
 interface SdnMudConstants {
 	// Well known ports.
-	int DNS_PORT = 53;
-	int DHCP_SERVER_PORT = 67;
-	int DHCP_CLIENT_PORT = 68;
-	int NTP_SERVER_PORT = 123;
+	static final int DNS_PORT = 53;
+	static final int DHCP_SERVER_PORT = 67;
+	static final int DHCP_CLIENT_PORT = 68;
+	static final int NTP_SERVER_PORT = 123;
 
 	// Protocol ids.
-	short TCP_PROTOCOL = 6;
-	short UDP_PROTOCOL = 17;
-	int ETHERTYPE_IPV4 = 0x0800;
-	int ETHERTYPE_CUSTOMER_VLAN = 0x08100;
+	static final short TCP_PROTOCOL = 6;
+	static final short UDP_PROTOCOL = 17;
+	
+	static final int ETHERTYPE_IPV4 = 0x0800;
+	static final int ETHERTYPE_CUSTOMER_VLAN = 0x08100;
 
 	// Well known classes.
-	String DNS_SERVER_URI = "urn:ietf:params:mud:dns";
-	String NTP_SERVER_URI = "urn:ietf:params:mud:ntp";
+	static final String DNS_SERVER_URI = "urn:ietf:params:mud:dns";
+	static final String NTP_SERVER_URI = "urn:ietf:params:mud:ntp";
 
 
 	// Split the metadata in two. Top half for src.
@@ -121,6 +122,7 @@ interface SdnMudConstants {
 	static final FlowCookie TO_DEVICE_FLOW_COOKIE = IdUtils.createFlowCookie(Direction.ToDevice.getName());
 
 	static final FlowCookie DH_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-request-flow-cookie");
+	static final FlowCookie DH_RESPONSE_FLOW_COOKIE = IdUtils.createFlowCookie("dhcp-response-flow-cookie");
 	static final FlowCookie DNS_REQUEST_FLOW_COOKIE = IdUtils.createFlowCookie("dns-request-flow-cookie");
 	static final FlowCookie DNS_RESPONSE_FLOW_COOKIE = IdUtils.createFlowCookie("dns-response-flow-cookie");
 	static final FlowCookie DEFAULT_MUD_FLOW_COOKIE = IdUtils.createFlowCookie("default-mud-flow-cookie");
@@ -136,8 +138,7 @@ interface SdnMudConstants {
 
 	static final String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
 
-	//boolean IMPLEMENT_MODEL_ACLS = false;
-	// TODO -- set this in the config file.
+	// Default drop rule timeout.
 	static final int DROP_RULE_TIMEOUT = 120;
 
 	// Flow table priorities.

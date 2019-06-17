@@ -55,6 +55,8 @@ import org.opendaylight.controller.liblldp.NetUtils;
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.openflowplugin.api.OFConstants;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.AceViolationNotificationBuilder;
@@ -83,6 +85,7 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.nist.antd.sdnmud.impl.dhcp.DhcpOfferPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpPacket;
 import gov.nist.antd.sdnmud.impl.dhcp.DhcpRequestPacket;
 import gov.nist.antd.sdnmud.impl.dns.ARecord;
@@ -327,6 +330,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 			for (String host : sdnmudProvider.getLocalNetworksExclude(nodeId)) {
 				if (host.equals(ipAddress))
 					return false;
+			}
+		}
+		Map<String,List<Ipv4Address>> controllerClassMap = sdnmudProvider.getControllerClassMap(nodeId);
+		Ipv4Address ipAddr = new Ipv4Address(ipAddress);
+		for (List<Ipv4Address> addList : controllerClassMap.values() ) {
+			if ( addList.contains(ipAddr)) {
+				return false;
 			}
 		}
 		boolean isLocalAddress = false;
@@ -609,7 +619,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
 						String mudUrl = dhcpRequestPacket.getMudUrl();
-
+						
 						if (mudUrl != null) {
 							MappingBuilder mb = new MappingBuilder();
 							ArrayList<MacAddress> macAddresses = new ArrayList<>();
@@ -622,6 +632,16 @@ public class PacketInDispatcher implements PacketProcessingListener {
 							tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
 							tx.submit();
 						}
+					}
+				} else if (cookie.equals(SdnMudConstants.DH_RESPONSE_FLOW_COOKIE)) {
+					DhcpPacket dhcpPacket = DhcpPacket.decodeFullPacket(notification.getPayload(), DhcpPacket.ENCAP_L2);
+					LOG.info("DHCP Response packet type " + dhcpPacket.getClass().getName());
+					if (dhcpPacket instanceof DhcpOfferPacket) {
+					  DhcpOfferPacket dhcpOfferPacket = (DhcpOfferPacket) dhcpPacket;
+					  int leaseTime = dhcpOfferPacket.getLeaseTime();
+					  // when lease expires, should the device be blocked?
+					  // For now just log it as informational. 
+					  LOG.info("Lease time is " + leaseTime);
 					}
 				} else if (cookie.equals(SdnMudConstants.DNS_REQUEST_FLOW_COOKIE)) {
 					LOG.info("Saw a DNS Request");

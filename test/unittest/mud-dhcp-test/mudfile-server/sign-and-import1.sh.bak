@@ -1,0 +1,37 @@
+# Generate self signed CA cert.
+
+CACRT=ca.crt
+openssl req -nodes -x509 -sha256 -newkey rsa:4096 -keyout "ca.key" -out "ca.crt" -days 3560 -subj "/C=US/ST=Maryland/L=Gaithersburg/O=NIST/OU=ITL/CN=localhost"
+
+TRUSTEDROOT=TrustedRoot.crt
+# import the CA cert in the JDK keystore
+sudo -E $JAVA_HOME/bin/keytool -delete -alias dhcptest.cacert -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+sudo -E $JAVA_HOME/bin/keytool -importcert -file $CACRT -alias dhcptest.cacert -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+sudo -E $JAVA_HOME/bin/keytool -importcert -file $TRUSTEDROOT -alias dhcptest.trustedroot -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+
+#Generate the private key for the mudsigner
+echo "Generating manufacturer key"
+openssl genrsa -out manufacturer.key 2048
+
+echo "Generated manufacturer key"
+#generte CSR for mud file signer (manufacturer) signed 
+#in the private key of the manufacturer
+echo "Generating cert request"
+openssl req -new -key manufacturer.key -out mudsigner.csr -subj "/C=US/ST=Maryland/L=Gaithersburg/O=NIST/OU=ITL/CN=localhost"
+echo "Generated cert request"
+
+#Create the certificate at the CA (signed in the private key of the CA and includes the public key of the CA)
+echo "CA generating cert"
+openssl x509 -req -in mudsigner.csr -CA $CACRT -CAkey ca.key -CAcreateserial -out manufacturer.crt
+echo "CA generated cert"
+sudo -E $JAVA_HOME/bin/keytool -delete -alias dhcptest.nist.local -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+sudo -E $JAVA_HOME/bin/keytool -importcert -file manufacturer.crt -alias dhcptest.nist.local -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
+
+#Get the public key from the crt
+openssl x509 -in manufacturer.crt  -pubkey -noout > manufacturer.pubkey
+
+#sign the mudfile in the private key of the manufacturer
+openssl dgst -sha256 -sign manufacturer.key -out mudfile.json.sha256 mudfile.json
+
+#verify the signature.
+openssl dgst -sha256 -verify manufacturer.pubkey -signature mudfile.json.sha256 mudfile.json

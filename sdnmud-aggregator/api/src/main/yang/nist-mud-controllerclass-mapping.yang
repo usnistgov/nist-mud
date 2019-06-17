@@ -59,7 +59,7 @@ module nist-mud-controllerclass-mapping {
         leaf-list address-list {
             description
                "The list of IP addresses associated with the controller URI";
-            type inet:ip-address;
+            type inet:ipv4-address;
         }
 
      }

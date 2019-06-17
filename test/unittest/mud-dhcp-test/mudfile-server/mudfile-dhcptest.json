@@ -2,7 +2,7 @@
   "ietf-mud:mud": {
     "mud-version": 1,
     "mud-url": "https://dhcptest.nist.local/super1",
-    "mud-signature": "https://dhcptest.nist.local/super1/mudfile.json.sha256",
+    "mud-signature": "https://dhcptest.nist.local/super1/mudfile-dhcptest.p7s",
     "last-update": "2018-03-11T19:44:23+01:00",
     "cache-validity": 48,
     "is-supported": true,

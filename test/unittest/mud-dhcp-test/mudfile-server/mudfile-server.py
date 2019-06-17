@@ -9,11 +9,11 @@ class MyHTTPRequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         if self.path == "/super1" :
-           with  open("mudfile.json") as f:
+           with  open("mudfile-dhcptest.json") as f:
                 data = f.read()
                 self.wfile.write(data)
-        elif self.path == "/super1/mudfile.json.sha256":
-           with open("mudfile.json.sha256") as f:
+        elif self.path == "/super1/mudfile-dhcptest.p7s":
+           with open("mudfile-dhcptest.p7s") as f:
                 data = f.read()
                 self.wfile.write(data)
         else:

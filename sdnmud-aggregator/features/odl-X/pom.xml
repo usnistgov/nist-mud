@@ -98,6 +98,29 @@
            </dependency>
 
 
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <type>jar</type>
+            </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <type>jar</type>
+            </dependency>
+
+            <!--
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-ext-jdk15on</artifactId>
+                <type>jar</type>
+            </dependency>
+            -->
+
+
+
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>sdnmud-impl</artifactId>

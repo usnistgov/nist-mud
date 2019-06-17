@@ -21,6 +21,7 @@
  */
 package gov.nist.antd.sdnmud.impl;
 
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.opendaylight.controller.md.sal.binding.api.DataBroker;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeIdentifier;
 import org.opendaylight.controller.md.sal.binding.api.NotificationPublishService;
@@ -43,6 +45,7 @@ import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSeriali
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.Acls;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.acls.acl.Aces;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
@@ -112,7 +115,7 @@ public class SdnmudProvider {
 	// installed for a given MAC address.
 	private HashMap<String, HashSet<InstanceIdentifier<FlowCapableNode>>> mudNodesMap = new HashMap<>();
 
-	private HashMap<String, HashMap<String, List<IpAddress>>> controllerMap = new HashMap<>();
+	private HashMap<String, HashMap<String, List<Ipv4Address>>> controllerMap = new HashMap<>();
 
 	//private HashSet<String> routerMacAddresses = new HashSet<String>();
 
@@ -199,10 +202,12 @@ public class SdnmudProvider {
 		//this.flowStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightFlowStatisticsService.class);
 		//this.directStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightDirectStatisticsService.class);
 		this.sdnmudConfig = sdnmudConfig;
+		Security.addProvider(new BouncyCastleProvider());
 		if (sdnmudConfig.getDropRuleTable() < sdnmudConfig.getTableStart() + 4) {
 			LOG.error("Drop rule table is incorrectly specified");
 			throw new RuntimeException("Error in config file -- please check defaults. Drop rule table is too small.");
 		}
+
 	}
 
 	private static InstanceIdentifier<FlowCapableNode> getWildcardPath() {
@@ -613,7 +618,7 @@ public class SdnmudProvider {
 		LOG.info("SdnmudProvider: Registering Controller for SwitchId " + nodeId);
 		this.cpeNodes.add(nodeId);
 		this.controllerClassMaps.put(nodeId, controllerMapping);
-		HashMap<String, List<IpAddress>> map = this.controllerMap.get(nodeId);
+		HashMap<String, List<Ipv4Address>> map = this.controllerMap.get(nodeId);
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();
 			this.controllerMap.put(nodeId, map);
@@ -623,7 +628,7 @@ public class SdnmudProvider {
 
 		for (Controller controller : controllerMapping.getController()) {
 			String name = controller.getUri().getValue();
-			List<IpAddress> addresses = controller.getAddressList();
+			List<Ipv4Address> addresses = controller.getAddressList();
 			map.put(name, addresses);
 		}
 
@@ -636,7 +641,7 @@ public class SdnmudProvider {
 	 * @param nodeUri
 	 * @return
 	 */
-	public Map<String, List<IpAddress>> getControllerClassMap(String nodeUri) {
+	public Map<String, List<Ipv4Address>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
 	}
 
