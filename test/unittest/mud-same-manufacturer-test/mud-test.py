@@ -50,7 +50,7 @@ class TestAccess(unittest.TestCase) :
         h1 = hosts[0]
         h3 = hosts[2]
         h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
-        time.sleep(2)
+        time.sleep(4)
         #result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8010")
         self.assertTrue(re.search("OK",result) != None, "Expecting a successful get")

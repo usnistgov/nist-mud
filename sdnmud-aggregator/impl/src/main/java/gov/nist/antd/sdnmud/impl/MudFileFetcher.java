@@ -459,7 +459,7 @@ public class MudFileFetcher {
 					for (Object aclObj : acls) {
 						Map acl = (Map) aclObj;
 						String oldName = (String) acl.get("name");
-						String newName = mudUrl + "/" + oldName;
+						String newName = mudUrlFromProfile + "/" + oldName;
 						LOG.info("renamed ACL " + oldName + " to " + newName);
 						acl.put("name", newName);
 					}
