@@ -107,7 +107,7 @@ public class SdnmudProvider {
 	private HashMap<String, List<Uri>> nodeToMudUriMap = new HashMap<>();
 
 	// Aces name to ace map.
-	private Map<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
+	private  HashMap<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
 
 	// A map between a mac address and the associated FlowCapableNodes where MUD
 	// profiles were installed.
@@ -178,6 +178,8 @@ public class SdnmudProvider {
 	private ListenerRegistration<QuaranteneDevicesListener> quaranteneDevicesListenerRegistration;
 
 	private OpendaylightDirectStatisticsService directStatisticsService;
+
+	private Uri lastMudUri;
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			OpendaylightFlowStatisticsService flowStatisticsService,
@@ -253,6 +255,9 @@ public class SdnmudProvider {
 		this.mudFlowsInstaller = new MudFlowsInstaller(this);
 		this.datastoreUpdater = new DatastoreUpdater(this);
 		this.nameResolutionCache = new NameResolutionCache();
+		/* Listener for flow miss packets sent to the controller */
+		this.packetInDispatcher = new PacketInDispatcher(this);
+	
 		/* Register listener for configuration state change */
 		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
 		final DataTreeIdentifier<SdnmudConfig> configId = new DataTreeIdentifier<SdnmudConfig>(
@@ -303,10 +308,6 @@ public class SdnmudProvider {
 				quaranteneDevicesWildCardPath);
 		this.quaranteneDevicesListener = new QuaranteneDevicesListener(this);
 		this.quaranteneDevicesListenerRegistration = this.dataBroker.registerDataTreeChangeListener(quaranteneDevicesId, quaranteneDevicesListener);
-	
-
-		/* Listener for flow miss packets sent to the controller */
-		this.packetInDispatcher = new PacketInDispatcher(this);
 		this.packetInDispatcherRegistration = this.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
 		
@@ -560,7 +561,7 @@ public class SdnmudProvider {
 		return this.uriToMudMap.values();
 	}
 
-	public void addMudProfile(Mud mud) {
+	public synchronized void addMudProfile(Mud mud) {
 		this.uriToMudMap.put(mud.getMudUrl().getValue(), mud);
 		this.configStateChanged++;
 	}
@@ -594,7 +595,7 @@ public class SdnmudProvider {
 	 * @param aces    -- the ACE entries to add.
 	 */
 	public void addAces(String aclName, Aces aces) {
-		LOG.info("adding ACEs aclName =  {} ", aclName);
+		LOG.info("adding ACEs aclName =   [" + aclName + "]");
 		this.nameToAcesMap.put(aclName, aces);
 		this.configStateChanged++;
 	}
@@ -605,9 +606,9 @@ public class SdnmudProvider {
 	 * @param aclName -- acl name
 	 * @return -- Aces list for the acl name
 	 */
-	public Aces getAces(String aclName) {
-		LOG.info("getAces aclName =  " + aclName);
-		return this.nameToAcesMap.get(aclName);
+	public Aces getAces(Uri mudUrl, String aclName) {
+		LOG.info("getAces [" + mudUrl.getValue() + "/"+ aclName +"]" );
+		return this.nameToAcesMap.get(mudUrl.getValue() + "/" + aclName);
 	}
 
 	/**

@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.concurrent.ExecutionException;
 
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
@@ -40,20 +41,20 @@ public class DatastoreUpdater {
 	
 	
 	private void importFromNormalizedNode(final DOMDataReadWriteTransaction rwTrx, final LogicalDatastoreType type,
-			final NormalizedNode<?, ?> data) throws TransactionCommitFailedException, ReadFailedException {
+			final NormalizedNode<?, ?> data) throws TransactionCommitFailedException, ReadFailedException, InterruptedException, ExecutionException {
 		if (data instanceof NormalizedNodeContainer) {
 			@SuppressWarnings("unchecked")
 			YangInstanceIdentifier yid = YangInstanceIdentifier.create(data.getIdentifier());
 			// rwTrx.put(type, yid, data);
 			rwTrx.merge(type, yid, data);
-			rwTrx.submit();
+			rwTrx.submit().get();
 		} else {
 			throw new IllegalStateException("Root node is not instance of NormalizedNodeContainer");
 		}
 	}
 
 	public  void writeToDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
-			ReadFailedException, SchemaSourceException, YangSyntaxErrorException {
+			ReadFailedException, SchemaSourceException, YangSyntaxErrorException, InterruptedException, ExecutionException {
 		LOG.info("jsonData = " + jsonData);
 
 		byte bytes[] = jsonData.getBytes();

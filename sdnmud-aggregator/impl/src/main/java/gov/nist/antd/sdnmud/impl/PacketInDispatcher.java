@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.ExecutionException;
 
 import org.opendaylight.controller.liblldp.Ethernet;
 import org.opendaylight.controller.liblldp.NetUtils;
@@ -332,10 +333,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					return false;
 			}
 		}
-		Map<String,List<Ipv4Address>> controllerClassMap = sdnmudProvider.getControllerClassMap(nodeId);
+		Map<String, List<Ipv4Address>> controllerClassMap = sdnmudProvider.getControllerClassMap(nodeId);
 		Ipv4Address ipAddr = new Ipv4Address(ipAddress);
-		for (List<Ipv4Address> addList : controllerClassMap.values() ) {
-			if ( addList.contains(ipAddr)) {
+		for (List<Ipv4Address> addList : controllerClassMap.values()) {
+			if (addList.contains(ipAddr)) {
 				return false;
 			}
 		}
@@ -569,7 +570,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						this.unclassifiedMacAddresses.add(srcMac);
 					}
 				}
-				
+
 				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
 					// Broadcast notification for mappings.
 					Uri mudUri = this.sdnmudProvider.getMappingDataStoreListener().getMudUri(dstMac);
@@ -619,29 +620,44 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (dhcpPacket instanceof DhcpRequestPacket) {
 						DhcpRequestPacket dhcpRequestPacket = (DhcpRequestPacket) dhcpPacket;
 						String mudUrl = dhcpRequestPacket.getMudUrl();
-						
-						if (mudUrl != null) {
-							MappingBuilder mb = new MappingBuilder();
-							ArrayList<MacAddress> macAddresses = new ArrayList<>();
-							macAddresses.add(srcMac);
-							mb.setDeviceId(macAddresses);
-							mb.setMudUrl(new Uri(mudUrl));
-							InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class).build();
-							ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
+						synchronized (this) {
+							if (mudUrl != null) {
+								LOG.info("MUD URL = " + mudUrl);
+								MappingBuilder mb = new MappingBuilder();
+								ArrayList<MacAddress> macAddresses = new ArrayList<>();
+								Uri mudUri = new Uri(mudUrl);
+								HashSet<MacAddress> currentMacAddresses = sdnmudProvider.getMappingDataStoreListener()
+										.getMapping().get(mudUri);
+								macAddresses.add(srcMac);
+								if (currentMacAddresses != null) {
+									macAddresses.addAll(currentMacAddresses);
+								}
+								mb.setDeviceId(macAddresses);
+								mb.setMudUrl(mudUri);
+								InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)
+										.build();
+								ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
 
-							tx.merge(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
-							tx.submit();
+								tx.put(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
+								try {
+									tx.submit().get();
+								} catch (InterruptedException | ExecutionException e) {
+									LOG.error("Failed to submit transaction");
+								}
+							} else {
+								LOG.info("Mud URL is null");
+							}
 						}
 					}
 				} else if (cookie.equals(SdnMudConstants.DH_RESPONSE_FLOW_COOKIE)) {
 					DhcpPacket dhcpPacket = DhcpPacket.decodeFullPacket(notification.getPayload(), DhcpPacket.ENCAP_L2);
 					LOG.info("DHCP Response packet type " + dhcpPacket.getClass().getName());
 					if (dhcpPacket instanceof DhcpOfferPacket) {
-					  DhcpOfferPacket dhcpOfferPacket = (DhcpOfferPacket) dhcpPacket;
-					  int leaseTime = dhcpOfferPacket.getLeaseTime();
-					  // when lease expires, should the device be blocked?
-					  // For now just log it as informational. 
-					  LOG.info("Lease time is " + leaseTime);
+						DhcpOfferPacket dhcpOfferPacket = (DhcpOfferPacket) dhcpPacket;
+						int leaseTime = dhcpOfferPacket.getLeaseTime();
+						// when lease expires, should the device be blocked?
+						// For now just log it as informational.
+						LOG.info("Lease time is " + leaseTime);
 					}
 				} else if (cookie.equals(SdnMudConstants.DNS_REQUEST_FLOW_COOKIE)) {
 					LOG.info("Saw a DNS Request");

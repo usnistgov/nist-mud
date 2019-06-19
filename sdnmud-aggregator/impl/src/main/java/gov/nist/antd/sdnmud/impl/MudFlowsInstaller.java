@@ -1016,8 +1016,12 @@ public class MudFlowsInstaller {
 	 * @param nodeUri          -- the URI of the node.
 	 */
 	public synchronized boolean tryInstallFlows(Mud mud, String cpeNodeId) {
+		boolean retval = true;
+
 		try {
-			Uri mudUri = mud.getMudUrl();
+			final Uri mudUri = mud.getMudUrl();
+			LOG.info("***************************");
+			LOG.info("tryInstallFlows : " + mudUri.getValue());
 			HashSet<String> enabledAceNames = new HashSet<String>();
 			boolean hasQuarantineDevicePolicy;
 
@@ -1104,10 +1108,10 @@ public class MudFlowsInstaller {
 				 */
 				FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
 				if (fromDevicePolicy != null) {
-					AccessLists accessLists = fromDevicePolicy.getAccessLists();
+					final AccessLists accessLists = fromDevicePolicy.getAccessLists();
 					for (AccessList accessList : accessLists.getAccessList()) {
-						String aclName = accessList.getName();
-						Aces aces = this.sdnmudProvider.getAces(aclName);
+						final String aclName = accessList.getName();
+						Aces aces = this.sdnmudProvider.getAces(mudUri,aclName);
 						if (aces != null) {
 							for (Ace ace : aces.getAce()) {
 								String aceName = ace.getName();
@@ -1157,27 +1161,27 @@ public class MudFlowsInstaller {
 												matches, matchesType, qFlag);
 									}
 								} else {
-									LOG.info("DENY rule not implemented");
-									return false;
+									LOG.error("DENY rule not implemented");
+									retval = false;
 								}
 							}
 
 						} else {
-							LOG.info("Could not find ACEs for " + aclName);
-							return false;
+							LOG.info("Install FromDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue() + " aceName " + aclName);
+							
 						}
 					}
 				}
 
 				ToDevicePolicy toDevicePolicy = mud.getToDevicePolicy();
 				if (toDevicePolicy != null) {
-					AccessLists accessLists = toDevicePolicy.getAccessLists();
+					final AccessLists accessLists = toDevicePolicy.getAccessLists();
 					for (AccessList accessList : accessLists.getAccessList()) {
-						String aclName = accessList.getName();
-						Aces aces = this.sdnmudProvider.getAces(aclName);
+						final String aclName = accessList.getName();
+						Aces aces = this.sdnmudProvider.getAces(mudUri,aclName);
 						if (aces != null) {
 							for (Ace ace : aces.getAce()) {
-								String aceName = ace.getName();
+								final String aceName = ace.getName();
 								boolean qFlag = enabledAceNames.contains(ace.getName());
 								if (ace.getActions().getForwarding().equals(Accept.class)) {
 
@@ -1221,13 +1225,12 @@ public class MudFlowsInstaller {
 									}
 								} else {
 									LOG.error("DENY rules not implemented");
-									return false;
+									retval = false;
 								}
 
 							}
 						} else {
-							LOG.info("Could not find ACEs for " + aclName);
-							return false;
+							LOG.info("Install ToDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue() + " aceName " + aclName);
 						}
 
 					}
@@ -1237,12 +1240,16 @@ public class MudFlowsInstaller {
 
 			} catch (Exception ex) {
 				LOG.error("MudFlowsInstaller: Exception caught installing MUD Flow ", ex);
-				return false;
+				retval = false;
 			}
 		} finally {
 			this.sdnmudProvider.getPacketInDispatcher().unblock();
 		}
-		return true;
+		
+		if (!retval) {
+			LOG.error("Error installing MUD Flow rules.");
+		}
+		return retval;
 
 	}
 

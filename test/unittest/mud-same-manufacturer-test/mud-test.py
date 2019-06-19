@@ -77,13 +77,13 @@ class TestAccess(unittest.TestCase) :
         h4 = hosts[4]
         h4.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) == 0, "expect unsuccessful ping")
 
     def testIcmpPingExpectPass(self):
         h1 = hosts[0]
         result = h1.cmdPrint("ping 10.0.0.3 -c 10 -q")
-        self.assertTrue(re.search("100",result) is None, "Expecting a successful ping")
+        self.assertTrue(re.search("0%",result) is not None, "Expecting a successful ping")
 
 
 

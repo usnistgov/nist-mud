@@ -27,6 +27,7 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,7 +80,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 	}
 
 	@Override
-	public void onDataTreeChanged(Collection<DataTreeModification<Mapping>> collection) {
+	public synchronized void onDataTreeChanged(Collection<DataTreeModification<Mapping>> collection) {
 		LOG.info("MappingDataStoreListener: onDataTreeChanged");
 		for (DataTreeModification<Mapping> change : collection) {
 			Mapping mapping = change.getRootNode().getDataAfter();
@@ -88,7 +89,12 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			// For testing purposes we support file: URIs so this may not actually
 			// be the same as the URI in the mud profile.
 			Uri uri = mapping.getMudUrl();
-			LOG.info("mudUri = " + uri.getValue());
+			Iterator<MacAddress> it = macAddresses.iterator();
+			while (it.hasNext()) {
+				if (macToUri.containsKey(it.next().getValue())) {
+					it.remove();
+				}
+			}
 			String uriStr = sdnmudProvider.getMudFileFetcher().fetchAndInstallMudFile(uri.getValue());
 			if (uriStr == null) {
 				if (sdnmudProvider.getSdnmudConfig().isBlockMacOnMudProfileFailure()) {
@@ -113,7 +119,7 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 					}
 				}
 			} else {
-			   uri = new Uri(uriStr);
+				uri = new Uri(uriStr);
 			}
 
 			boolean found = false;
@@ -127,7 +133,6 @@ public class MappingDataStoreListener implements DataTreeChangeListener<Mapping>
 			if (found) {
 				sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
 			}
-			
 
 			// Cache the MAC addresses of the devices under the same URL.
 			for (MacAddress mac : macAddresses) {

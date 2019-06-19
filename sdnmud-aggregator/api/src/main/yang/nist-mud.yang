@@ -34,16 +34,14 @@ module nist-mud {
 
 
   augment "/ietf-mud:mud" {
-    description
-      "Adds leaf nodes appropriate MUD usage in the
-       Secure Home Gateway";
 
     container quarantined-device-policy {
       description
         " List of strings that identify the device ACEs 
           that should NOT be disabled when the device is under
           quarantene. A quarantene is signalled when the device
-          voiolates its MUD policy file.
+          voiolates its MUD policy file. 
+          From draft-richardson-shg-quarantine (correccted).
          ";
          list enabled-ace-names {
           leaf ace-name {

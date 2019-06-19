@@ -35,6 +35,7 @@ import org.opendaylight.controller.md.sal.binding.api.DataTreeChangeListener;
 import org.opendaylight.controller.md.sal.binding.api.DataTreeModification;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.access.lists.access.lists.AccessList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,11 +63,14 @@ public class MudProfileDataStoreListener implements DataTreeChangeListener<Mud> 
 
 			Uri uri = mud.getMudUrl();
 			LOG.info("mudURI {}", uri.getValue());
+			for ( AccessList accessList : mud.getFromDevicePolicy().getAccessLists().getAccessList()) {
+				LOG.info("FromDevicePolicy: AccessList Name : " + accessList.getName());
+			}
 
 			// Put this in a map. Later when the MAC appears, we can pick it up
 			// from this map and install flow rules.
 			this.sdnmudProvider.addMudProfile(mud);
-
+		
 		}
 	}
 

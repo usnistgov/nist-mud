@@ -12,6 +12,7 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
@@ -35,6 +36,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLException;
@@ -67,6 +69,8 @@ import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.opendaylight.controller.md.sal.common.api.data.ReadFailedException;
 import org.opendaylight.mdsal.common.api.TransactionCommitFailedException;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.Acls;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.acls.Acl;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.access.control.list.rev190304.acls.AclBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
 import org.opendaylight.yangtools.yang.model.parser.api.YangSyntaxErrorException;
@@ -260,45 +264,43 @@ public class MudFileFetcher {
 		LOG.error("Signature verification failed");
 		return false;
 	}
-	
-	
+
 	private PublicKey checkCertPath(SignerId signerId, Store<X509CertificateHolder> certs)
-	        throws IOException, GeneralSecurityException
-	    {
-	        CertStore store = new JcaCertStoreBuilder().setProvider("BC").addCertificates(certs).build();
+			throws IOException, GeneralSecurityException {
+		CertStore store = new JcaCertStoreBuilder().setProvider("BC").addCertificates(certs).build();
 
-	        CertPathBuilder pathBuilder = CertPathBuilder.getInstance("PKIX","BC");
-	        X509CertSelector targetConstraints = new X509CertSelector();
+		CertPathBuilder pathBuilder = CertPathBuilder.getInstance("PKIX", "BC");
+		X509CertSelector targetConstraints = new X509CertSelector();
 
-	        targetConstraints.setIssuer(signerId.getIssuer().getEncoded());
-	        targetConstraints.setSerialNumber(signerId.getSerialNumber());
-	        
-	        String cacertHome = sdnmudConfig.getCaCerts();
-			if (!cacertHome.startsWith("/")) {
-				cacertHome = System.getProperty("java.home") + "/" + cacertHome;
-			}
-			LOG.debug("cacertHome = " + cacertHome);
-			FileInputStream is = new FileInputStream(cacertHome);
-			String keyPass = sdnmudConfig.getKeyPass();
-			LOG.debug("keyPass = " + keyPass);
-			KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-			LOG.debug("keystore = " + keystore);
-			keystore.load(is, keyPass.toCharArray());
-			Enumeration<String> aliases = keystore.aliases();
-			HashSet<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
-			while(aliases.hasMoreElements()) {
-				String alias = aliases.nextElement();
-				X509Certificate cert = (X509Certificate) keystore.getCertificate(alias);
-				trustAnchors.add(new TrustAnchor(cert,null));
-			}
-	        
-	        PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+		targetConstraints.setIssuer(signerId.getIssuer().getEncoded());
+		targetConstraints.setSerialNumber(signerId.getSerialNumber());
 
-	        params.addCertStore(store);
-	        params.setRevocationEnabled(false);            // TODO: CRLs?
+		String cacertHome = sdnmudConfig.getCaCerts();
+		if (!cacertHome.startsWith("/")) {
+			cacertHome = System.getProperty("java.home") + "/" + cacertHome;
+		}
+		LOG.debug("cacertHome = " + cacertHome);
+		FileInputStream is = new FileInputStream(cacertHome);
+		String keyPass = sdnmudConfig.getKeyPass();
+		LOG.debug("keyPass = " + keyPass);
+		KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
+		LOG.debug("keystore = " + keystore);
+		keystore.load(is, keyPass.toCharArray());
+		Enumeration<String> aliases = keystore.aliases();
+		HashSet<TrustAnchor> trustAnchors = new HashSet<TrustAnchor>();
+		while (aliases.hasMoreElements()) {
+			String alias = aliases.nextElement();
+			X509Certificate cert = (X509Certificate) keystore.getCertificate(alias);
+			trustAnchors.add(new TrustAnchor(cert, null));
+		}
 
-	        return pathBuilder.build(params).getCertPath().getCertificates().get(0).getPublicKey();
-	    }
+		PKIXBuilderParameters params = new PKIXBuilderParameters(trustAnchors, targetConstraints);
+
+		params.addCertStore(store);
+		params.setRevocationEnabled(false); // TODO: CRLs?
+
+		return pathBuilder.build(params).getCertPath().getCertificates().get(0).getPublicKey();
+	}
 
 	private boolean verifySignatureP7S(byte[] mudfileData, byte[] signature)
 			throws CMSException, OperatorCreationException, IOException, GeneralSecurityException {
@@ -312,27 +314,29 @@ public class MudFileFetcher {
 		Iterator<SignerInformation> it = c.iterator();
 		while (it.hasNext()) {
 			SignerInformation signer = (SignerInformation) it.next();
-			Collection<X509CertificateHolder>  certCollection = store.getMatches(signer.getSID());
-			if (certCollection.size() == 0 ) {
+			Collection<X509CertificateHolder> certCollection = store.getMatches(signer.getSID());
+			if (certCollection.size() == 0) {
 				LOG.error("Impossible to find a cert using signer ID " + signer.getSID());
 				return false;
 			}
 			Iterator<X509CertificateHolder> certIt = certCollection.iterator();
 			X509CertificateHolder certHolder = certIt.next();
-			X509Certificate cert = new JcaX509CertificateConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME).getCertificate(certHolder);
+			X509Certificate cert = new JcaX509CertificateConverter().setProvider(BouncyCastleProvider.PROVIDER_NAME)
+					.getCertificate(certHolder);
 			cert.checkValidity();
 			SignerId signerId = signer.getSID();
 			PublicKey result = this.checkCertPath(signerId, store);
-			
-			if (signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME).build(result))) {
-				LOG.error("verification success");
+
+			if (signer.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider(BouncyCastleProvider.PROVIDER_NAME)
+					.build(result))) {
+				LOG.info("verification success");
 				return true;
 			}
 		}
 		LOG.error("Signature verification failed");
 		return false;
 	}
-	
+
 	public String fetchAndInstallMudFile(String mudUrl) {
 		LOG.info("MUD URL = " + mudUrl);
 		try {
@@ -427,12 +431,10 @@ public class MudFileFetcher {
 					LOG.debug("read " + bytesRead + " bytes");
 					byte[] signature = Arrays.copyOf(buffer, bytesRead);
 
-				
-					if (! verifySignatureP7S(mudfileData, signature) ) {
+					if (!verifySignatureP7S(mudfileData, signature)) {
 						return null;
 					}
-					
-				
+
 				}
 
 				if (fileFetchedFromHttps) {
@@ -446,6 +448,23 @@ public class MudFileFetcher {
 				// Writing to the datastore will invoke the listener.
 				datastoreUpdater.writeToDatastore(mudStr, Mud.QNAME);
 
+				Map aclMap = (Map) mudFile.get("ietf-access-control-list:acls");
+
+				// Rewrite the ACL names to allow coexistence with conflicting ACL names from
+				// different mud profiles.
+
+				for (Object aclsObj : aclMap.values()) {
+					// Get the ACL (there's a list of them). Rename
+					ArrayList acls = (ArrayList) aclsObj;
+					for (Object aclObj : acls) {
+						Map acl = (Map) aclObj;
+						String oldName = (String) acl.get("name");
+						String newName = mudUrl + "/" + oldName;
+						LOG.info("renamed ACL " + oldName + " to " + newName);
+						acl.put("name", newName);
+					}
+				}
+
 				String aclStr = gson.toJson(mudFile.get("ietf-access-control-list:acls"));
 
 				datastoreUpdater.writeToDatastore(aclStr, Acls.QNAME);
@@ -454,8 +473,8 @@ public class MudFileFetcher {
 			}
 
 		} catch (IOException | TransactionCommitFailedException | ReadFailedException | SchemaSourceException
-				| YangSyntaxErrorException | OperatorCreationException
-				| CMSException | GeneralSecurityException ex) {
+				| YangSyntaxErrorException | OperatorCreationException | CMSException | GeneralSecurityException
+				| InterruptedException | ExecutionException ex) {
 			LOG.error("Error fetching MUD file -- not installing", ex);
 			return null;
 		}
