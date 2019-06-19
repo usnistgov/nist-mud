@@ -178,11 +178,15 @@ public class MudFlowsInstaller {
 	private void registerTcpSynFlagCheck(String mudUri, String aceName, InstanceIdentifier<FlowCapableNode> node,
 			BigInteger metadata, BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort,
 			Ipv4Address destinationAddress, int destinationPort, int priority) {
-
+		
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
 		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aceName);
+		
 		FlowCookie flowCookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
+		
+		LOG.info("registerTcpSynFlagCheck " + fid.getValue() + " sourcePort " + sourcePort + " destinationPort "
+				+ destinationPort + " priority " + priority);
 		FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
 				metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
 				sdnmudProvider.getSdnmudRulesTable(), priority, sdnmudProvider.getDropTable(), fid, flowCookie, 0);
@@ -335,8 +339,7 @@ public class MudFlowsInstaller {
 	private Ipv4Address getDnsAddress(String nodeUri) {
 		Ipv4Address retval = getControllerAddress(nodeUri, SdnMudConstants.DNS_SERVER_URI);
 		if (retval != null) {
-			LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri + " dnsAddress "
-					+ retval.getValue());
+			LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri + " dnsAddress " + retval.getValue());
 		} else {
 			LOG.info(this.getClass().getName() + " getDnsAddress " + nodeUri + " dnsAddress is null");
 		}
@@ -354,8 +357,7 @@ public class MudFlowsInstaller {
 	public Ipv4Address getNtpAddress(String nodeUri) {
 		Ipv4Address retval = getControllerAddress(nodeUri, SdnMudConstants.NTP_SERVER_URI);
 		if (retval != null) {
-			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress "
-					+ retval.getValue());
+			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress " + retval.getValue());
 		} else {
 			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress is null");
 		}
@@ -512,6 +514,9 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = flowCookie.getValue();
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		boolean ctrlFlag = false;
+		
+		LOG.info(String.format("permitFromDeviceToIpAddressFlow[mudUri : %s aceName %s protocol %d destinationAddress %s destinationPort %d ]",
+				mudUri, aceName, protocol, destinationAddress.getValue(), destinationPort)); 
 
 		int priority = !isEnabledOnQ ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
@@ -562,6 +567,9 @@ public class MudFlowsInstaller {
 			BigInteger metadataMask, Ipv4Address address, int sourcePort, short protocol, boolean checkTcpSyn,
 			FlowCookie flowCookie, FlowId flowId, InstanceIdentifier<FlowCapableNode> node, boolean qFlag) {
 		try {
+			LOG.info(String.format("permitFromIpToIpDeviceFlow[ mudUri : %s aceName %s protocol %d destinationAddress %s destinationPort %d ]",
+					mudUri, aceName, protocol, address.getValue(), sourcePort)); 
+
 			BigInteger newMetadata = flowCookie.getValue();
 			BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
@@ -835,7 +843,8 @@ public class MudFlowsInstaller {
 		List<Ipv4Address> ipAddresses = new ArrayList<Ipv4Address>();
 		LOG.info("Resolving controller address for " + controllerUri.getValue());
 		if (getControllerAddresses(nodeConnectorUri, controllerUri.getValue()) != null) {
-			List<Ipv4Address> controllerIpAddresses = getControllerAddresses(nodeConnectorUri, controllerUri.getValue());
+			List<Ipv4Address> controllerIpAddresses = getControllerAddresses(nodeConnectorUri,
+					controllerUri.getValue());
 			for (Ipv4Address ipAddress : controllerIpAddresses) {
 				LOG.info("controllerAddress " + ipAddress.getValue());
 				ipAddresses.add(ipAddress);
@@ -1107,12 +1116,14 @@ public class MudFlowsInstaller {
 				 * Fetch and install the MUD ACLs. First install the "from-device" rules.
 				 */
 				FromDevicePolicy fromDevicePolicy = mud.getFromDevicePolicy();
+				boolean fromAclFound = false;
 				if (fromDevicePolicy != null) {
 					final AccessLists accessLists = fromDevicePolicy.getAccessLists();
 					for (AccessList accessList : accessLists.getAccessList()) {
 						final String aclName = accessList.getName();
-						Aces aces = this.sdnmudProvider.getAces(mudUri,aclName);
+						Aces aces = this.sdnmudProvider.getAces(mudUri, aclName);
 						if (aces != null) {
+							fromAclFound = true;
 							for (Ace ace : aces.getAce()) {
 								String aceName = ace.getName();
 								// Is this ACE enabled for quarantine access?
@@ -1123,7 +1134,6 @@ public class MudFlowsInstaller {
 									MatchesType matchesType = matchesType(matches);
 									LOG.info("matchType " + matchesType);
 									if (matchesType == MatchesType.DNS_MATCH) {
-
 										List<Ipv4Address> addresses = getMatchAddresses(node, matches);
 										if (!addresses.isEmpty()) {
 											this.installPermitFromDeviceToIpAddressFlowRules(node, mudUri.getValue(),
@@ -1167,19 +1177,22 @@ public class MudFlowsInstaller {
 							}
 
 						} else {
-							LOG.info("Install FromDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue() + " aceName " + aclName);
-							
+							LOG.info("Install FromDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue()
+									+ " aceName " + aclName);
+
 						}
 					}
 				}
 
+				boolean toAclFound = false;
 				ToDevicePolicy toDevicePolicy = mud.getToDevicePolicy();
 				if (toDevicePolicy != null) {
 					final AccessLists accessLists = toDevicePolicy.getAccessLists();
 					for (AccessList accessList : accessLists.getAccessList()) {
 						final String aclName = accessList.getName();
-						Aces aces = this.sdnmudProvider.getAces(mudUri,aclName);
+						Aces aces = this.sdnmudProvider.getAces(mudUri, aclName);
 						if (aces != null) {
+							toAclFound = true;
 							for (Ace ace : aces.getAce()) {
 								final String aceName = ace.getName();
 								boolean qFlag = enabledAceNames.contains(ace.getName());
@@ -1230,12 +1243,17 @@ public class MudFlowsInstaller {
 
 							}
 						} else {
-							LOG.info("Install ToDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue() + " aceName " + aclName);
+							LOG.info("Install ToDevicePolicy : Could not find ACEs for mudUrl " + mudUri.getValue()
+									+ " aceName " + aclName);
 						}
-
 					}
+					retval = fromAclFound && toAclFound;
+
 					// Clear the cache so can be re-poplulated after packets come in again.
-					this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					// Is this necessary??
+					if (retval) {
+						this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					}
 				}
 
 			} catch (Exception ex) {
@@ -1245,7 +1263,7 @@ public class MudFlowsInstaller {
 		} finally {
 			this.sdnmudProvider.getPacketInDispatcher().unblock();
 		}
-		
+
 		if (!retval) {
 			LOG.error("Error installing MUD Flow rules.");
 		}
