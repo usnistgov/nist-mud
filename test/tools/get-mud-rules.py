@@ -21,4 +21,5 @@ if __name__ == "__main__" :
     print(jsonStr)
     r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
     response = json.loads(r.content)
+    
     print(json.dumps(response,indent=4))

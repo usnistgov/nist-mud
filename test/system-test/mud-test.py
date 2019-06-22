@@ -80,8 +80,8 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(re.search("0%",result) is not None, "Expecting a successful ping")
 
 
-        result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 30   -O foo.html --delete-after ")
-        print "result = ",result
+        result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
     
 
