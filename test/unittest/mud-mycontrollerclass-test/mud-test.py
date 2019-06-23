@@ -61,9 +61,9 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testLocalNetPingExpectPass(self) :
-        print "pinging a local network peer -- this should succeed with MUD. Note that 10.0.0.5 is not a MUD device."
+        print "pinging a local network peer -- this should succeed with MUD. Note that 10.0.0.4 is not a MUD device but listening on port 8000."
         h1 = hosts[0]
-        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.5 --client --quiet")
+        result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) > 0, "expect successful ping")
 
     def testUdpPingExpectFail(self):
@@ -254,7 +254,7 @@ def setupTopology(controller_addr):
     h2.cmdPrint("python ../util/udpping.py --port 4000 --server &")
     h4.cmdPrint("python ../util/udpping.py --port 4000 --server &")
     # h5 is a localhost peer.
-    h5.cmdPrint("python ../util/udpping.py --port 8000 --server &")
+    h4.cmdPrint("python ../util/udpping.py --port 8000 --server &")
     # h7 is the controller peer.
     h7.cmdPrint("python ../util/udpping.py --port 8002 --server &")
     

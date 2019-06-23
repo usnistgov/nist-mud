@@ -431,7 +431,7 @@ public class MudFlowsInstaller {
 
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
 				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
-				priority, SdnMudConstants.DROP_RULE_TIMEOUT);
+				priority, 0);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -1039,7 +1039,7 @@ public class MudFlowsInstaller {
 			LOG.info("***************************");
 			LOG.info("tryInstallFlows : " + mudUri.getValue());
 			HashSet<String> enabledAceNames = new HashSet<String>();
-			boolean hasQuarantineDevicePolicy;
+			boolean hasQuarantineDevicePolicy = false;
 
 			if (mud.getAugmentation(Mud1.class) != null) {
 				QuarantinedDevicePolicy qdp = mud.getAugmentation(Mud1.class).getQuarantinedDevicePolicy();
@@ -1048,6 +1048,9 @@ public class MudFlowsInstaller {
 					List<EnabledAceNames> aceNames = qdp.getEnabledAceNames();
 					for (EnabledAceNames aceName : aceNames) {
 						enabledAceNames.add(aceName.getAceName());
+					}
+					if (enabledAceNames.isEmpty()) {
+						hasQuarantineDevicePolicy = false;
 					}
 				} else {
 					hasQuarantineDevicePolicy = false;

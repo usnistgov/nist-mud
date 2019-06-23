@@ -44,121 +44,35 @@ class TestAccess(unittest.TestCase) :
     def setUp(self):
         pass
 
-    def updateFailCount(self):
-        global failCount
-        failCount = failCount + 1
-
     def tearDown(self):
-         print "TEAR DOWN"
-         print "failCount ", failCount
-         try:
-
-             for fname in { "/tmp/udpserver.pid", 
-                            "/tmp/udpclient.pid",
-                            "/tmp/tcpserver.pid",
-                            "/tmp/tcpclient.pid" } :
-                if os.path.exists(fname):
-                    with  open(fname) as f:
-                        for h in hosts:
-                            pid = int(f.read())
-                            os.kill(pid,signal.SIGKILL)
-                            os.kill(pid,signal.SIGTERM)
-                    os.remove(fname)
-
-		time.sleep(3)
-
-         except OSError:
-            pass
+        pass
         
 
     def testTcpGetFromDeviceExpectSuccess(self):
-        h1 = hosts[0]
+        #inbound on port 8000 is allowed
         h4 = hosts[3]
         result = None
-        for i in range(1,self.ntries):
-            h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 8000 &")
-            time.sleep(1)
-            result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 8000  -B ")
-            if re.search("OK",result) is not None:
-               break
-            else:
-               self.updateFailCount()
-               time.sleep(3)
-        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
+        result = h4.cmdPrint("wget 10.0.0.1:8000 --tries 2 --delete-after --timeout 20")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
     def testTcpGetFromDeviceExpectFail(self):
-        h1 = hosts[0]
-        h4 = hosts[3]
-        result = None
-        for i in range(1,self.ntries):
-            h1.cmdPrint("python ../util/tcp-server.py -H 10.0.0.1 -P 800 &")
-            time.sleep(1)
-            result = h4.cmdPrint("python ../util/tcp-client.py -H 10.0.0.1 -P 800 -B ")
-            if re.search("OK",result) is None:
-               break
-            else:
-               self.updateFailCount()
-               time.sleep(3)
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        #inbound on 800 is disallowed
+        h5 = hosts[4]
+        result = h4.cmdPrint("wget 10.0.0.1:800 --tries 2 --delete-after --timeout 10")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
     def testDeviceTcpGetFromLocalNetworkExpectFail(self):
+        #outbound on port 8000 is disallowed
         h1 = hosts[0]
-        h3 = hosts[2]
-        result = None
-        for i in range(1,self.ntries):
-            h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 &")
-            time.sleep(1)
-            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 8000 -B")
-            if re.search("OK",result) is None:
-               break
-            else:
-               self.updateFailCount()
-               time.sleep(3)
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
+        result = h1.cmdPrint("wget 10.0.0.3:8000 --tries 2 --delete-after --timeout 10")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
     def testDeviceTcpGetFromLocalNetworkExpectPass(self):
+        #inbound on 800 is allowed
         h1 = hosts[0]
-        h3 = hosts[2]
-        result = None
-        for i in range(1,self.ntries):
-           h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 800  &")
-           time.sleep(3)
-           result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.3 -P 800 -B ")
-           if re.search("OK",result) is not None:
-              break
-           else:
-              self.updateFailCount()
-              time.sleep(3)
-        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
+        result = h1.cmdPrint("wget 10.0.0.3:800 --tries 2 --delete-after --timeout 10")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a failed get")
 
-    def testDeviceTcpGetFromLocalNetworkExpectFail1(self):
-        h1 = hosts[0]
-        h4 = hosts[3]
-        result = None
-        for i in range(1,self.ntries):
-            h4.cmdPrint("python ../util/tcp-server.py -H 10.0.0.4 -P 8000 &")
-            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.4 -P 8000 ")
-            if re.search("OK",result) is None:
-               break
-            else:
-              self.updateFailCount()
-              time.sleep(3)
-        self.assertTrue(re.search("OK",result) is None, "Expecting a failed get")
-
-    def testDeviceTcpGetFromLocalNetworkExpectPass1(self):
-        h1 = hosts[0]
-        h5 = hosts[4]
-        result = None
-        for i in range(1,self.ntries):
-            h5.cmdPrint("python ../util/tcp-server.py -H 10.0.0.5 -P 800 &")
-            time.sleep(1)
-            result = h1.cmdPrint("python ../util/tcp-client.py -H 10.0.0.5 -P 800 ")
-            if re.search("OK",result) is not None:
-               break
-            else:
-              self.updateFailCount()
-              time.sleep(3)
-        self.assertTrue(re.search("OK",result) is not None, "Expecting a successful get")
 
     def tearDown(self):
         time.sleep(5)
@@ -321,10 +235,11 @@ def setupTopology(controller_addr):
     
 
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
-    if os.environ.get("UNITTEST") is None or os.environ.get("UNITTEST") == '0' :
-        h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8000 -T 10000 -C&")
-    	#h1.cmdPrint("python ../util/tcp-server.py -P 8000 -H 10.0.0.1 -T 10000 -C&")
-    	#h4.cmdPrint("python ../util/tcp-server.py -P 80 -H 10.0.0.4 -T 10000 -C&")
+    h3.cmdPrint("python -m SimpleHTTPServer 8000&")
+    h1.cmdPrint("python -m SimpleHTTPServer 8000&")
+    h1.cmdPrint("python -m SimpleHTTPServer 800&")
+    h3.cmdPrint("python -m SimpleHTTPServer 800&")
+    h5.cmdPrint("python -m SimpleHTTPServer 800&")
     
 
     net.waitConnected()

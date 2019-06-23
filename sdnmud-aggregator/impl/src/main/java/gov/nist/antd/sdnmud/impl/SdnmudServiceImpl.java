@@ -230,8 +230,12 @@ public class SdnmudServiceImpl implements SdnmudService {
 				.shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
 		long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
 				.shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
+		long srcMacBlockedFlag = maskedMetadata.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK)
+				.shiftRight(SdnMudConstants.SRC_MAC_BLOCKED_MASK_SHIFT).longValue();
 		long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
 				.shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
+		long dstMacBlockedFlag = maskedMetadata.and(SdnMudConstants.DST_MAC_BLOCKED_MASK)
+				.shiftRight(SdnMudConstants.DST_MAC_BLOCKED_MASK_SHIFT).longValue();
 		GetMudMetadataMappingOutputBuilder outputBuilder = new GetMudMetadataMappingOutputBuilder();
 		if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
 			outputBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
@@ -257,6 +261,13 @@ public class SdnmudServiceImpl implements SdnmudService {
 		if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
 			outputBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
 		}
+		if ( metadataMask.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK).longValue() != 0) {
+			outputBuilder.setSrcMacBlockedFlag(dstMacBlockedFlag > 0 ? true:false);
+		}
+		if (metadataMask.and(SdnMudConstants.DST_MAC_BLOCKED_MASK).longValue() != 0) {
+			outputBuilder.setDstMacBlockedFlag(dstMacBlockedFlag>0?true:false);
+		}
+		
 		RpcResult<GetMudMetadataMappingOutput> result = RpcResultBuilder.success(outputBuilder).build();
 		return new CompletedFuture<RpcResult<GetMudMetadataMappingOutput>>(result);
 
@@ -304,8 +315,12 @@ public class SdnmudServiceImpl implements SdnmudService {
 							.shiftRight(SdnMudConstants.DST_NETWORK_FLAGS_SHIFT).longValue();
 					long srcQuarantineFlag = maskedMetadata.and(SdnMudConstants.SRC_QUARANTENE_MASK)
 							.shiftRight(SdnMudConstants.SRC_QUARANTENE_MASK_SHIFT).longValue();
+					long srcMacBlockedFlag = maskedMetadata.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK)
+							.shiftRight(SdnMudConstants.SRC_MAC_BLOCKED_MASK_SHIFT).longValue();
 					long dstQuranteneFlag = maskedMetadata.and(SdnMudConstants.DST_QURANTENE_MASK)
 							.shiftRight(SdnMudConstants.DST_QUARANTENE_FLAGS_SHIFT).longValue();
+					long dstMacBlockedFlag = maskedMetadata.and(SdnMudConstants.DST_MAC_BLOCKED_MASK)
+							.shiftRight(SdnMudConstants.DST_MAC_BLOCKED_MASK_SHIFT).longValue();
 					if (metadataMask.and(SdnMudConstants.SRC_MANUFACTURER_MASK).longValue() != 0) {
 						frBuilder.setSrcManufacturer(IdUtils.getManufacturer((int) srcManufacturerId));
 					}
@@ -329,6 +344,14 @@ public class SdnmudServiceImpl implements SdnmudService {
 					}
 					if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
 						frBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
+					}
+					
+					if (metadataMask.and(SdnMudConstants.DST_MAC_BLOCKED_MASK).longValue() != 0) {
+						frBuilder.setDstMacBlockedFlag(dstMacBlockedFlag > 0 ? true: false);
+					}
+					
+					if (metadataMask.and(SdnMudConstants.SRC_MAC_BLOCKED_FLAG).longValue() != 0) {
+						frBuilder.setSrcMacBlockedFlag(srcMacBlockedFlag > 0 ? true : false);
 					}
 
 					try {

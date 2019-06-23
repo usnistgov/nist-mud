@@ -61,7 +61,6 @@ class TestAccess(unittest.TestCase) :
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-
         result = h1.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
@@ -70,18 +69,26 @@ class TestAccess(unittest.TestCase) :
         result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-        print "pinging mycontroller host -- this should work"
+        print "udp pinging mycontroller host -- this should work"
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../unittest/util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) > 2, "expect successful ping")
 
         print "pinging a same manufacturer peer after configuration -- this should work"
         result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
-        self.assertTrue(re.search("0%",result) is not None, "Expecting a successful ping")
+        self.assertTrue(re.search(" 0%",result) is not None, "Expecting a successful ping")
 
-
+	print "Fetching from antd.local on host 1 -- this should fail"
         result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
+
+        print  "icmp ping otherman -- this should fail"
+        result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
+        self.assertTrue(re.search(" 0%",result) is not None, "Expecting a failed icmp pings")
+
+        print "udpping otherman on port 800"
+        result = h1.cmdPrint("python ../unittest/util/udpping.py --port 800 --host 10.0.0.3 --client --quiet")
+        self.assertTrue(int(result) > 2, "expect successful ping")
 
     
 
@@ -267,6 +274,7 @@ def setupServers():
     otherman.cmdPrint("python ../unittest/util/udpping.py --port 800 --server&")
     h9.cmdPrint('python -m SimpleHTTPServer 443&')
     h10.cmdPrint('python -m SimpleHTTPServer 80&')
+    sensor.cmdPrint("python -m SimpleHTTPServer 80&")
 
 
 

@@ -246,6 +246,11 @@ module sdnmud {
                      "Qurarantene flag networks match";
                 type boolean;
             }
+            leaf src-mac-blocked-flag {
+                description 
+                     "src mac blocked flag";
+                type boolean;
+            }
             leaf dst-model {
                 description
                        "Dst Model";
@@ -264,6 +269,11 @@ module sdnmud {
             leaf dst-quarantine-flag {
                 description 
                      "Qurarantene flag networks match";
+                type boolean;
+            }
+            leaf dst-mac-blocked-flag {
+                description 
+                     "dst mac blocked flag";
                 type boolean;
             }
 
@@ -438,9 +448,22 @@ rpc get-dst-mac-classification {
                      "Qurarantene flag networks match";
                 type boolean;
             }
+
+            leaf src-mac-blocked-flag {
+                description 
+                     "Src MAC blocked flag";
+                type boolean;
+            }
+
             leaf dst-quarantine-flag {
                 description 
                      "Qurarantene flag networks match";
+                type boolean;
+            }
+
+            leaf dst-mac-blocked-flag {
+                description 
+                     "Dst MAC blocked flag";
                 type boolean;
             }
 
