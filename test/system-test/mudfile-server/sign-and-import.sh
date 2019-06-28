@@ -1,3 +1,4 @@
+rm -f *.crl *.p7s *.crt *.key *.csr
 # Generate self signed CA cert.
 CACRT=ca.crt
 CAKEY=ca.key

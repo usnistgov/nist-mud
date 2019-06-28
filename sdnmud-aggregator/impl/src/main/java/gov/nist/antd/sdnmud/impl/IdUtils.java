@@ -86,7 +86,7 @@ public class IdUtils {
 	}
 
 	public static FlowId createFlowId(String prefix) {
-		return new FlowId(prefix + "/sdnmud/" + String.valueOf(flowIdInc.getAndIncrement()));
+		return new FlowId(prefix + "/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
 
 	public static FlowCookie createFlowCookie(String flowCookieId) {

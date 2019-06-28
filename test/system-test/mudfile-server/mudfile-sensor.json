@@ -68,7 +68,7 @@
                 "tcp": {
                   "source-port": {
                     "operator": "eq",
-                    "port": 80
+                    "port": 8080
                   }
                 }
               },
@@ -193,7 +193,7 @@
                 "tcp": {
                   "destination-port": {
                     "operator": "eq",
-                    "port": 80
+                    "port": 8080
                   }
                 }
               },

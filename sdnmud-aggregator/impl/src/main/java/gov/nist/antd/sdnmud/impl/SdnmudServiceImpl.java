@@ -250,7 +250,7 @@ public class SdnmudServiceImpl implements SdnmudService {
 			outputBuilder.setDstModel(IdUtils.getModel((int) dstModelId));
 		}
 		if (metadataMask.and(SdnMudConstants.SRC_NETWORK_MASK).longValue() != 0) {
-			outputBuilder.setDstLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
+			outputBuilder.setSrcLocalNetworksFlag(srcLocalNetworksFlag > 0 ? true : false);
 		}
 		if (metadataMask.and(SdnMudConstants.DST_NETWORK_MASK).longValue() != 0) {
 			outputBuilder.setDstLocalNetworksFlag(dstLocalNetworksFlag > 0 ? true : false);
