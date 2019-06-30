@@ -360,8 +360,9 @@ public class MudFileFetcher {
 					fileFetchedFromHttps = true;
 				} else {
 					nread = cachedFile.length;
-					mudFileChars = cachedFile;
+					LOG.info("Found file in mud cache length = " + nread );
 
+					mudFileChars = cachedFile;
 				}
 			} else if (protocol.equals("file")) {
 				// FILE URLs are supported for testing purposes.

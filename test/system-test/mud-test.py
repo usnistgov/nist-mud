@@ -33,13 +33,6 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
-        h1 = hosts[0]
-        h1.cmdPrint("ifconfig h1-eth0 0")
-        h1.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
-        h2 = hosts[1]
-        h2.cmdPrint("ifconfig h2-eth0 0")
-        h2.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.toaster")
-	time.sleep(10)
         pass
 
     def tearDown(self):
@@ -77,7 +70,7 @@ class TestAccess(unittest.TestCase) :
 
         print "pinging a same manufacturer peer after configuration -- this should work"
         result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
-        self.assertTrue(re.search(" 0%",result) is not None, "Expecting a successful ping")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful ping")
 
 	print "Fetching from antd.local on host 1 -- this should fail"
         result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
@@ -85,12 +78,15 @@ class TestAccess(unittest.TestCase) :
 
         print  "icmp ping otherman -- this should fail"
         result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
-        self.assertTrue(re.search(" 0%",result) is  None, "Expecting a failed icmp pings")
+        self.assertTrue(re.search("100%",result) is  None, "Expecting a failed icmp pings")
 
         print "udpping otherman on port 800"
         result = h1.cmdPrint("python ../unittest/util/udpping.py --port 800 --host 10.0.0.3 --client --quiet")
         self.assertTrue(int(result) > 2, "expect successful ping")
 
+        print "wget get from device port 80"
+        result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
     
 
 
