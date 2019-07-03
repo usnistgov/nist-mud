@@ -666,17 +666,18 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					try {
 						byte[] payload = PacketUtils.getPacketPayload(notification.getPayload(), etherType, protocol);
 						Message message = new Message(payload);
-						LOG.info("Message = " + message);
+						LOG.debug("Message = " + message);
 						Record[] records = message.getSectionArray(Section.ANSWER);
 						for (Record record : records) {
 							if (record.getType() == Type.A) {
-								LOG.info("A record");
 								ARecord arecord = (ARecord) record;
 								// Get the name resolution
 								InetAddress inetAddress = arecord.getAddress();
+
 								// Add it to the resolution cache of the MudFlows installer
-								LOG.info("Name " + record.getName());
-								LOG.info("Address " + inetAddress.getHostAddress());
+								LOG.debug("Name " + record.getName());
+								LOG.debug("Address " + inetAddress.getHostAddress());
+								LOG.info("A record Name = " + record.getName() + " address = " + inetAddress.getHostAddress());
 								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
 								sdnmudProvider.getMudFlowsInstaller().fixupNameResolution(node,

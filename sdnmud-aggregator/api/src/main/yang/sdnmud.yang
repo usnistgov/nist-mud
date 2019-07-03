@@ -81,6 +81,14 @@ module sdnmud {
                 self signed Certs should not be trusted under normal circumstances";
       }
 
+      leaf strict-hostname-verify {
+           type boolean;
+           default "false";
+           description
+                "Whether or not to do Hostname verification when connecting to the 
+                mudfile (manufacturer) server. For debugging puroses only";
+      }
+
       leaf relaxed-acl {
            type boolean;
            default "true";

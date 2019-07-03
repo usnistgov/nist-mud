@@ -42,6 +42,9 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -184,25 +187,57 @@ public class MudFileFetcher {
 		X509Certificate last = (X509Certificate) certs[n - 1];
 		// if self-signed, verify the final cert
 		// TODO -- check if this is in our CA store.
-		LOG.error("VALIDATION CODE SHOULD GO HERE -- this accepts ALL certificates");
 		if (last.getIssuerX500Principal().equals(last.getSubjectX500Principal())) {
+			// Issuer == subject means it is self signed.
 			try {
 				last.verify(last.getPublicKey());
-			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+				TrustManagerFactory tmf = TrustManagerFactory
+					    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+				tmf.init((KeyStore) null);
+				X509TrustManager defaultTm = null;
+				for (TrustManager tm : tmf.getTrustManagers()) {
+				    if (tm instanceof X509TrustManager) {
+				        defaultTm = (X509TrustManager) tm;
+				        break;
+				    }
+				}
+				if (defaultTm == null) {
+					LOG.error("Could not find default TM");
+					return false;
+				}
+				boolean verified = false;
+				for (Certificate cf : defaultTm.getAcceptedIssuers()) {
+					if (cf.equals(last)) {
+						LOG.info("Trust chain verified");
+						verified = true;
+					}
+				}
+				return verified;
+			} catch (InvalidKeyException | NoSuchAlgorithmException 
+					| NoSuchProviderException | SignatureException 
+					| KeyStoreException e) {
 				return false;
 			}
 		}
 
-		return true;
+		return false;
 
 	}
 
+	
+	
 	private int doHttpGet(String url, byte[] data) throws NoSuchAlgorithmException, KeyStoreException,
 			KeyManagementException, ClientProtocolException, IOException {
 		SSLContextBuilder builder = new SSLContextBuilder();
 
 		// TODO -- this is for testing purposes.
-		X509HostnameVerifier hv = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
+		X509HostnameVerifier hv ;
+		
+		if (! sdnmudConfig.isStrictHostnameVerify()) {
+			hv = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
+		} else {
+			hv = SSLConnectionSocketFactory.STRICT_HOSTNAME_VERIFIER;
+		}
 
 		if (sdnmudConfig.isTrustSelfSignedCert()) {
 			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
@@ -216,10 +251,15 @@ public class MudFileFetcher {
 
 			builder.loadTrustMaterial(null, trustStrategy);
 		}
-
+		
+	
+		
+		
 		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
-
+		
+		
 		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+		
 
 		HttpGet httpGet = new HttpGet(url);
 
@@ -338,7 +378,7 @@ public class MudFileFetcher {
 	}
 
 	public String fetchAndInstallMudFile(String mudUrl) {
-		LOG.info("MUD URL = " + mudUrl);
+		LOG.info("MudfileFetcher: fetchAndInstall : MUD URL = " + mudUrl);
 		try {
 
 			// BUG BUG -- this should be a config parameter
