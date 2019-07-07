@@ -232,6 +232,7 @@ def setupTopology(controller_addr):
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     h7.cmdPrint("python ../util/udpping.py --port 4000 --server &")
     h7.cmdPrint('python ../util/http-server.py -H 10.0.0.7&')
+    h1.cmdPrint('python ../util/http-server.py -H 10.0.0.1&')
     
     net.waitConnected()
 

@@ -177,13 +177,13 @@ public class MudFlowsInstaller {
 		}
 	}
 
-	private void registerTcpSynFlagCheck(String mudUri, String aceName, InstanceIdentifier<FlowCapableNode> node,
+	private void registerTcpSynFlagCheck(String mudUri, String aclName, String aceName, InstanceIdentifier<FlowCapableNode> node,
 			BigInteger metadata, BigInteger metadataMask, Ipv4Address sourceAddress, int sourcePort,
 			Ipv4Address destinationAddress, int destinationPort, int priority) {
 
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
-		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aceName);
+		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName);
 
 		FlowCookie flowCookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
 
@@ -509,29 +509,29 @@ public class MudFlowsInstaller {
 		}
 	}
 
-	private void installPermitFromDeviceToIpAddressFlow(String mudUri, String aceName,
+	private void installPermitFromDeviceToIpAddressFlow(String mudUri, String aclName, String aceName,
 			InstanceIdentifier<FlowCapableNode> node, FlowId flowId, BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address destinationAddress, int destinationPort, short protocol, boolean synFlagCheck,
+			Ipv4Address destinationAddress, int srcPort, int destinationPort, short protocol, boolean synFlagCheck,
 			boolean isEnabledOnQ, FlowCookie flowCookie) {
 		BigInteger newMetadata = flowCookie.getValue();
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		boolean ctrlFlag = false;
 
 		LOG.info(String.format(
-				"permitFromDeviceToIpAddressFlow[mudUri : %s aceName %s protocol %d destinationAddress %s destinationPort %d ]",
-				mudUri, aceName, protocol, destinationAddress.getValue(), destinationPort));
+				"permitFromDeviceToIpAddressFlow[mudUri : %s aceName %s protocol %d srcPort %d destinationAddress %s destinationPort %d ]",
+				mudUri, aceName, protocol, srcPort, destinationAddress.getValue(), destinationPort));
 
 		int priority = !isEnabledOnQ ? SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		FlowBuilder fb = FlowUtils.createMetadataDestIpAndPortMatchGoToNextTableFlow(metadata, metadataMask,
-				destinationAddress, destinationPort, protocol, ctrlFlag, sdnmudProvider.getSdnmudRulesTable(), priority,
+				destinationAddress, srcPort, destinationPort, protocol, ctrlFlag, sdnmudProvider.getSdnmudRulesTable(), priority,
 				newMetadata, newMetadataMask, flowId, flowCookie);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (synFlagCheck) {
 			assert protocol == SdnMudConstants.TCP_PROTOCOL;
-			registerTcpSynFlagCheck(mudUri, aceName, node, metadata, metadataMask, null, -1, destinationAddress,
+			registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, null, srcPort, destinationAddress,
 					destinationPort, priority + 1);
 		}
 	}
@@ -544,7 +544,8 @@ public class MudFlowsInstaller {
 
 		Short protocol = getProtocol(matches);
 
-		int port = getDestinationPort(matches);
+		int destinationport = getDestinationPort(matches);
+		int srcPort = getSourcePort(matches);
 		for (Ipv4Address address : addresses) {
 			String flowSpec = matchesType.toString();
 			FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName);
@@ -560,19 +561,19 @@ public class MudFlowsInstaller {
 			 */
 			boolean synFlagCheck = directionCheck(direction, true);
 			FlowCookie flowCookie = IdUtils.createFlowCookie(flowSpec);
-			this.installPermitFromDeviceToIpAddressFlow(mudUri, aceName, node, flowId, metadata, metadataMask, address,
-					port, protocol.shortValue(), synFlagCheck, isEnabledOnQ, flowCookie);
+			this.installPermitFromDeviceToIpAddressFlow(mudUri, aclName, aceName, node, flowId, metadata, metadataMask, address,
+					srcPort, destinationport, protocol.shortValue(), synFlagCheck, isEnabledOnQ, flowCookie);
 
 		}
 	}
 
-	private void installPermitFromIpToDeviceFlow(String mudUri, String aceName, BigInteger metadata,
-			BigInteger metadataMask, Ipv4Address address, int sourcePort, short protocol, boolean checkTcpSyn,
+	private void installPermitFromIpToDeviceFlow(String mudUri, String aclName, String aceName, BigInteger metadata,
+			BigInteger metadataMask, Ipv4Address srcAddress, int sourcePort, int destinationPort, short protocol, boolean checkTcpSyn,
 			FlowCookie flowCookie, FlowId flowId, InstanceIdentifier<FlowCapableNode> node, boolean qFlag) {
 		try {
 			LOG.info(String.format(
-					"permitFromIpToIpDeviceFlow[ mudUri : %s aceName %s protocol %d destinationAddress %s destinationPort %d ]",
-					mudUri, aceName, protocol, address.getValue(), sourcePort));
+					"permitFromIpToIpDeviceFlow[ mudUri : %s aceName %s protocol %d srcAddress %s sourcePort %d  destinationPort %d]",
+					mudUri, aceName, protocol, srcAddress.getValue(),  sourcePort, destinationPort));
 
 			BigInteger newMetadata = flowCookie.getValue();
 			BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -582,15 +583,14 @@ public class MudFlowsInstaller {
 			int priority = !qFlag ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
 					: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
-			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, address,
-					sourcePort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(), priority, newMetadata,
+			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask, srcAddress,
+					sourcePort,  destinationPort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(), priority, newMetadata,
 					newMetadataMask, flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 			if (checkTcpSyn) {
 				// Check for TCP SYN when packet arrives at the controller.
 				assert protocol == SdnMudConstants.TCP_PROTOCOL;
-				this.registerTcpSynFlagCheck(mudUri, aceName, node, metadata, metadataMask, address, sourcePort, null,
-						-1, priority + 1);
+				this.registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, srcAddress, sourcePort, null, destinationPort, priority + 1);
 			}
 
 		} catch (Exception ex) {
@@ -603,9 +603,9 @@ public class MudFlowsInstaller {
 			throws Exception {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
-		String authority = IdUtils.getAuthority(mudUri);
 		Short protocol = getProtocol(matches);
-		int port = getSourcePort(matches);
+		int sourcePort = getSourcePort(matches);
+		int destinationPort = getDestinationPort(matches);
 
 		for (Ipv4Address address : addresses) {
 			Direction direction = getDirectionInitiated(matches);
@@ -618,8 +618,8 @@ public class MudFlowsInstaller {
 			}
 			FlowCookie flowCookie = IdUtils.createFlowCookie(matchesType.toString());
 			boolean checkDirectionInitiated = directionCheck(direction, false);
-			this.installPermitFromIpToDeviceFlow(mudUri, aceName, metadata, metadataMask, address, port,
-					protocol.shortValue(), checkDirectionInitiated, flowCookie, flowId, node, qFlag);
+			this.installPermitFromIpToDeviceFlow(mudUri, aclName, aceName, metadata, metadataMask, address, sourcePort,
+					destinationPort, protocol.shortValue(), checkDirectionInitiated, flowCookie, flowId, node, qFlag);
 
 		}
 
@@ -1269,9 +1269,8 @@ public class MudFlowsInstaller {
 
 					// Clear the cache so can be re-poplulated after packets come in again.
 					// Is this necessary??
-					if (retval) {
-						this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
-					}
+					this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					
 				}
 
 			} catch (Exception ex) {

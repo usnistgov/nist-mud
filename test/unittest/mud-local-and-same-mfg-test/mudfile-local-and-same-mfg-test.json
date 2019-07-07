@@ -3,19 +3,18 @@
   "ietf-mud:mud": {
     "mud-version": 1,
     "mud-url": "https://local-and-same-mfg-test.nist.local/super1",
-    "mud-signature": "https://loca-and-same-mfg-test.nist.local/super1/mudfile.json.sha256",
-    "last-update": "2019-03-26T15:31:38+00:00",
+    "last-update": "2019-07-07T14:39:18+00:00",
     "cache-validity": 48,
     "is-supported": true,
-    "systeminfo": "Demo sensor",
+    "systeminfo": "Test device",
     "mfg-name": "NIST",
-    "documentation": "https://www.nist.gov",
-    "model-name": "superv1",
+    "documentation": "https://www.nist.local",
+    "model-name": "super1",
     "from-device-policy": {
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-73764-v4fr"
+            "name": "mud-58540-v4fr"
           }
         ]
       }
@@ -24,7 +23,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-73764-v4to"
+            "name": "mud-58540-v4to"
           }
         ]
       }
@@ -33,7 +32,7 @@
   "ietf-access-control-list:acls": {
     "acl": [
       {
-        "name": "mud-73764-v4to",
+        "name": "mud-58540-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -69,7 +68,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "source-port": {
+                  "destination-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -96,7 +95,7 @@
         }
       },
       {
-        "name": "mud-73764-v4fr",
+        "name": "mud-58540-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -132,7 +131,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "destination-port": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
                   }

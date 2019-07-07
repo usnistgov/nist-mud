@@ -77,8 +77,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-
 public class FlowUtils {
 
 	private static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
@@ -174,6 +172,7 @@ public class FlowUtils {
 		return maskInstruction;
 
 	}
+
 	private static Instruction createNormalInstruction() {
 
 		ApplyActionsBuilder aab = new ApplyActionsBuilder();
@@ -229,6 +228,7 @@ public class FlowUtils {
 		ib.setInstruction(aacb.build());
 		return ib.build();
 	}
+
 	private static List<Instruction> addGoToTableInstruction(List<Instruction> instructions, short targetTable) {
 		Instruction gotoTableInstruction = new InstructionBuilder()
 				.setInstruction(new GoToTableCaseBuilder()
@@ -238,9 +238,9 @@ public class FlowUtils {
 		instructions.add(gotoTableInstruction);
 		return instructions;
 	}
-	
-	private static List<Instruction> addGoToTableInstruction(List<Instruction> instructions, short targetTable, BigInteger metadata,
-			BigInteger metadataMask	) {
+
+	private static List<Instruction> addGoToTableInstruction(List<Instruction> instructions, short targetTable,
+			BigInteger metadata, BigInteger metadataMask) {
 		WriteMetadataBuilder wmb = new WriteMetadataBuilder();
 		wmb.setMetadata(metadata);
 		wmb.setMetadataMask(metadataMask);
@@ -377,7 +377,7 @@ public class FlowUtils {
 		isb.setInstruction(instructions);
 		return isb;
 	}
-	
+
 	private static InstructionsBuilder createGoToNextTableInstruction(short thistable, boolean sendPacketToController) {
 		// Create an instruction allowing the interaction.
 		List<Instruction> instructions = new ArrayList<Instruction>();
@@ -554,8 +554,8 @@ public class FlowUtils {
 		FlowBuilder flowBuilder = new FlowBuilder();
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build()).setTableId(table).setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie)
-				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 
 	}
@@ -577,34 +577,34 @@ public class FlowUtils {
 		fb.setStrict(false);
 		fb.setBarrier(true);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchGoToTable(" + dropTableId +")").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY)
-				.setHardTimeout(duration).setIdleTimeout(0)
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchGoToTable(" + dropTableId + ")")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}
-	
+
 	static FlowBuilder createMetadataMatchGoToTableAndSendToControllerFlow(FlowCookie flowCookie, BigInteger metadata,
-			BigInteger metadataMask, FlowId flowId, Short tableId, int priority,BigInteger newMetadata, BigInteger newMetadataMask,
-			Short targetTableId, int duration) {
-		LOG.info("FlowUtils: createMetadataMatchGoToTableAndSendToController " + flowCookie.getValue().toString(16) + " metadata "
-				+ metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId " + tableId
-				+ " targetTable " + targetTableId);
+			BigInteger metadataMask, FlowId flowId, Short tableId, int priority, BigInteger newMetadata,
+			BigInteger newMetadataMask, Short targetTableId, int duration) {
+		LOG.info("FlowUtils: createMetadataMatchGoToTableAndSendToController " + flowCookie.getValue().toString(16)
+				+ " metadata " + metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId "
+				+ tableId + " targetTable " + targetTableId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
-		InstructionsBuilder insb = FlowUtils.createGoToNextTableAndSendToControllerInstruction(targetTableId, newMetadata, newMetadataMask);
+		InstructionsBuilder insb = FlowUtils.createGoToNextTableAndSendToControllerInstruction(targetTableId,
+				newMetadata, newMetadataMask);
 
 		FlowBuilder fb = new FlowBuilder();
 		fb.setStrict(false);
 		fb.setBarrier(true);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataMatchGoToTableAndSendToController:"+(short) (tableId+1)).setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY)
-				.setHardTimeout(duration).setIdleTimeout(0)
+		fb.setMatch(matchBuilder.build()).setTableId(tableId)
+				.setFlowName("metadataMatchGoToTableAndSendToController:" + (short) (tableId + 1)).setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build()).setPriority(priority)
+				.setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
@@ -613,8 +613,9 @@ public class FlowUtils {
 	static FlowBuilder createUnconditionalGoToNextTableFlow(short table, FlowId flowId, FlowCookie flowCookie) {
 		LOG.info("createGoToTableFlow ");
 
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("unconditionalGoToTable:"+(short)(table+1)).setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table)
+				.setFlowName("unconditionalGoToTable:" + (short) (table + 1)).setId(flowId).setKey(new FlowKey(flowId))
+				.setCookie(flowCookie);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<>();
@@ -626,8 +627,8 @@ public class FlowUtils {
 		InstructionsBuilder isb = new InstructionsBuilder().setInstruction(instructions);
 
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
+				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 
@@ -708,16 +709,16 @@ public class FlowUtils {
 		addGoToTableInstruction(instructions, destinationTableId);
 		isb.setInstruction(instructions);
 
-		
-		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 
 	}
 
-	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId, boolean sendToController) {
+	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId,
+			boolean sendToController) {
 
 		LOG.info("createPermitPacketsFromDhcpServerFlow ");
 
@@ -735,17 +736,18 @@ public class FlowUtils {
 			addSendPacketToControllerInstruction(instructions);
 		addGoToTableInstruction(instructions, destinationTableId);
 		isb.setInstruction(instructions);
-		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(SdnMudConstants.MAX_PRIORITY)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 
 	}
 
 	static FlowBuilder createMetadataDestIpAndPortMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int destinationPort, short protocol, boolean sendToController, Short tableId, int priority,
-			BigInteger newMetadata, BigInteger newMetadataMask, FlowId flowId, FlowCookie flowCookie) {
+			Ipv4Address address, int srcPort, int destinationPort, short protocol, boolean sendToController,
+			Short tableId, int priority, BigInteger newMetadata, BigInteger newMetadataMask, FlowId flowId,
+			FlowCookie flowCookie) {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 
@@ -754,7 +756,7 @@ public class FlowUtils {
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createDestIpv4Match(matchBuilder, address);
-		createDstProtocolPortMatch(matchBuilder, protocol, destinationPort);
+		createSrcDstProtocolPortMatch(matchBuilder, protocol, srcPort, destinationPort);
 
 		InstructionsBuilder insb = sendToController
 				? createGoToNextTableAndSendToControllerInstruction(targetTableId, newMetadata, newMetadataMask)
@@ -764,19 +766,19 @@ public class FlowUtils {
 		fb.setStrict(false);
 		fb.setBarrier(false);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName(
-				String.format("metadataDestIpAndPortMatchGoToNext(destIp=%s:%d,protocol=%d,sendToController=%b)",
-						address.getValue(),destinationPort,protocol,sendToController))
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName(String.format(
+				"metadataDestIpAndPortMatchGoToNext(destIp=%s,srcPort=%d,destPort=%d,protocol=%d,sendToController=%b)",
+				address.getValue(), srcPort, destinationPort, protocol, sendToController)).setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build()).setPriority(priority)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}
 
 	static FlowBuilder createMetadataSrcIpAndPortMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
-			Ipv4Address address, int srcPort, short protocol, boolean sendToController, Short tableId, int priority,
-			BigInteger newMetadata, BigInteger newMetadataMask, FlowId flowId, FlowCookie flowCookie) {
+			Ipv4Address address, int srcPort, int dstPort, short protocol, boolean sendToController, Short tableId,
+			int priority, BigInteger newMetadata, BigInteger newMetadataMask, FlowId flowId, FlowCookie flowCookie) {
 
 		LOG.info("createMetadataSrcIpAndPortMatchGoTo metadata = " + metadata.toString(16) + " metadataMask = "
 				+ metadataMask.toString(16) + " ipv4Address = " + address.getValue() + " destinationPort = " + srcPort
@@ -786,7 +788,7 @@ public class FlowUtils {
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createSrcIpv4Match(matchBuilder, address);
-		createSrcProtocolPortMatch(matchBuilder, protocol, srcPort);
+		createSrcDstProtocolPortMatch(matchBuilder, protocol, srcPort, dstPort);
 
 		InstructionsBuilder insb = sendToController
 				? createGoToNextTableAndSendToControllerInstruction(targetTable, newMetadata, newMetadataMask)
@@ -796,11 +798,12 @@ public class FlowUtils {
 		fb.setStrict(false);
 		fb.setBarrier(true);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("metadataSrcIpAndPortMatchGoTo(address=" + address.getValue() + ":" + srcPort + 
-				",targetTable=" + targetTable +")").setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		fb.setMatch(matchBuilder.build()).setTableId(tableId)
+				.setFlowName("metadataSrcIpAndPortMatchGoTo(srcAddress =" + address.getValue() + ",srcPort = " + srcPort
+						+ ",dstPort " + dstPort + ",protocol=" + protocol + ",targetTable=" + targetTable + ")")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}
@@ -827,12 +830,13 @@ public class FlowUtils {
 		fb.setStrict(false);
 		fb.setBarrier(true);
 
-		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName(
-				String.format("MetadaProtocolAndSrcDstPortMatchGoToTable(protocol=%s,srcPort=%d,dstPort=%d,targetTable=%d)",
-						protocol,srcPort,destPort,targetTableId))
+		fb.setMatch(matchBuilder.build()).setTableId(tableId)
+				.setFlowName(String.format(
+						"MetadaProtocolAndSrcDstPortMatchGoToTable(protocol=%s,srcPort=%d,dstPort=%d,targetTable=%d)",
+						protocol, srcPort, destPort, targetTableId))
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return fb;
 	}
@@ -876,11 +880,11 @@ public class FlowUtils {
 	}
 
 	static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, int priority, boolean sendPacketToController,  FlowId flowId, FlowCookie flowCookie) {
+			short tableId, int priority, boolean sendPacketToController, FlowId flowId, FlowCookie flowCookie) {
 
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName(
-				String.format("permitPacketsToServerFlow(address=%s:%d,protocol=%d,sendToController=%b",
-				dnsAddress.getValue(),port,protocol,sendPacketToController))
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName(String.format("permitPacketsToServerFlow(address=%s:%d,protocol=%d,sendToController=%b",
+						dnsAddress.getValue(), port, protocol, sendPacketToController))
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
@@ -892,11 +896,10 @@ public class FlowUtils {
 
 		short nextTable = (short) (tableId + 1);
 
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable,sendPacketToController);
+		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, sendPacketToController);
 
-		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(priority).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 	}
@@ -905,10 +908,9 @@ public class FlowUtils {
 			short tableId, int priority, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName(
-						String.format("SrcAddressPortProtocolMatchGoToNextFlow(address=%s:%d protocol=%d)",
-								address.getValue(),port,protocol)).setId(flowId).setKey(new FlowKey(flowId))
-				.setCookie(flowCookie);
+				.setFlowName(String.format("SrcAddressPortProtocolMatchGoToNextFlow(address=%s:%d protocol=%d)",
+						address.getValue(), port, protocol))
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		MatchBuilder matchBuilder = new MatchBuilder();
 
 		createEthernetTypeMatch(matchBuilder, 0x800);
@@ -918,11 +920,10 @@ public class FlowUtils {
 		Match match = matchBuilder.build();
 		short nextTable = (short) (tableId + 1);
 
-		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable,sendToController);
-		
-		flowBuilder.setMatch(match).setInstructions(isb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0)
-				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, sendToController);
+
+		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(priority).setBufferId(OFConstants.ANY)
+				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 	}
@@ -931,8 +932,9 @@ public class FlowUtils {
 			short tableId, BigInteger metadata, BigInteger metadataMask, int timeout, FlowId flowId,
 			FlowCookie flowCookie) {
 
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName(
-				String.format("srcIpAddressProtocolMatchGoToNext(address=%s,%d, protocol=%d)",srcIp.getValue(),port,protocol))
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
+				.setFlowName(String.format("srcIpAddressProtocolMatchGoToNext(address=%s,%d, protocol=%d)",
+						srcIp.getValue(), port, protocol))
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		MatchBuilder matchBuilder = new MatchBuilder();
 
@@ -963,23 +965,20 @@ public class FlowUtils {
 		createTcpSynMatch(matchBuilder);
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addSendPacketToControllerInstruction(instructions);
-		FlowUtils.addGoToTableInstruction(instructions, targetTableId, metadata,metadataMask);
+		FlowUtils.addGoToTableInstruction(instructions, targetTableId, metadata, metadataMask);
 		// FlowUtils.addWriteMetadataInstruction(instructions, newMetadata,
 		// newMetadataMask);
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName(
-						String.format("MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow (srcIp=%s:%d,dstIp=%s:%d,targetTable=%d",
-								srcIp != null ? srcIp.getValue():null,
-										sourcePort,dstIp != null? 
-												dstIp.getValue():null,dstPort,
-												targetTableId)).setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+				.setFlowName(String.format(
+						"MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow (srcIp=%s,srcPort=%d,dstIp=%s,dstPort=%d,targetTable=%d)",
+						srcIp != null ? srcIp.getValue() : null, sourcePort, dstIp != null ? dstIp.getValue() : null,
+						dstPort, targetTableId))
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY)
-				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build()).setPriority(priority)
+				.setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -987,8 +986,8 @@ public class FlowUtils {
 	}
 
 	public static FlowBuilder createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(BigInteger metadata,
-			BigInteger metadataMask, int srcPort, int dstPort, Short tableId, int priotity, Short targetTableId, FlowId flowId,
-			FlowCookie flowCookie, int timeout) {
+			BigInteger metadataMask, int srcPort, int dstPort, Short tableId, int priotity, Short targetTableId,
+			FlowId flowId, FlowCookie flowCookie, int timeout) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createSrcDstProtocolPortMatch(matchBuilder, SdnMudConstants.TCP_PROTOCOL, srcPort, dstPort);
@@ -997,18 +996,17 @@ public class FlowUtils {
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addSendPacketToControllerInstruction(instructions);
 		FlowUtils.addGoToTableInstruction(instructions, targetTableId, metadata, metadataMask);
-		
+
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
-				.setFlowName(
-						String.format("MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow(srcPort=%d,dstPort=%d,targetTable=%d)",
-								srcPort,dstPort,targetTableId)).setId(flowId)
-				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+				.setFlowName(String.format(
+						"MetadataTcpSynSrcIpAndPortMatchToToNextTableFlow(srcPort=%d,dstPort=%d,targetTable=%d)",
+						srcPort, dstPort, targetTableId))
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(priotity).setBufferId(OFConstants.ANY)
-				.setHardTimeout(timeout / 2).setIdleTimeout(timeout)
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build()).setPriority(priotity)
+				.setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
@@ -1024,26 +1022,26 @@ public class FlowUtils {
 	 * @return
 	 */
 	public static FlowBuilder createMetadataMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
-			short tableId, short targetTableId, int priority, FlowId flowId, FlowCookie flowCookie,String flowName) {
+			short tableId, short targetTableId, int priority, FlowId flowId, FlowCookie flowCookie, String flowName) {
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 
 		ArrayList<Instruction> instructions = new ArrayList<>();
 		FlowUtils.addGoToTableInstruction(instructions, targetTableId);
-		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName(flowName)
-				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName(flowName).setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 
 		InstructionsBuilder isb = new InstructionsBuilder();
 		isb.setInstruction(instructions);
 
-		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
-				.setPriority(priority).setBufferId(OFConstants.ANY)
-				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build()).setPriority(priority)
+				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
 
 		return flowBuilder;
 	}
-	
+
 	public static FlowBuilder createNormalFlow(boolean outputToInport, short table, FlowId flowId,
 			FlowCookie flowCookie) {
 

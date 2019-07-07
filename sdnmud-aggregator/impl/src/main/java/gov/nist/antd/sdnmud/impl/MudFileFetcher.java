@@ -191,15 +191,14 @@ public class MudFileFetcher {
 			// Issuer == subject means it is self signed.
 			try {
 				last.verify(last.getPublicKey());
-				TrustManagerFactory tmf = TrustManagerFactory
-					    .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+				TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
 				tmf.init((KeyStore) null);
 				X509TrustManager defaultTm = null;
 				for (TrustManager tm : tmf.getTrustManagers()) {
-				    if (tm instanceof X509TrustManager) {
-				        defaultTm = (X509TrustManager) tm;
-				        break;
-				    }
+					if (tm instanceof X509TrustManager) {
+						defaultTm = (X509TrustManager) tm;
+						break;
+					}
 				}
 				if (defaultTm == null) {
 					LOG.error("Could not find default TM");
@@ -213,8 +212,7 @@ public class MudFileFetcher {
 					}
 				}
 				return verified;
-			} catch (InvalidKeyException | NoSuchAlgorithmException 
-					| NoSuchProviderException | SignatureException 
+			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException
 					| KeyStoreException e) {
 				return false;
 			}
@@ -224,16 +222,14 @@ public class MudFileFetcher {
 
 	}
 
-	
-	
 	private int doHttpGet(String url, byte[] data) throws NoSuchAlgorithmException, KeyStoreException,
 			KeyManagementException, ClientProtocolException, IOException {
 		SSLContextBuilder builder = new SSLContextBuilder();
 
 		// TODO -- this is for testing purposes.
-		X509HostnameVerifier hv ;
-		
-		if (! sdnmudConfig.isStrictHostnameVerify()) {
+		X509HostnameVerifier hv;
+
+		if (!sdnmudConfig.isStrictHostnameVerify()) {
 			hv = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
 		} else {
 			hv = SSLConnectionSocketFactory.STRICT_HOSTNAME_VERIFIER;
@@ -251,15 +247,10 @@ public class MudFileFetcher {
 
 			builder.loadTrustMaterial(null, trustStrategy);
 		}
-		
-	
-		
-		
+
 		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
-		
-		
+
 		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
-		
 
 		HttpGet httpGet = new HttpGet(url);
 
@@ -400,7 +391,7 @@ public class MudFileFetcher {
 					fileFetchedFromHttps = true;
 				} else {
 					nread = cachedFile.length;
-					LOG.info("Found file in mud cache length = " + nread );
+					LOG.info("Found file in mud cache length = " + nread);
 
 					mudFileChars = cachedFile;
 				}
@@ -446,8 +437,17 @@ public class MudFileFetcher {
 				/*
 				 * Set up gson to preserve the order of fields
 				 */
-				Map<?, ?> mudFile = gson.fromJson(mudFileStr, new TypeToken<Map<String, LinkedHashMap>>() {
-				}.getType());
+				Map<?, ?> mudFile = null;
+
+				try {
+					mudFile = gson.fromJson(mudFileStr, new TypeToken<Map<String, LinkedHashMap>>() {
+					}.getType());
+				} catch (Exception ex) {
+					LOG.error("Error decoding json ", ex);
+					return null;
+				}
+				
+				assert mudFile != null;
 
 				Map<?, ?> ietfMud = (Map<?, Object>) mudFile.get("ietf-mud:mud");
 

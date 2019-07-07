@@ -53,7 +53,7 @@ class TestAccess(unittest.TestCase) :
         h4 = hosts[3]
         result = None
         result = h4.cmdPrint("wget 10.0.0.1:8000 --tries 2 --delete-after --timeout 20")
-        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get : " + result)
 
     def testTcpGetFromDeviceExpectFail(self):
         #inbound on 800 is disallowed

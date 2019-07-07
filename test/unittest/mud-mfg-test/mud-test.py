@@ -86,7 +86,7 @@ class TestAccess(unittest.TestCase) :
     def testUdpManufacturerPingExpectFail(self) :
         print "pinging a manufacturer peer -- this fail with MUD (on local nw not same mfg.)"
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.3 --client --quiet")
-        self.assertTrue(int(result) == 0, "expect unsuccessful ping -- (on local nw not same mfg.)")
+        self.assertTrue(int(result) < 3, "expect unsuccessful ping -- (on local nw not same mfg.)")
 
     def tearDown(self):
         time.sleep(5)

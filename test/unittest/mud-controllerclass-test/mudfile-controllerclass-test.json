@@ -3,7 +3,7 @@
   "ietf-mud:mud": {
     "mud-version": 1,
     "mud-url": "https://controller-class-test.nist.local/super1",
-    "last-update": "2019-06-06T20:43:22+00:00",
+    "last-update": "2019-07-07T03:18:16+00:00",
     "cache-validity": 48,
     "is-supported": true,
     "systeminfo": "Test device",
@@ -14,7 +14,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-16054-v4fr"
+            "name": "mud-35579-v4fr"
           }
         ]
       }
@@ -23,7 +23,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-16054-v4to"
+            "name": "mud-35579-v4to"
           }
         ]
       }
@@ -32,7 +32,7 @@
   "ietf-access-control-list:acls": {
     "acl": [
       {
-        "name": "mud-16054-v4to",
+        "name": "mud-35579-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -47,7 +47,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "from-device",
-                  "destination-port": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -61,7 +61,7 @@
         }
       },
       {
-        "name": "mud-16054-v4fr",
+        "name": "mud-35579-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -76,7 +76,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "from-device",
-                  "source-port": {
+                  "destination-port": {
                     "operator": "eq",
                     "port": 80
                   }

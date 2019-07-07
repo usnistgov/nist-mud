@@ -71,11 +71,9 @@ class TestAccess(unittest.TestCase) :
 
     def testUdpLocalNetworkPingExpectFail(self) :
         print "pinging a non-iot device local network peer on port 8008 -- this should not succeed with MUD"
-        h4 = hosts[3]
-        h4.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../util/udpping.py --port 8008 --host 10.0.0.4 --client --quiet")
-        self.assertTrue(int(result) == 0, "expect failed ping")
+        self.assertTrue(int(result) <= 1, "expect failed ping")
 
     def testIcmpPingExpectPass(self):
         h1 = hosts[0]
@@ -256,6 +254,7 @@ def setupTopology(controller_addr):
     h10.cmdPrint("python ../util/http-server.py -H 203.0.113.14 -P 443 &")
     h9.cmdPrint("python ../util/http-server.py -H 203.0.113.13 -P 443 &")
     h3.cmdPrint("python ../util/tcp-server.py -H 10.0.0.3 -P 8010 &")
+    h4.cmdPrint("python ../util/udpping.py --port 8008 --server --timeout &")
 
     net.waitConnected()
     print "*********** System ready *********"
