@@ -660,9 +660,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.info("Lease time is " + leaseTime);
 					}
 				} else if (cookie.equals(SdnMudConstants.DNS_REQUEST_FLOW_COOKIE)) {
-					LOG.info("Saw a DNS Request");
+					LOG.debug("Saw a DNS Request");
 				} else if (cookie.equals(SdnMudConstants.DNS_RESPONSE_FLOW_COOKIE)) {
-					LOG.info("Saw a DNS response");
+					LOG.debug("Saw a DNS response");
 					try {
 						byte[] payload = PacketUtils.getPacketPayload(notification.getPayload(), etherType, protocol);
 						Message message = new Message(payload);
@@ -675,12 +675,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								InetAddress inetAddress = arecord.getAddress();
 
 								// Add it to the resolution cache of the MudFlows installer
-								LOG.debug("Name " + record.getName());
-								LOG.debug("Address " + inetAddress.getHostAddress());
 								LOG.info("A record Name = " + record.getName() + " address = " + inetAddress.getHostAddress());
 								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
-								sdnmudProvider.getMudFlowsInstaller().fixupNameResolution(node,
+								sdnmudProvider.getMudFlowsInstaller().fixupDnsNameResolution(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
 							}
 						}

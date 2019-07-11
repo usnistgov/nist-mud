@@ -247,6 +247,19 @@ def clean_mud_rules(controller_addr) :
     r = requests.post(url,headers=headers , auth=('admin', 'admin'))
     print r
 
+def add_controller(mudmanager_addr, controller_addr, controller_url, switch_id) :
+    url =  "http://" + mudmanager_addr + ":8181/restconf/operations/sdnmud:add-controller-mapping"
+    headers= {"Content-Type":"application/json"}
+    data = {} 
+    data["switch-id"] = switch_id
+    data["controller-uri"]  = controller_url
+    data["address-list"] = [controller_addr]
+    argmap = {}
+    argmap["input"] = data
+    r = requests.post(url,headers=headers , auth=('admin', 'admin'),data=json.dumps(argmap))
+    print r
+	
+
 def fixupResolvConf():
     # prepending 10.0.0.5 -- we want to go through our name resolution
     found = False
@@ -336,9 +349,12 @@ if __name__ == '__main__':
 		time.sleep(10)
 
     print "uploaded mud rules ", str(r)
+    add_controller(controller_addr, "10.0.0.7", "https://controller.nist.local", "openflow:1")
     net.pingAll(timeout=1)
     h1.cmdPrint("nslookup www.nist.local")
     h1.cmdPrint("nslookup www.antd.local")
+
+
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
         unittest.main()
         #clean_mud_rules(controller_addr)

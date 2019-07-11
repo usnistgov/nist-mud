@@ -13,11 +13,7 @@
     	{
          	"uri" :  "urn:ietf:params:mud:dhcp",
          	"address-list" : [ "10.0.0.6" ]
-     	},
-        {
-    		"uri": "https://controller.nist.local",
-		    "address-list" : [ "10.0.0.7" ]
-        }
+     	}
    ],
    "local-networks": [ "10.0.0.0/24" ],
    "wireless":false

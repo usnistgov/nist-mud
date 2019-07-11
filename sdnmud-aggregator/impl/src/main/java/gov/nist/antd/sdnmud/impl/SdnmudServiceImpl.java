@@ -30,25 +30,18 @@ import java.util.concurrent.TimeoutException;
 
 import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuarantineDevice;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetNodeConnectorStatisticsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.OpendaylightDirectStatisticsService;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForGivenMatchInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAggregateFlowStatisticsFromFlowTableForGivenMatchOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.GetAllFlowsStatisticsFromAllFlowTablesInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.get.aggregate.flow.statistics.from.flow.table._for.given.match.output.AggregatedFlowStatistics;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorId;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeConnectorRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.NodeBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.AddControllerMappingInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearMudRulesOutput;
@@ -261,13 +254,13 @@ public class SdnmudServiceImpl implements SdnmudService {
 		if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
 			outputBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
 		}
-		if ( metadataMask.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK).longValue() != 0) {
-			outputBuilder.setSrcMacBlockedFlag(dstMacBlockedFlag > 0 ? true:false);
+		if (metadataMask.and(SdnMudConstants.SRC_MAC_BLOCKED_MASK).longValue() != 0) {
+			outputBuilder.setSrcMacBlockedFlag(dstMacBlockedFlag > 0 ? true : false);
 		}
 		if (metadataMask.and(SdnMudConstants.DST_MAC_BLOCKED_MASK).longValue() != 0) {
-			outputBuilder.setDstMacBlockedFlag(dstMacBlockedFlag>0?true:false);
+			outputBuilder.setDstMacBlockedFlag(dstMacBlockedFlag > 0 ? true : false);
 		}
-		
+
 		RpcResult<GetMudMetadataMappingOutput> result = RpcResultBuilder.success(outputBuilder).build();
 		return new CompletedFuture<RpcResult<GetMudMetadataMappingOutput>>(result);
 
@@ -345,11 +338,11 @@ public class SdnmudServiceImpl implements SdnmudService {
 					if (metadataMask.and(SdnMudConstants.DST_QURANTENE_MASK).longValue() != 0) {
 						frBuilder.setDstQuarantineFlag(dstQuranteneFlag > 0 ? true : false);
 					}
-					
+
 					if (metadataMask.and(SdnMudConstants.DST_MAC_BLOCKED_MASK).longValue() != 0) {
-						frBuilder.setDstMacBlockedFlag(dstMacBlockedFlag > 0 ? true: false);
+						frBuilder.setDstMacBlockedFlag(dstMacBlockedFlag > 0 ? true : false);
 					}
-					
+
 					if (metadataMask.and(SdnMudConstants.SRC_MAC_BLOCKED_FLAG).longValue() != 0) {
 						frBuilder.setSrcMacBlockedFlag(srcMacBlockedFlag > 0 ? true : false);
 					}
@@ -515,6 +508,21 @@ public class SdnmudServiceImpl implements SdnmudService {
 		ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
 		tx.put(LogicalDatastoreType.CONFIGURATION, qId, qd);
 		tx.submit();
+		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+	}
+
+	@Override
+	public Future<RpcResult<Void>> addControllerMapping(AddControllerMappingInput input) {
+		String switchId = input.getSwitchId();
+		String controllerUri = input.getControllerUri().getValue();
+		List<Ipv4Address> addresses = input.getAddressList();
+		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId);
+		if (node != null) {
+			for (Ipv4Address address : addresses) {
+				sdnmudProvider.getMudFlowsInstaller().fixupControllerNameResolution(node, controllerUri,
+						address.getValue());
+			}
+		}
 		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
 	}
 

@@ -215,9 +215,36 @@ module sdnmud {
         }
     }
 
+  rpc add-controller-mapping {
+     description
+        "Resolve a controller to a list of addresses";
+     input {
+        leaf switch-id {
+            description
+              "The URI of the switch / enforcement point.";
+            type string;
+        }
+
+        leaf controller-uri {
+            description
+              "The controller URI";
+            type inet:uri;
+        }
+
+       
+
+        leaf-list address-list {
+            description
+               "The list of IP addresses associated with the controller URI";
+            type inet:ipv4-address;
+        }
+     }
+  }
+
+
   rpc get-mud-metadata-mapping {
     description
-         "Get the Metadata mapping in human readable form";
+         "Get the Metadata mapping in human readable form given a HEX input";
     input {
         leaf metadata-and-mask {
             description 

@@ -33,6 +33,20 @@ module nist-mud-controllerclass-mapping {
 
 
   
+    grouping controller-map {
+        leaf uri {
+            description
+              "The controller URI";
+            type inet:uri;
+        }
+
+        leaf-list address-list {
+            description
+               "The list of IP addresses associated with the controller URI";
+            type inet:ipv4-address;
+        }
+
+     }
 
 
   container controllerclass-mapping {
@@ -49,20 +63,6 @@ module nist-mud-controllerclass-mapping {
         mandatory true;
      }
 
-     grouping controller-map {
-        leaf uri {
-            description
-              "The controller URI";
-            type inet:uri;
-        }
-
-        leaf-list address-list {
-            description
-               "The list of IP addresses associated with the controller URI";
-            type inet:ipv4-address;
-        }
-
-     }
 
      list controller {
         description
@@ -92,4 +92,6 @@ module nist-mud-controllerclass-mapping {
     }
 
   }
+
+
 }
