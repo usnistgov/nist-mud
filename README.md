@@ -9,7 +9,7 @@ access and network functionality they require for the Thing to properly
 function.  A manufacturer associates a MUD file with a device which
 specifies an ACL for the device to within deployment specific parameters.
 
-[The MUD standard is defined here](https://www.ietf.org/id/draft-ietf-opsawg-mud-25.txt)
+[The MUD standard is defined in RFC 8520](https://tools.ietf.org/html/rfc8520)
 
 This repository publishes a public domain scalable implementation of
 the  IETF MUD standard.  MUD is implemented on SDN capable switches
@@ -20,6 +20,7 @@ using OpenDaylight as the SDN controller.
 
 * SDN-MUD : implements MUD ACLs on SDN Switches. 
   Implements the full set of MUD-defined ACLs (including Manufacturer, Controller, Model classes).
+  *Does NOT Implement general Network ACLs*
 * Model Driven design : Works directly with the IETF published YANG models.
 * Implements DHCP or Directly administered MUD profiles. DHCP support is transparent - does not depend on modifications to the
   DHCP server. DHCP interactions are handled in the SDN controller.
@@ -96,7 +97,7 @@ how to exercise the MUD feature.
 
 ### DEMO ###
 
-[See the instructions in the test/demo directory](test/demo/README.md)
+[See the instructions in the test/systemtest directory](test/systemtest/README.md)
 
 
 ### Tests ###
