@@ -519,7 +519,8 @@ public class SdnmudServiceImpl implements SdnmudService {
 		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId);
 		if (node != null) {
 			for (Ipv4Address address : addresses) {
-				sdnmudProvider.getMudFlowsInstaller().fixupControllerNameResolution(node, controllerUri,
+				sdnmudProvider.addControllerMap(switchId, controllerUri, address.getValue());
+				sdnmudProvider.getMudFlowsInstaller().fixupControllerNameResolution(switchId, controllerUri,
 						address.getValue());
 			}
 		}

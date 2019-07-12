@@ -625,7 +625,6 @@ public class SdnmudProvider {
 			this.controllerMap.put(nodeId, map);
 		}
 		
-	
 
 		for (Controller controller : controllerMapping.getController()) {
 			String name = controller.getUri().getValue();
@@ -637,6 +636,24 @@ public class SdnmudProvider {
 		this.configStateChanged++;
 
 	}
+	
+	public void addControllerMap(String nodeId, String name, String address) {
+		HashMap<String, List<Ipv4Address>> map = this.controllerMap.get(nodeId);
+		if (this.controllerMap.get(nodeId) == null) {
+			map = new HashMap<>();
+			this.controllerMap.put(nodeId, map);
+		}
+		
+		List<Ipv4Address> addresses = map.get(name);
+		if ( addresses == null) {
+			addresses = new ArrayList<Ipv4Address>();
+			map.put(name,addresses);
+		}
+		addresses.add(new Ipv4Address(address));
+
+		this.configStateChanged++;
+	}
+	
 
 	/**
 	 * @param nodeUri

@@ -67,6 +67,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.ethernet.match.fields.EthernetTypeBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatch;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.EthernetMatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Icmpv4MatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.IpMatchBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.Layer4Match;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.model.match.types.rev131026.match.MetadataBuilder;
@@ -413,6 +414,13 @@ public class FlowUtils {
 		ipmatch.setIpProtocol(protocol);
 		return matchBuilder;
 	}
+	
+	private static MatchBuilder createIcmpMatch(MatchBuilder matchBuilder, short icmpType) {
+		Icmpv4MatchBuilder mb = new Icmpv4MatchBuilder();
+		mb.setIcmpv4Type(icmpType);
+		matchBuilder.setIcmpv4Match(mb.build());
+		return matchBuilder;
+	}
 
 	private static MatchBuilder createDstProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int port) {
 		IpMatchBuilder ipmatch = new IpMatchBuilder();
@@ -433,9 +441,7 @@ public class FlowUtils {
 			}
 			matchBuilder.setLayer4Match(l4match);
 		}
-
 		return matchBuilder;
-
 	}
 
 	private static MatchBuilder createSrcDstProtocolPortMatch(MatchBuilder matchBuilder, short protocol, int srcPort,

@@ -678,7 +678,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								LOG.info("A record Name = " + record.getName() + " address = " + inetAddress.getHostAddress());
 								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
-								sdnmudProvider.getMudFlowsInstaller().fixupDnsNameResolution(node,
+								sdnmudProvider.getMudFlowsInstaller().fixupDnsNameResolution(IdUtils.getNodeUri(node),
 										record.getName().toString(true), inetAddress.getHostAddress());
 							}
 						}

@@ -64,8 +64,10 @@ public class MudFlowsInstaller {
 
 	private SdnmudProvider sdnmudProvider;
 	static final Logger LOG = LoggerFactory.getLogger(MudFlowsInstaller.class);
-	private HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>> nameResolutionCache = new HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>>();
-	private HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>> controllerResolutionCache = new HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>>();
+	private HashMap<String, List<NameResolutionCacheEntry>> nameResolutionCache = 
+			new HashMap<String, List<NameResolutionCacheEntry>>();
+	private HashMap<String, List<NameResolutionCacheEntry>> controllerResolutionCache =
+			new HashMap<String, List<NameResolutionCacheEntry>>();
 
 	private enum MatchesType {
 		CONTROLLER_MAPPING, SAME_MANUFACTURER, MANUFACTURER, MODEL, MY_CONTROLLER, LOCAL_NETWORKS, DNS_MATCH,
@@ -125,11 +127,11 @@ public class MudFlowsInstaller {
 		String domainName = dnsName.getDomainName().getValue();
 		NameResolutionCacheEntry nameResolutionCacheEntry = new NameResolutionCacheEntry(matches, matchesType,
 				toDeviceFlag, qFlag, node, mudUrl, aclName, aceName, domainName, addresses);
-		if (!nameResolutionCache.containsKey(node)) {
+		if (!nameResolutionCache.containsKey(IdUtils.getNodeUri(node))) {
 			List<NameResolutionCacheEntry> entries = new ArrayList<NameResolutionCacheEntry>();
-			nameResolutionCache.put(node, entries);
+			nameResolutionCache.put(IdUtils.getNodeUri(node), entries);
 		}
-		List<NameResolutionCacheEntry> entries = nameResolutionCache.get(node);
+		List<NameResolutionCacheEntry> entries = nameResolutionCache.get(IdUtils.getNodeUri(node));
 		entries.add(nameResolutionCacheEntry);
 	}
 
@@ -142,11 +144,11 @@ public class MudFlowsInstaller {
 		String controllerName = controllerUri != null ? controllerUri.getValue() : mudUrl;
 		NameResolutionCacheEntry nameResolutionCacheEntry = new NameResolutionCacheEntry(matches, matchesType,
 				toDeviceFlag, qFlag, node, mudUrl, aclName, aceName, controllerName, addresses);
-		if (!controllerResolutionCache.containsKey(node)) {
+		if (!controllerResolutionCache.containsKey(IdUtils.getNodeUri(node))) {
 			List<NameResolutionCacheEntry> entries = new ArrayList<NameResolutionCacheEntry>();
-			controllerResolutionCache.put(node, entries);
+			controllerResolutionCache.put(IdUtils.getNodeUri(node), entries);
 		}
-		List<NameResolutionCacheEntry> entries = controllerResolutionCache.get(node);
+		List<NameResolutionCacheEntry> entries = controllerResolutionCache.get(IdUtils.getNodeUri(node));
 		entries.add(nameResolutionCacheEntry);
 	}
 
@@ -154,11 +156,11 @@ public class MudFlowsInstaller {
 		nameResolutionCache.remove(node);
 	}
 
-	private void fixupNameResolution(InstanceIdentifier<FlowCapableNode> node, String name, String address,
-			HashMap<InstanceIdentifier<FlowCapableNode>, List<NameResolutionCacheEntry>> nameResolutionCache) {
+	private void fixupNameResolution(String nodeId, String name, String address,
+			HashMap<String, List<NameResolutionCacheEntry>> nameResolutionCache) {
 
-		if (nameResolutionCache.containsKey(node)) {
-			List<NameResolutionCacheEntry> entries = nameResolutionCache.get(node);
+		if (nameResolutionCache.containsKey(nodeId)) {
+			List<NameResolutionCacheEntry> entries = nameResolutionCache.get(nodeId);
 			for (NameResolutionCacheEntry entry : entries) {
 				if (entry.domainName.equals(name)) {
 					boolean found = false;
@@ -170,6 +172,7 @@ public class MudFlowsInstaller {
 						}
 					}
 					if (found) {
+						LOG.info("Name resolution already in the cache -- skipping");
 						continue;
 					}
 					// Found an entry in our cache
@@ -179,6 +182,8 @@ public class MudFlowsInstaller {
 					ArrayList<Ipv4Address> newAddress = new ArrayList<Ipv4Address>();
 					newAddress.add(new Ipv4Address(address));
 					try {
+						InstanceIdentifier<FlowCapableNode> node = this.sdnmudProvider.getNode(nodeId);
+						if ( node != null) {
 						if (entry.toFlag) {
 							this.installPermitFromIpAddressToDeviceFlowRules(node, entry.mudUrl, entry.aclName,
 									entry.aceName, entry.matches, entry.matchesType, newAddress, entry.qFlag);
@@ -186,22 +191,25 @@ public class MudFlowsInstaller {
 							this.installPermitFromDeviceToIpAddressFlowRules(node, entry.mudUrl, entry.aclName,
 									entry.aceName, entry.matches, entry.matchesType, newAddress, entry.qFlag);
 						}
+						}
 					} catch (Exception e) {
 						LOG.error("Could not install flow rule ", e);
 					}
 				}
 			}
 		} else {
-			LOG.info("Cannot find node in name resolution cache." + node);
+			LOG.info("Cannot find node in name resolution cache." + nodeId);
 		}
 	}
 
-	public void fixupDnsNameResolution(InstanceIdentifier<FlowCapableNode> node, String name, String address) {
+	public void fixupDnsNameResolution(String node, String name, String address) {
+		LOG.info("fixupDNSNameResolution " + node + " name "  + name + " address " +address);
 		fixupNameResolution(node, name, address, this.nameResolutionCache);
 	}
 
 
-	public void fixupControllerNameResolution(InstanceIdentifier<FlowCapableNode> node, String name, String address) {
+	public void fixupControllerNameResolution(String node, String name, String address) {
+		LOG.info("fixupControllerNameResolution " + node + " name "  + name + " address " +address);
 		fixupNameResolution(node, name, address, this.controllerResolutionCache);
 	}
 	
@@ -244,11 +252,11 @@ public class MudFlowsInstaller {
 
 	private static MatchesType matchesType(Matches matches) {
 		Matches1 matches1 = matches.getAugmentation(Matches1.class);
-		if (matches1 == null) {
+		
+		
+		if ( matches1 == null ) {
 			return MatchesType.DNS_MATCH;
-		}
-
-		if (matches1.getMud() != null && matches1.getMud().getController() != null) {
+		} else if (matches1.getMud() != null && matches1.getMud().getController() != null) {
 			LOG.info("MudFlowsInstaller: controllerMapping");
 			return MatchesType.CONTROLLER_MAPPING;
 		} else if (matches1.getMud() != null && matches1.getMud().getManufacturer() != null) {
@@ -385,7 +393,7 @@ public class MudFlowsInstaller {
 	 * @return -- the ipAddress corresponding to Ntp
 	 */
 
-	public Ipv4Address getNtpAddress(String nodeUri) {
+	private Ipv4Address getNtpAddress(String nodeUri) {
 		Ipv4Address retval = getControllerAddress(nodeUri, SdnMudConstants.NTP_SERVER_URI);
 		if (retval != null) {
 			LOG.info(this.getClass().getName() + " getNtpAddress " + nodeUri + " ntpAddress " + retval.getValue());
@@ -886,6 +894,9 @@ public class MudFlowsInstaller {
 				LOG.info("controllerAddress " + ipAddress.getValue());
 				ipAddresses.add(ipAddress);
 			}
+		}
+		if ( ipAddresses.isEmpty()) {
+			LOG.error("No controller mappings found for " + mudUri);
 		}
 		return ipAddresses;
 	}
