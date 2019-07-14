@@ -98,7 +98,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 			BigInteger metadata, BigInteger metadataMask) {
 		FlowId flowId = IdUtils.createFlowId(nodeUri + ":bypassDhcp");
 		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, flowCookie, flowId, false);
+		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, sdnmudProvider.getNormalRulesTable(), 
+				flowCookie, flowId, true);
 		this.sdnmudProvider.getFlowWriter().writeFlow(fb, nodePath);
 	}
 
@@ -119,7 +120,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowId flowId = IdUtils.createFlowId("BASEAPP");
 		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
 		assert sdnmudProvider.isWirelessSwitch(nodeUri);
-		FlowBuilder fb = FlowUtils.createNormalFlow(true, sdnmudProvider.getBroadcastRuleTable(), flowId, flowCookie);
+		FlowBuilder fb = FlowUtils.createNormalFlow(true, sdnmudProvider.getNormalRulesTable(), flowId, flowCookie);
 		sdnmudProvider.getFlowWriter().writeFlow(fb, node);
 	}
 
@@ -147,8 +148,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getSrcDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
-		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getSrcDeviceManufacturerStampTable(), metadata,
-				metadataMask);
+		//installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getSrcDeviceManufacturerStampTable(), metadata,
+		//		metadataMask);
 
 		metadata = BigInteger.valueOf(IdUtils.getManfuacturerId(SdnMudConstants.UNKNOWN))
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
@@ -160,8 +161,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		installSendIpPacketToControllerFlow(nodeUri, sdnmudProvider.getDstDeviceManufacturerStampTable(), nodePath,
 				metadata, metadataMask);
 
-		installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getDstDeviceManufacturerStampTable(), metadata,
-				metadataMask);
+		//installToDhcpFlow(nodeUri, nodePath, sdnmudProvider.getDstDeviceManufacturerStampTable(), metadata,
+		//		metadataMask);
 
 	}
 
@@ -176,7 +177,8 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 		installSendToControllerFlows(nodeUri);
 
-		installUnconditionalGoToTable(nodeUri, nodePath, sdnmudProvider.getSdnmudRulesTable());
+		installUnconditionalGoToTable(nodeUri, nodePath, sdnmudProvider.getSrcMatchTable());
+		installUnconditionalGoToTable(nodeUri,nodePath,sdnmudProvider.getDstMatchTable());
 
 		if (sdnmudProvider.isWirelessSwitch(nodeUri)) {
 			installBroadcastRule(nodeUri, nodePath);
@@ -222,7 +224,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		FlowId flowId = IdUtils.createFlowId("Normal");
 		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
 		// Assume we are dealing with a WIRED switch unless otherwise configured.
-		FlowBuilder fb = FlowUtils.createNormalFlow(false, sdnmudProvider.getBroadcastRuleTable(), flowId, flowCookie);
+		FlowBuilder fb = FlowUtils.createNormalFlow(false, sdnmudProvider.getNormalRulesTable(), flowId, flowCookie);
 		Flow normalFlow = fb.build();
 		this.normalFlows.put(nodeUri, normalFlow);
 		sdnmudProvider.getFlowWriter().writeFlow(fb.build(), node);
@@ -230,7 +232,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private synchronized void installDefaultFlows(InstanceIdentifier<FlowCapableNode> nodePath, String nodeUri) {
 
-		for (int i = sdnmudProvider.getTableStart(); i < sdnmudProvider.getBroadcastRuleTable(); i++) {
+		for (int i = sdnmudProvider.getTableStart(); i < sdnmudProvider.getNormalRulesTable(); i++) {
 			installUnconditionalGoToTable(nodePath, (short) i);
 		}
 		installNormalFlow(nodePath,nodeUri);

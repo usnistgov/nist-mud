@@ -97,7 +97,7 @@ how to exercise the MUD feature.
 
 ### DEMO ###
 
-[See the instructions in the test/systemtest directory](test/systemtest/README.md)
+[See the instructions in the test/system-test directory](test/system-test/README.md)
 
 
 ### Tests ###

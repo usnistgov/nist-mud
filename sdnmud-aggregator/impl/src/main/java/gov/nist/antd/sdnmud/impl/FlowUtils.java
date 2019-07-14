@@ -688,7 +688,7 @@ public class FlowUtils {
 		return sendToControllerFlow;
 	}
 
-	static FlowBuilder createToDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId,
+	static FlowBuilder createToDhcpServerMatchGoToNextTableFlow(short tableId, short destinationTableId, FlowCookie flowCookie, FlowId flowId,
 			boolean sendToController) {
 
 		LOG.info("createPermitPacketsToDhcpServerFlow ");
@@ -706,7 +706,6 @@ public class FlowUtils {
 		 */
 
 		Match match = matchBuilder.build();
-		short destinationTableId = (short) (tableId + 1);
 
 		InstructionsBuilder isb = new InstructionsBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
@@ -723,7 +722,7 @@ public class FlowUtils {
 
 	}
 
-	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, FlowCookie flowCookie, FlowId flowId,
+	static FlowBuilder createFromDhcpServerMatchGoToNextTableFlow(short tableId, short destinationTableId, FlowCookie flowCookie, FlowId flowId,
 			boolean sendToController) {
 
 		LOG.info("createPermitPacketsFromDhcpServerFlow ");
@@ -735,7 +734,6 @@ public class FlowUtils {
 		createUdpPortMatch(matchBuilder, SdnMudConstants.DHCP_SERVER_PORT, SdnMudConstants.DHCP_CLIENT_PORT);
 
 		Match match = matchBuilder.build();
-		short destinationTableId = (short) (tableId + 1);
 		InstructionsBuilder isb = new InstructionsBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
 		if (sendToController)
@@ -858,7 +856,7 @@ public class FlowUtils {
 		fb.setBarrier(true);
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -878,7 +876,7 @@ public class FlowUtils {
 
 		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("destMacMatchSetMetadataAndGoToTable")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
@@ -886,7 +884,7 @@ public class FlowUtils {
 	}
 
 	static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
-			short tableId, int priority, boolean sendPacketToController, FlowId flowId, FlowCookie flowCookie) {
+			short tableId,  short nextTable, int priority, boolean sendPacketToController, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName(String.format("permitPacketsToServerFlow(address=%s:%d,protocol=%d,sendToController=%b",
@@ -900,8 +898,6 @@ public class FlowUtils {
 		createDestIpv4Match(matchBuilder, dnsAddress);
 		Match match = matchBuilder.build();
 
-		short nextTable = (short) (tableId + 1);
-
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, sendPacketToController);
 
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(priority).setBufferId(OFConstants.ANY)
@@ -911,7 +907,8 @@ public class FlowUtils {
 	}
 
 	static FlowBuilder createSrcAddressPortProtocolMatchGoToNextFlow(Ipv4Address address, int port, short protocol,
-			short tableId, int priority, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
+			short tableId, short nextTable, 
+			int priority, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName(String.format("SrcAddressPortProtocolMatchGoToNextFlow(address=%s:%d protocol=%d)",
@@ -924,7 +921,6 @@ public class FlowUtils {
 		createSrcIpv4Match(matchBuilder, address);
 
 		Match match = matchBuilder.build();
-		short nextTable = (short) (tableId + 1);
 
 		InstructionsBuilder isb = createGoToNextTableInstruction(nextTable, sendToController);
 
@@ -1068,7 +1064,7 @@ public class FlowUtils {
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table).setFlowName("normalFlow").setId(flowId)
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
-				.setPriority(SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 		return flowBuilder;
 	}
