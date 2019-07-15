@@ -87,7 +87,7 @@ class TestAccess(unittest.TestCase) :
         result = self.runAndReturnOutput(h1,"python ../unittest/util/udpping.py --port 800 --host 10.0.0.3 --client --quiet")
         self.assertTrue(int(result) >= 5, "expect successful ping")
 
-        print "wget get from device port 80"
+        print "wget get from device port 80 from local network - this should work"
         result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
     

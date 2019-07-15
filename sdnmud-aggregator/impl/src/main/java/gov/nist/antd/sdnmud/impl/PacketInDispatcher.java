@@ -631,14 +631,14 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								MappingBuilder mb = new MappingBuilder();
 								ArrayList<MacAddress> macAddresses = new ArrayList<>();
 								Uri mudUri = new Uri(mudUrl);
-								/*
+								
 								HashSet<MacAddress> currentMacAddresses = sdnmudProvider.getMappingDataStoreListener()
 										.getMapping().get(mudUri);
 								macAddresses.add(srcMac);
 								if (currentMacAddresses != null) {
 									macAddresses.addAll(currentMacAddresses);
 								}
-								*/
+								
 								mb.setDeviceId(macAddresses);
 								mb.setMudUrl(mudUri);
 								InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)

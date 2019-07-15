@@ -1343,7 +1343,9 @@ public class MudFlowsInstaller {
 
 					// Clear the cache so can be re-poplulated after packets come in again.
 					// Is this necessary??
-					this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					if ( retval ) {
+					    this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					}
 
 				}
 
