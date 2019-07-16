@@ -49,19 +49,19 @@ module sdnmud {
             type uint32;
             default "0";
             description
-                "Start of tables in rules table space. Not yet implemented";
+                "Start of tables in rules table space.";
       }
 
       leaf broadcast-rule-table {
             type uint32;
-            default "3";
+            default "4";
             description
                 "Table location for the Broadcast rule.";
       }
 
       leaf drop-rule-table {
             type uint32;
-            default "4";
+            default "5";
             description 
                "Table location for the Packet Drop rule"; 
       }

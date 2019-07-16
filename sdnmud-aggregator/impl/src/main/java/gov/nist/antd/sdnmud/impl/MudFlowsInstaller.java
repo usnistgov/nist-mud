@@ -216,7 +216,7 @@ public class MudFlowsInstaller {
 	private void registerTcpSynFlagCheck(String mudUri, String aclName, String aceName,
 			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask,
 			Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress, int destinationPort,
-			int priority) {
+			int priority, short tableId) {
 
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
@@ -228,18 +228,18 @@ public class MudFlowsInstaller {
 				+ destinationPort + " priority " + priority);
 		FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(metadata,
 				metadataMask, sourceAddress, sourcePort, destinationAddress, destinationPort,
-				sdnmudProvider.getSdnmudRulesTable(), priority, sdnmudProvider.getDropTable(), fid, flowCookie, 0);
+				tableId, priority, sdnmudProvider.getDropTable(), fid, flowCookie, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
 	private void registerTcpSynFlagCheck(FlowId flowId, FlowCookie flowCookie, InstanceIdentifier<FlowCapableNode> node,
-			BigInteger metadata, BigInteger metadataMask, int sourcePort, int destinationPort, int priority) {
+			BigInteger metadata, BigInteger metadataMask, int sourcePort, int destinationPort, int priority, short tableId) {
 
 		LOG.info("registerTcpSynFlagCheck " + flowId.getValue() + " sourcePort " + sourcePort + " destinationPort "
-				+ destinationPort + " priority " + priority);
+				+ destinationPort + " priority " + priority + " tableId " + tableId);
 		// flag.
 		FlowBuilder fb = FlowUtils.createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(metadata, metadataMask,
-				destinationPort, sourcePort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				destinationPort, sourcePort, tableId, priority,
 				sdnmudProvider.getDropTable(), flowId, flowCookie, 0);
 
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
@@ -419,8 +419,14 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = metadata;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableAndSendToControllerFlow(flowCookie, metadata,
-				metadataMask, flowId, sdnmudProvider.getSdnmudRulesTable(), priority, newMetadata, newMetadataMask,
+				metadataMask, flowId, sdnmudProvider.getSrcMatchTable(), priority, newMetadata, newMetadataMask,
 				sdnmudProvider.getDropTable(), 0);
+		
+		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
+	    fb = FlowUtils.createMetadataMatchGoToTableAndSendToControllerFlow(flowCookie, metadata,
+				metadataMask, flowId, sdnmudProvider.getDstMatchTable(), priority, newMetadata, newMetadataMask,
+				sdnmudProvider.getDropTable(), 0);
+		
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
 
@@ -434,7 +440,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = metadata;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
-				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
+				sdnmudProvider.getSrcMatchTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
 				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -448,7 +454,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = metadata;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
-				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
+				sdnmudProvider.getDstMatchTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
 				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -469,7 +475,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
-				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
+				sdnmudProvider.getSrcMatchTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
 				priority, 0);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
@@ -484,7 +490,7 @@ public class MudFlowsInstaller {
 		BigInteger newMetadata = metadata;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToTableFlow(flowCookie, metadata, metadataMask, flowId,
-				sdnmudProvider.getSdnmudRulesTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
+				sdnmudProvider.getDstMatchTable(), newMetadata, newMetadataMask, sdnmudProvider.getDropTable(),
 				priority, 0);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -562,14 +568,14 @@ public class MudFlowsInstaller {
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		FlowBuilder fb = FlowUtils.createMetadataDestIpAndPortMatchGoToNextTableFlow(metadata, metadataMask,
-				destinationAddress, srcPort, destinationPort, protocol, ctrlFlag, sdnmudProvider.getSdnmudRulesTable(),
+				destinationAddress, srcPort, destinationPort, protocol, ctrlFlag, sdnmudProvider.getSrcMatchTable(),
 				priority, newMetadata, newMetadataMask, flowId, flowCookie);
 
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (synFlagCheck) {
 			assert protocol == SdnMudConstants.TCP_PROTOCOL;
 			registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, null, srcPort,
-					destinationAddress, destinationPort, priority + 1);
+					destinationAddress, destinationPort, priority + 1, sdnmudProvider.getSrcMatchTable());
 		}
 	}
 
@@ -618,18 +624,18 @@ public class MudFlowsInstaller {
 
 			boolean toCtrlFlag = false;
 
-			int priority = !qFlag ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
-					: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
+			int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
+					: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 			FlowBuilder fb = FlowUtils.createMetadataSrcIpAndPortMatchGoToNextTableFlow(metadata, metadataMask,
-					srcAddress, sourcePort, destinationPort, protocol, toCtrlFlag, sdnmudProvider.getSdnmudRulesTable(),
+					srcAddress, sourcePort, destinationPort, protocol, toCtrlFlag, sdnmudProvider.getDstMatchTable(),
 					priority, newMetadata, newMetadataMask, flowId, flowCookie);
 			this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 			if (checkTcpSyn) {
 				// Check for TCP SYN when packet arrives at the controller.
 				assert protocol == SdnMudConstants.TCP_PROTOCOL;
 				this.registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, srcAddress,
-						sourcePort, null, destinationPort, priority + 1);
+						sourcePort, null, destinationPort, priority + 1, sdnmudProvider.getDstMatchTable());
 			}
 
 		} catch (Exception ex) {
@@ -690,7 +696,7 @@ public class MudFlowsInstaller {
 
 		boolean checkDirectionInitiated = directionCheck(direction, true);
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
@@ -724,7 +730,7 @@ public class MudFlowsInstaller {
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
@@ -751,11 +757,11 @@ public class MudFlowsInstaller {
 		LOG.info("installMetadataProtocolAndSrcDestPortMatchGoToNextFlow  metadata = " + metadata.toString(16)
 				+ " metadataMask = " + mask.toString(16) + " sourcePort " + sourcePort + " destinationPort "
 				+ destinationPort);
-		int priority = !qFlag ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
-				: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
+		int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
+				: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
@@ -781,7 +787,7 @@ public class MudFlowsInstaller {
 		int priority = !qFlag ? SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
@@ -808,10 +814,10 @@ public class MudFlowsInstaller {
 		Direction direction = getDirectionInitiated(matches);
 
 		boolean checkDirectionInitiated = directionCheck(direction, false);
-		int priority = !qFlag ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
-				: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
+		int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
+				: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 	}
 
@@ -841,11 +847,11 @@ public class MudFlowsInstaller {
 		Direction direction = getDirectionInitiated(matches);
 
 		boolean checkDirectionInitiated = directionCheck(direction, false);
-		int priority = !qFlag ? SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY
-				: SdnMudConstants.MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
+		int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
+				: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
-				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSdnmudRulesTable(), priority,
+				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, checkDirectionInitiated, flowCookie, flowId, node);
 
 	}
@@ -862,7 +868,7 @@ public class MudFlowsInstaller {
 			flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName);
 			FlowCookie cookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
 			this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, srcPort, destinationPort,
-					priority + 1);
+					priority + 1, tableId);
 		}
 	}
 
@@ -930,13 +936,18 @@ public class MudFlowsInstaller {
 
 		// Under qurantene, devices may access DNS and dhcp.
 		FlowBuilder flowBuilder = FlowUtils.createDestAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
-				sdnmudProvider.getSdnmudRulesTable(), SdnMudConstants.MAX_PRIORITY, sendToController, flowId,
+				sdnmudProvider.getSrcMatchTable(), sdnmudProvider.getNormalRulesTable(), 
+				SdnMudConstants.MAX_PRIORITY, sendToController, flowId,
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
+	
 		flowId = IdUtils.createFlowId(nodeId);
 		flowCookie = SdnMudConstants.DNS_RESPONSE_FLOW_COOKIE;
 		flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
-				sdnmudProvider.getSdnmudRulesTable(), SdnMudConstants.MAX_PRIORITY, sendToController, flowId,
+				sdnmudProvider.getSrcMatchTable(), 
+				sdnmudProvider.getNormalRulesTable(),
+				SdnMudConstants.MAX_PRIORITY,
+				sendToController, flowId,
 				flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
@@ -949,38 +960,40 @@ public class MudFlowsInstaller {
 		String nodeId = IdUtils.getNodeUri(node);
 		FlowId flowId = IdUtils.createFlowId(nodeId);
 		FlowBuilder flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
-				sdnmudProvider.getSdnmudRulesTable(), priority, false, flowId, flowCookie);
+				sdnmudProvider.getSrcMatchTable(), 
+				sdnmudProvider.getNormalRulesTable(),
+				priority, false, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
-
 	}
 
 	public static void installPermitPacketsToServer(SdnmudProvider sdnmudProvider, FlowCookie flowCookie,
 			InstanceIdentifier<FlowCapableNode> node, Ipv4Address address, short protocol, int port, int priority) {
 
 		LOG.info("installPermitPacketsFromToServer :  address = " + address.getValue());
-
 		String nodeId = IdUtils.getNodeUri(node);
-
 		FlowId flowId = IdUtils.createFlowId(nodeId);
-
 		FlowBuilder flowBuilder = FlowUtils.createDestAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
-				sdnmudProvider.getSdnmudRulesTable(), priority, false, flowId, flowCookie);
+				sdnmudProvider.getSrcMatchTable(), 
+				sdnmudProvider.getNormalRulesTable(),
+				priority, false, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
 
 	public void installPermitPacketsToFromDhcp(InstanceIdentifier<FlowCapableNode> node) {
 
 		String nodeId = IdUtils.getNodeUri(node);
+		
 		FlowCookie flowCookie = SdnMudConstants.DH_REQUEST_FLOW_COOKIE;
 		FlowId flowId = IdUtils.createFlowId(nodeId);
 		FlowBuilder flowBuilder = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(
-				sdnmudProvider.getSdnmudRulesTable(), flowCookie, flowId, true);
+				sdnmudProvider.getSrcMatchTable(), sdnmudProvider.getNormalRulesTable(), flowCookie, flowId, true);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
 		// DHCP is local so both directions are installed on the CPE node.
 		flowCookie = SdnMudConstants.DH_RESPONSE_FLOW_COOKIE;
 		flowId = IdUtils.createFlowId(nodeId);
-		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(sdnmudProvider.getSdnmudRulesTable(),
+		flowBuilder = FlowUtils.createFromDhcpServerMatchGoToNextTableFlow(sdnmudProvider.getSrcMatchTable(),
+				sdnmudProvider.getNormalRulesTable(),
 				flowCookie, flowId, true);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 	}
@@ -991,9 +1004,9 @@ public class MudFlowsInstaller {
 		FlowId flowId = IdUtils.createFlowId(nodeId);
 		BigInteger metadata = SdnMudConstants.DST_MAC_BLOCKED_MASK;
 		BigInteger metadataMask = SdnMudConstants.DST_MAC_BLOCKED_FLAG;
-		int priority = SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY;
+		int priority = SdnMudConstants.DST_MATCHED_DROP_ON_QUARANTINE_PRIORITY;
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask,
-				sdnmudProvider.getSdnmudRulesTable(), sdnmudProvider.getDropTable(), priority, flowId, flowCookie,
+				sdnmudProvider.getDstMatchTable(), sdnmudProvider.getDropTable(), priority, flowId, flowCookie,
 				"dropBlockedDstMacFlow");
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
@@ -1004,7 +1017,7 @@ public class MudFlowsInstaller {
 		priority = SdnMudConstants.SRC_MATCHED_DROP_ON_QUARANTINE_PRIORITY;
 
 		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask,
-				sdnmudProvider.getSdnmudRulesTable(), sdnmudProvider.getDropTable(), priority, flowId, flowCookie,
+				sdnmudProvider.getSrcMatchTable(), sdnmudProvider.getDropTable(), priority, flowId, flowCookie,
 				"dropBlockedSrcMacFlow");
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 	}
@@ -1049,9 +1062,9 @@ public class MudFlowsInstaller {
 
 		FlowId flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
 		FlowCookie flowCookie = IdUtils.createFlowCookie("metadata-match-go-to-next");
-		short tableId = sdnmudProvider.getSdnmudRulesTable();
+		short tableId = sdnmudProvider.getSrcMatchTable();
 		FlowBuilder fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId,
-				(short) (tableId + 1), priority, flowId, flowCookie, "unknownSrcPassThrough");
+				sdnmudProvider.getNormalRulesTable(), priority, flowId, flowCookie, "unknownSrcPassThrough");
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 
 		flowId = IdUtils.createFlowId(IdUtils.getNodeUri(node));
@@ -1059,7 +1072,7 @@ public class MudFlowsInstaller {
 				.shiftLeft(SdnMudConstants.DST_MANUFACTURER_SHIFT)
 				.or(BigInteger.valueOf(IdUtils.getModelId(SdnMudConstants.UNKNOWN))
 						.shiftLeft(SdnMudConstants.DST_MODEL_SHIFT));
-		priority = SdnMudConstants.MATCHED_GOTO_FLOW_PRIORITY + 2;
+		priority = SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY + 2;
 		metadataMask = SdnMudConstants.DST_MANUFACTURER_MASK.or(SdnMudConstants.DST_MODEL_MASK);
 		fb = FlowUtils.createMetadataMatchGoToNextTableFlow(metadata, metadataMask, tableId, (short) (tableId + 1),
 				priority, flowId, flowCookie, "unknownDstPassThrough");
@@ -1129,8 +1142,9 @@ public class MudFlowsInstaller {
 			try {
 
 				sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
-						sdnmudProvider.getSdnmudRulesTable(), null, null);
-
+						sdnmudProvider.getSrcMatchTable(), null, null);
+				sdnmudProvider.getFlowCommitWrapper().deleteFlows(node, mudUri.getValue(),
+						sdnmudProvider.getDstMatchTable(), null, null);
 				/*
 				 * Track that we have added a node for this device MAC address for this node.
 				 * i.e. we store MUD rules for this device on the given node.
@@ -1153,7 +1167,7 @@ public class MudFlowsInstaller {
 					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node,
 							SdnMudConstants.SRC_MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 					this.installGoToDropTableOnQuaranteneDstModelMetadataMatchFlow(mudUri.getValue(), node,
-							SdnMudConstants.MATCHED_DROP_ON_QUARANTINE_PRIORITY);
+							SdnMudConstants.DST_MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 
 				}
 
@@ -1172,7 +1186,7 @@ public class MudFlowsInstaller {
 							SdnMudConstants.SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY);
 				}
 				this.installGoToDropTableOnDstModelMetadataMatchFlow(mudUri.getValue(), node,
-						SdnMudConstants.MATCHED_DROP_PACKET_FLOW_PRIORITY);
+						SdnMudConstants.DST_MATCHED_DROP_PACKET_FLOW_PRIORITY);
 
 				/*
 				 * Fetch and install the MUD ACLs. First install the "from-device" rules.
@@ -1329,7 +1343,9 @@ public class MudFlowsInstaller {
 
 					// Clear the cache so can be re-poplulated after packets come in again.
 					// Is this necessary??
-					this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					if ( retval ) {
+					    this.sdnmudProvider.getPacketInDispatcher().clearMfgModelRules();
+					}
 
 				}
 
@@ -1360,7 +1376,10 @@ public class MudFlowsInstaller {
 			if (flowCapableNode != null) {
 				for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
 					String uriPrefix = mud.getMudUrl().getValue() + "/sdnmud";
-					short table = sdnmudProvider.getSdnmudRulesTable();
+					short table = sdnmudProvider.getSrcMatchTable();
+					this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
+							null);
+					table = sdnmudProvider.getDstMatchTable();
 					this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
 							null);
 				}

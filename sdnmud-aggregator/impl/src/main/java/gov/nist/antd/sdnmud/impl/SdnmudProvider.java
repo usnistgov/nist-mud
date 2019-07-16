@@ -353,8 +353,19 @@ public class SdnmudProvider {
 		return (short) (this.sdnmudConfig.getTableStart().shortValue() + 1);
 	}
 
-	public short getSdnmudRulesTable() {
+	/* public short getSdnmudRulesTable() {
 		return (short) (this.sdnmudConfig.getTableStart() + 2);
+	} */
+	
+	public short getSrcMatchTable() {
+		return (short)(this.sdnmudConfig.getTableStart() + 2);
+	}
+	public short getDstMatchTable() {
+		return (short)(this.sdnmudConfig.getTableStart() + 3);
+	}
+	
+	public short getNormalRulesTable() {
+		return (short)(this.sdnmudConfig.getBroadcastRuleTable().shortValue());
 	}
 
 	public short getDropTable() {
@@ -716,9 +727,7 @@ public class SdnmudProvider {
 		this.nameToAcesMap.clear();
 	}
 	
-	public short getBroadcastRuleTable() {
-		return this.sdnmudConfig.getBroadcastRuleTable().shortValue();
-	}
+	
 
 	public MudFileFetcher getMudFileFetcher() {
 		return mudFileFetcher;

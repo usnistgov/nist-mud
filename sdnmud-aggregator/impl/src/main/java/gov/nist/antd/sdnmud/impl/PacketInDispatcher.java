@@ -535,6 +535,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
 				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue() + "etherType = " + etherType);
 
+		if ( node == null) {
+			LOG.error("Node not found " + nodeId);
+			return;
+		}
+		
 		this.packetInCounter++;
 
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
@@ -603,7 +608,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					// Broadcast notifications for mappings seen at the switch.
 				}
 
-			} else if (tableId == sdnmudProvider.getSdnmudRulesTable()) {
+			} else if (tableId == sdnmudProvider.getSrcMatchTable()) {
 				this.mudRelatedPacketInCounter++;
 				LOG.debug("PacketInDispatcher: Packet packetIn from SDNMUD_RULES_TABLE");
 				int protocol = PacketUtils.extractIpProtocol(rawPacket);
@@ -626,18 +631,21 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								MappingBuilder mb = new MappingBuilder();
 								ArrayList<MacAddress> macAddresses = new ArrayList<>();
 								Uri mudUri = new Uri(mudUrl);
+								
 								HashSet<MacAddress> currentMacAddresses = sdnmudProvider.getMappingDataStoreListener()
 										.getMapping().get(mudUri);
 								macAddresses.add(srcMac);
 								if (currentMacAddresses != null) {
 									macAddresses.addAll(currentMacAddresses);
 								}
+								
 								mb.setDeviceId(macAddresses);
 								mb.setMudUrl(mudUri);
 								InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)
 										.build();
+								
 								ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-
+								
 								tx.put(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
 								try {
 									tx.submit().get();
@@ -660,9 +668,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.info("Lease time is " + leaseTime);
 					}
 				} else if (cookie.equals(SdnMudConstants.DNS_REQUEST_FLOW_COOKIE)) {
-					LOG.debug("Saw a DNS Request");
+					LOG.info("Saw a DNS Request");
 				} else if (cookie.equals(SdnMudConstants.DNS_RESPONSE_FLOW_COOKIE)) {
-					LOG.debug("Saw a DNS response");
+					LOG.info("Saw a DNS response");
 					try {
 						byte[] payload = PacketUtils.getPacketPayload(notification.getPayload(), etherType, protocol);
 						Message message = new Message(payload);
