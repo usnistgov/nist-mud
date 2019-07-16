@@ -43,6 +43,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.acti
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.action.types.rev131112.action.list.ActionKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowKey;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
@@ -892,6 +893,28 @@ public class FlowUtils {
         flowTable.put(flowId,fb);
 		return fb;
 	}
+	
+	static Flow createSrcMacMatchDropFlow(MacAddress srcMac, FlowId flowId, FlowCookie flowCookie, short tableId, int timeout) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetSourceMatch(matchBuilder, srcMac);
+		Instruction ins = createDropInstruction();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		InstructionsBuilder insb = new InstructionsBuilder();
+		instructions.add(ins);
+		insb.setInstruction(instructions);
+		FlowBuilder fb = new FlowBuilder();
+		fb.setStrict(false);
+		fb.setBarrier(true);
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return fb.build();
+	}
+	
+	
 
 	static FlowBuilder createDestMacMatchSetMetadataAndGoToNextTableFlow(MacAddress dstMac, BigInteger metadata,
 			BigInteger metadataMask, short tableId, FlowId flowId, FlowCookie flowCookie, int timeout) {
@@ -913,6 +936,26 @@ public class FlowUtils {
 
         flowTable.put(flowId,fb);
 		return fb;
+	}
+	
+	static Flow createDstMacMatchDropFlow(MacAddress dstMac, FlowId flowId, FlowCookie flowCookie, short tableId, int timeout) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetDestMatch(matchBuilder, dstMac);
+		Instruction ins = createDropInstruction();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		InstructionsBuilder insb = new InstructionsBuilder();
+		instructions.add(ins);
+		insb.setInstruction(instructions);
+		FlowBuilder fb = new FlowBuilder();
+		fb.setStrict(false);
+		fb.setBarrier(true);
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return fb.build();
 	}
 
 	static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
@@ -1114,5 +1157,26 @@ public class FlowUtils {
         flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
+
+	public static Flow createMetadataMatchDropFlow(BigInteger metadata, BigInteger metadataMask,short tableId, FlowId flowId, 
+			FlowCookie flowCookie, int timeout) {
+		MatchBuilder matchBuilder  = new MatchBuilder();
+		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
+		Instruction dropInstruction = FlowUtils.createDropInstruction();
+		InstructionsBuilder insb = new InstructionsBuilder();
+		List<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(dropInstruction);
+		insb.setInstruction(instructions);
+		
+		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("dropFlow").setId(flowId)
+				.setKey(new FlowKey(flowId)).setCookie(flowCookie);
+		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
+				.setHardTimeout(timeout).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+		return flowBuilder.build();
+		
+	}
+
+	
 
 }
