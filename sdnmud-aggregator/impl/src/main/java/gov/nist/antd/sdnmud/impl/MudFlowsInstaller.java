@@ -49,11 +49,11 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev1901
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.mud.grouping.ToDevicePolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.packet.fields.rev190304.port.range.or.operator.port.range.or.operator.Operator;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.mud.QuarantinedDevicePolicy;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.mud.quarantined.device.policy.EnabledAceNames;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowId;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.FlowBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.types.rev131026.FlowCookie;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
@@ -1077,6 +1077,8 @@ public class MudFlowsInstaller {
 
 	}
 
+	
+	
 	/**
 	 * Retrieve and install flows for a device of a given MAC address.
 	 *
@@ -1097,8 +1099,12 @@ public class MudFlowsInstaller {
 			HashSet<String> enabledAceNames = new HashSet<String>();
 			boolean hasQuarantineDevicePolicy = false;
 
-			if (mud.getAugmentation(Mud1.class) != null) {
-				QuarantinedDevicePolicy qdp = mud.getAugmentation(Mud1.class).getQuarantinedDevicePolicy();
+			if (mud.getAugmentation(
+					org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class) != null) {
+				QuarantinedDevicePolicy qdp = mud
+						.getAugmentation(
+								org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class)
+						.getQuarantinedDevicePolicy();
 				if (qdp != null) {
 					hasQuarantineDevicePolicy = true;
 					List<EnabledAceNames> aceNames = qdp.getEnabledAceNames();

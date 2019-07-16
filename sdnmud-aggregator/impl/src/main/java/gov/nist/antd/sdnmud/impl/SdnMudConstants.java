@@ -138,6 +138,12 @@ interface SdnMudConstants {
 	static final String DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/";
 
 	static final String SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/srcMacMatchSetMetadataAndGoToNextTable/";
+	
+	static final String METADATA_MATCH_DROP = "/sdnmud/metadataMatchDrop/";
+	
+	static final String SRC_MAC_DROP_FLOW_ID_PREFIX = "/sdmud/srcMacDrop/";
+	static final String DST_MAC_DROP_FLOW_ID_PREFIX = "/sdmud/dstMacDrop/";
+
 
 	// Default drop rule timeout.
 	static final int DROP_RULE_TIMEOUT = 120;

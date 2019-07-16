@@ -382,7 +382,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		int quaranteneFlag = isQurantened ? 1 : 0;
 		int blockedFlag = isBlocked ? 1 : 0;
 
-		LOG.debug("installStampSrcManufacturerModelFlowRules : dstMac = " + srcMac.getValue() + " isLocalAddress "
+		LOG.debug("installStampSrcManufacturerModelFlowRules : srcMac = " + srcMac.getValue() + " isLocalAddress "
 				+ "isQuarantine " + isQurantened + isLocalAddress + " mudUri " + mudUri);
 
 		BigInteger metadata = (BigInteger.valueOf(manufacturerId).shiftLeft(SdnMudConstants.SRC_MANUFACTURER_SHIFT))
@@ -416,6 +416,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.broadcastStateChange();
 
 	}
+	
+
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			boolean isQurarantened, boolean isBlocked, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
@@ -461,6 +463,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.broadcastStateChange();
 	}
 
+	
+	
+	
+	
+	
 	/**
 	 *
 	 */
@@ -482,6 +489,30 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.dstMetadataMap.clear();
 
 	}
+	
+	
+	private void installSrcMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		String flowIdStr = SdnMudConstants.SRC_MAC_DROP_FLOW_ID_PREFIX;
+		FlowId flowId = IdUtils.createFlowId(flowIdStr);
+		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
+		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
+		Flow flow = FlowUtils.createSrcMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(), timeout);
+		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
+	}
+	
+	
+	
+	private void installDstMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		String flowIdStr = SdnMudConstants.DST_MAC_DROP_FLOW_ID_PREFIX;
+		FlowId flowId = IdUtils.createFlowId(flowIdStr);
+		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
+		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
+		Flow flow = FlowUtils.createDstMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(), timeout);
+		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
+
+	}
+	
+	
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -574,6 +605,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (isLocalAddress) {
 						this.unclassifiedMacAddresses.add(srcMac);
 					}
+					installSrcMacMatchDrop(srcMac, node);
 				}
 
 				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
@@ -584,10 +616,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (isLocalAddress) {
 						this.unclassifiedMacAddresses.add(dstMac);
 					}
-					boolean isQuarantened = this.isQuarantene(dstMac);
+					boolean isQurantine = this.isQuarantene(dstMac);
 					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
-					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQuarantened, isBlocked,
+					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
 							mudUri.getValue(), node);
+					installDstMacMatchDrop(dstMac, node);
 				}
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
@@ -600,12 +633,13 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.info("already installed in table 1");
 						return;
 					}
-					boolean isQurarantene = this.isQuarantene(dstMac);
+					boolean isQurantine = this.isQuarantene(dstMac);
 					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
 
-					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurarantene, isBlocked,
+					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
 							mudUri.getValue(), node);
 					// Broadcast notifications for mappings seen at the switch.
+					installDstMacMatchDrop(dstMac, node);
 				}
 
 			} else if (tableId == sdnmudProvider.getSrcMatchTable()) {
