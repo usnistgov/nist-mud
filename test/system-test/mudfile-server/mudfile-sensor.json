@@ -4,18 +4,18 @@
     "mud-version": 1,
     "mud-url": "https://sensor.nist.local/nistmud1",
     "mud-signature": "https://sensor.nist.local/nistmud1/mudfile-sensor.p7s",
-    "last-update": "2019-06-13T17:47:52+00:00",
+    "last-update": "2019-07-16T15:02:08+00:00",
     "cache-validity": 48,
     "is-supported": true,
-    "systeminfo": "test sensor foo",
+    "systeminfo": "test sensor",
     "mfg-name": "NIST",
-    "documentation": "https://www.nist.local",
-    "model-name": "superv1",
+    "documentation": "https://www.nist.gov",
+    "model-name": "nistmud1",
     "from-device-policy": {
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-27611-v4fr"
+            "name": "mud-31931-v4fr"
           }
         ]
       }
@@ -24,7 +24,7 @@
       "access-lists": {
         "access-list": [
           {
-            "name": "mud-27611-v4to"
+            "name": "mud-31931-v4to"
           }
         ]
       }
@@ -33,7 +33,7 @@
   "ietf-access-control-list:acls": {
     "acl": [
       {
-        "name": "mud-27611-v4to",
+        "name": "mud-31931-v4to",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -60,12 +60,13 @@
               "name": "ent0-todev",
               "matches": {
                 "ietf-mud:mud": {
-                  "controller": "https://controller.nist.local"
+                  "controller": "http://controller.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6
                 },
                 "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
                   "source-port": {
                     "operator": "eq",
                     "port": 8080
@@ -111,9 +112,32 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "destination-port": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc1-todev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 888
                   }
                 }
               },
@@ -148,6 +172,15 @@
                   "same-manufacturer": [
                     null
                   ]
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "source-port": {
+                    "operator": "eq",
+                    "port": 8888
+                  }
                 }
               },
               "actions": {
@@ -158,7 +191,7 @@
         }
       },
       {
-        "name": "mud-27611-v4fr",
+        "name": "mud-31931-v4fr",
         "type": "ipv4-acl-type",
         "aces": {
           "ace": [
@@ -185,12 +218,13 @@
               "name": "ent0-frdev",
               "matches": {
                 "ietf-mud:mud": {
-                  "controller": "https://controller.nist.local"
+                  "controller": "http://controller.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6
                 },
                 "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
                   "destination-port": {
                     "operator": "eq",
                     "port": 8080
@@ -236,9 +270,32 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "source-port": {
+                  "destination-port": {
                     "operator": "eq",
                     "port": 80
+                  }
+                }
+              },
+              "actions": {
+                "forwarding": "accept"
+              }
+            },
+            {
+              "name": "loc1-frdev",
+              "matches": {
+                "ietf-mud:mud": {
+                  "local-networks": [
+                    null
+                  ]
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 888
                   }
                 }
               },
@@ -273,6 +330,15 @@
                   "same-manufacturer": [
                     null
                   ]
+                },
+                "ipv4": {
+                  "protocol": 6
+                },
+                "tcp": {
+                  "destination-port": {
+                    "operator": "eq",
+                    "port": 8888
+                  }
                 }
               },
               "actions": {

@@ -259,7 +259,19 @@ public class MudFileFetcher {
 		try {
 			// Get the response
 			if (response.getStatusLine().getStatusCode() == 200) {
-				return response.getEntity().getContent().read(data);
+				int len = (int)response.getEntity().getContentLength();
+				LOG.info("content-length = " + len);
+				int bytesRead = 0;
+				while (bytesRead != len) {
+				    int nr = response.getEntity().getContent().read(data, bytesRead, len);
+				    if (nr <= 0) {
+				    	LOG.error("End of stream detected ");
+				    	return bytesRead;
+				    } else {
+				    	bytesRead += nr;
+				    }
+				}
+				return len;
 			} else {
 				LOG.error("Could not fetch from " + url + " statusCode = " + response.getStatusLine().getStatusCode());
 				throw new IOException(
