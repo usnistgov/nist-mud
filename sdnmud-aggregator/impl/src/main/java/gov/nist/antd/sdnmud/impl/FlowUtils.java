@@ -826,7 +826,9 @@ public class FlowUtils {
 		if (sendToController)
 			addSendPacketToControllerInstruction(instructions);
 		addGoToTableInstruction(instructions, targetTableId);
-
+		// Added
+		addWriteMetadataInstruction(instructions, newMetadata, newMetadataMask);
+		
 		InstructionsBuilder insb = new InstructionsBuilder();
 		insb.setInstruction(instructions);
 

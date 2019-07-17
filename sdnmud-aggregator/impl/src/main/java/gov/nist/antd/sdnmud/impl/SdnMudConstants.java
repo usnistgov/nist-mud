@@ -132,7 +132,8 @@ interface SdnMudConstants {
 
 	// Cache timeout for network and model stamping flow rules.
 	static final int ETHERTYPE_LLDP = 0x88cc;
-	static final BigInteger DEFAULT_METADATA_MASK = new BigInteger("FFFFFFFFFFFFFFFF", 16);
+	static final BigInteger DEFAULT_METADATA_MASK = BigInteger.ZERO;
+	static final BigInteger DEFAULT_METADATA = new BigInteger("FFFFFFFFFFFFFFFF",16);
 
 	static final String DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/";
 
@@ -154,12 +155,14 @@ interface SdnMudConstants {
 	static final Integer UNCONDITIONAL_GOTO_PRIORITY = DST_BASE_PRIORITY;
 	static final Integer UNCONDITIONAL_DROP_PRIORITY = DST_BASE_PRIORITY;
 	
-	static final Integer SRC_BASE_PRIORITY = BASE_PRIORITY ;
+	static final Integer SRC_BASE_PRIORITY = BASE_PRIORITY + 25;
 	static final Integer MAX_PRIORITY = SRC_BASE_PRIORITY + 25;
 	static final Integer SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY = SRC_BASE_PRIORITY + 20;
 	static final Integer SRC_MATCHED_DROP_ON_QUARANTINE_PRIORITY = SRC_BASE_PRIORITY + 15;
 	static final Integer SRC_MATCHED_GOTO_FLOW_PRIORITY = SRC_BASE_PRIORITY + 10;
 	static final Integer SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY = SRC_BASE_PRIORITY + 5;
+	//static final Integer SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY = DST_MATCHED_DROP_PACKET_FLOW_PRIORITY;
+	static final boolean MUDMAKER_HACK = true;
 	
 
 }

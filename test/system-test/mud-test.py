@@ -60,7 +60,7 @@ class TestAccess(unittest.TestCase) :
         print "wgetting from controller.nist.local host  on port 80 -- this should fail"
         h2=hosts[1]
         result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- only inbound connections allowed")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
        
         print "wgetting from correct port on ontroller.nist.local host -- this should succeed."
         result = h2.cmdPrint("wget http://10.0.0.4:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
@@ -71,11 +71,11 @@ class TestAccess(unittest.TestCase) :
         result = self.runAndReturnOutput(h1, "python ../unittest/util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) > 2, "expect successful ping")
 
-        print "pinging a same manufacturer peer after configuration -- this should work"
+        print "pinging a same manufacturer peer after configuration -- this should fail"
         result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
-        self.assertTrue(re.search("100%",result) is  None, "Expecting a successful ping")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a failed pings")
 
-	print "Fetching from antd.local on host 1 -- this should fail"
+	print "Fetching from antd.local from sensor -- this should fail"
         result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
@@ -87,10 +87,13 @@ class TestAccess(unittest.TestCase) :
         result = self.runAndReturnOutput(h1,"python ../unittest/util/udpping.py --port 800 --host 10.0.0.3 --client --quiet")
         self.assertTrue(int(result) >= 5, "expect successful ping")
 
-        print "wget get from device port 80 from local network - this should work"
+        print "wget get from local net  from server on port 80 running on sensor - this should work"
         result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
     
+        print "wget get port 888 localnet from sensor "
+        result = h5.cmdPrint("wget http://10.0.0.5:888 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
 
 
@@ -269,6 +272,7 @@ def setupServers():
     sensor=h1
     sameman=h2
     otherman=h3
+    localnet=h5
     controller_controller_nist_gov.cmdPrint("python -m SimpleHTTPServer  80&")
     controller_controller_nist_gov.cmdPrint("python -m SimpleHTTPServer  8080&")
     controller_mycontroller_sensor.cmdPrint("python ../unittest/util/udpping.py --port 4000 --server&") 
@@ -277,6 +281,8 @@ def setupServers():
     h10.cmdPrint('python -m SimpleHTTPServer 80&')
     #inbound connections allowed on port 80 http
     sensor.cmdPrint("python -m SimpleHTTPServer 80&")
+    sameman.cmdPrint("python -m SimpleHTTPServer 8888&")
+    localnet.cmdPrint("python -m SimpleHTTPServer 888&")
 
 
 
