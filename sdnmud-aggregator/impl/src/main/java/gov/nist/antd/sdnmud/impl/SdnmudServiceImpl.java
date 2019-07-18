@@ -400,7 +400,8 @@ public class SdnmudServiceImpl implements SdnmudService {
 			Collections.sort(flowRules, new Comparator<FlowRule>() {
 				@Override
 				public int compare(FlowRule fl1, FlowRule fl2) {
-					return Long.compare(fl2.getPriority(), fl1.getPriority());
+					return Long.compare(fl1.getPriority()*fl1.getTableId(),fl2.getPriority()*fl2.getTableId() 
+							);
 				}
 			});
 		}

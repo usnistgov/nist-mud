@@ -60,7 +60,7 @@
               "name": "ent0-todev",
               "matches": {
                 "ietf-mud:mud": {
-                  "controller": "http://controller.nist.local"
+                  "controller": "https://controller.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6
@@ -112,7 +112,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "source-port": {
+                  "destination-port": {
                     "operator": "eq",
                     "port": 80
                   }
@@ -218,7 +218,7 @@
               "name": "ent0-frdev",
               "matches": {
                 "ietf-mud:mud": {
-                  "controller": "http://controller.nist.local"
+                  "controller": "https://controller.nist.local"
                 },
                 "ipv4": {
                   "protocol": 6
@@ -270,7 +270,7 @@
                 },
                 "tcp": {
                   "ietf-mud:direction-initiated": "to-device",
-                  "destination-port": {
+                  "source-port": {
                     "operator": "eq",
                     "port": 80
                   }

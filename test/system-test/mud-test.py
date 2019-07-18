@@ -33,13 +33,10 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
-	h1 = hosts[0]
-        h1.cmdPrint("nslookup www.nist.local")
-        h1.cmdPrint("nslookup www.antd.local")
         pass
 
     def tearDown(self):
-	time.sleep(3)
+        pass
 
     def runAndReturnOutput(self, host, command ):
         output = host.cmdPrint(command)
@@ -57,14 +54,11 @@ class TestAccess(unittest.TestCase) :
         # Check to see if the result was successful.
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
-        print "wgetting from controller.nist.local host  on port 80 -- this should fail"
-        h2=hosts[1]
-        result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
-       
         print "wgetting from correct port on ontroller.nist.local host -- this should succeed."
+        h2 = hosts[1]
         result = h2.cmdPrint("wget http://10.0.0.4:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get -- can access controller.nist.local on port 8080")
+
 
         print "udp pinging mycontroller host -- this should work"
         h1 = hosts[0]
@@ -88,6 +82,7 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(int(result) >= 5, "expect successful ping")
 
         print "wget get from local net  from server on port 80 running on sensor - this should work"
+        h5 = hosts[4]
         result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
     
@@ -95,6 +90,15 @@ class TestAccess(unittest.TestCase) :
         result = h5.cmdPrint("wget http://10.0.0.5:888 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
+        print "wgetting from controller.nist.local host  on port 80 -- this should fail"
+        h2=hosts[1]
+        result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
+
+        print "wgetting from wrong direction - expect fail"
+        h4 = hosts[3]
+        result = h4.cmdPrint("wget http://10.0.0.1:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
 
 #########################################################
@@ -281,8 +285,10 @@ def setupServers():
     h10.cmdPrint('python -m SimpleHTTPServer 80&')
     #inbound connections allowed on port 80 http
     sensor.cmdPrint("python -m SimpleHTTPServer 80&")
+    sensor.cmdPrint("python -m SimpleHTTPServer 8080&")
     sameman.cmdPrint("python -m SimpleHTTPServer 8888&")
     localnet.cmdPrint("python -m SimpleHTTPServer 888&")
+    localnet.cmdPrint("python -m SimpleHTTPServer 80&")
 
 
 
@@ -376,6 +382,7 @@ if __name__ == '__main__':
     h3.cmdPrint("dhclient -cf /etc/dhcp/dhclient.conf.otherman")
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
+        time.sleep(5)
         unittest.main()
     else:
         cli()

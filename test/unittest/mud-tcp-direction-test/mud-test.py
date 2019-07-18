@@ -237,6 +237,7 @@ def setupTopology(controller_addr):
     #subprocess.Popen(cmd,shell=True,  stdin= subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=False)
     h3.cmdPrint("python -m SimpleHTTPServer 8000&")
     h1.cmdPrint("python -m SimpleHTTPServer 8000&")
+    h4.cmdPrint("python -m SimpleHTTPServer 8000&")
     h1.cmdPrint("python -m SimpleHTTPServer 800&")
     h3.cmdPrint("python -m SimpleHTTPServer 800&")
     h5.cmdPrint("python -m SimpleHTTPServer 800&")
