@@ -152,9 +152,10 @@
                   "manufacturer": "otherman.nist.local"
                 },
                 "ipv4": {
-                  "protocol": 17
+                  "protocol": 6
                 },
-                "udp": {
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
                   "source-port": {
                     "operator": "eq",
                     "port": 800
@@ -310,9 +311,10 @@
                   "manufacturer": "otherman.nist.local"
                 },
                 "ipv4": {
-                  "protocol": 17
+                  "protocol":6 
                 },
-                "udp": {
+                "tcp": {
+                  "ietf-mud:direction-initiated": "from-device",
                   "destination-port": {
                     "operator": "eq",
                     "port": 800
