@@ -1178,5 +1178,48 @@ public class FlowUtils {
 	}
 
 	
+	public static Flow createSourceMacMatchDropFlow(MacAddress srcMac, short tableId, FlowId flowId,
+			FlowCookie flowCookie, int timeout) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetSourceMatch(matchBuilder, srcMac);
+		Instruction dropInstruction = FlowUtils.createDropInstruction();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(dropInstruction);
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);	
+		FlowBuilder fb = new FlowBuilder();
+		fb.setStrict(false);
+		fb.setBarrier(true);
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(timeout).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return fb.build();
+	
+	}
+	
+	public static Flow createDestinationMacMatchDropFlow(MacAddress destinationMac, short tableId, FlowId flowId,
+			FlowCookie flowCookie, int timeout) {
+		MatchBuilder matchBuilder = new MatchBuilder();
+		createEthernetDestMatch(matchBuilder, destinationMac);
+		Instruction dropInstruction = FlowUtils.createDropInstruction();
+		ArrayList<Instruction> instructions = new ArrayList<Instruction>();
+		instructions.add(dropInstruction);
+		InstructionsBuilder insb = new InstructionsBuilder();
+		insb.setInstruction(instructions);	
+		FlowBuilder fb = new FlowBuilder();
+		fb.setStrict(false);
+		fb.setBarrier(true);
+		fb.setMatch(matchBuilder.build()).setTableId(tableId).setFlowName("sourceMacMatchSetMetadataAndGoToTable")
+				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie).setInstructions(insb.build())
+				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
+				.setHardTimeout(timeout).setIdleTimeout(0)
+				.setFlags(new FlowModFlags(false, false, false, false, false));
+
+		return fb.build();
+	
+	}
 
 }

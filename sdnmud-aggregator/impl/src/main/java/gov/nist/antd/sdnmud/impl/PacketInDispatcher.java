@@ -116,24 +116,24 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	// assigned.
 	private HashSet<MacAddress> unclassifiedMacAddresses = new HashSet<MacAddress>();
 
+	// source mac address metadata mapping.
 	private HashMap<String, BigInteger> srcMetadataMap = new HashMap<String, BigInteger>();
-
 	// Set of Mac addresses for which a source mac classification rule exists
 	private HashMap<String, BigInteger> srcMacRuleTable = new HashMap<String, BigInteger>();
-
+	// Destination MAC address metadata mapping
 	private HashMap<String, BigInteger> dstMetadataMap = new HashMap<String, BigInteger>();
 	// Set of mac addresses for which a dst mac classification rule exists
 	private HashMap<String, BigInteger> dstMacRuleTable = new HashMap<String, BigInteger>();
 	// Flow rules in the first two tables -- these can be cleared via an API
 	private HashSet<Flow> flowTable = new HashSet<Flow>();
 	// The set of mac addresses that were seen when a packet was dropped.
-	private HashSet<MacAddress> dropRuleTable = new HashSet<MacAddress>();
+	// This tracks ACL violations.
+	
+	private HashMap<InstanceIdentifier<FlowCapableNode>,HashSet<MacAddress>> dropRuleMacAddressMap = new HashMap<>();
+	
+	private HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<String>> dropRuleControllerMap = new HashMap<>();
 
 	private Timer timer = new Timer();
-
-	private ArrayList<Socket> listeners = new ArrayList<Socket>();
-
-	private ServerSocket listenerSock;
 
 	private boolean isClosed;
 
@@ -171,13 +171,39 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	private class DropRuleTableTimerTask extends TimerTask {
 		private MacAddress macAddress;
+		private InstanceIdentifier<FlowCapableNode> node;
+		private String srcController;
+		private String dstController;
 
-		public DropRuleTableTimerTask(MacAddress macAddress) {
+		public DropRuleTableTimerTask(InstanceIdentifier<FlowCapableNode> node, MacAddress macAddress, String srcControllerUrl, String dstControllerUrl) {
 			this.macAddress = macAddress;
+			this.srcController = srcControllerUrl;
+			this.dstController = dstControllerUrl;
+			this.node = node;
 		}
 
 		public void run() {
-			dropRuleTable.remove(macAddress);
+			HashSet<MacAddress> macAddresses = dropRuleMacAddressMap.get(node);
+			if (macAddresses != null) {
+				macAddresses.remove(macAddress);
+				if (macAddresses.isEmpty()) {
+					dropRuleMacAddressMap.remove(node);
+				}
+			}
+			
+			if ( srcController != null ) {
+				HashSet<String> controllers = dropRuleControllerMap.get(node);
+				if ( controllers != null )  {
+					controllers.remove(srcController);
+				}
+			}
+			
+			if (dstController != null ) {
+				HashSet<String> controllers = dropRuleControllerMap.get(node);
+				if ( controllers != null )  {
+					controllers.remove(dstController);
+				}
+			}
 		}
 	}
 
@@ -417,7 +443,25 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 	
-
+	// Block a specific MAC address. TODO -- add code to invoke this.
+	
+	private void installSrcMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		FlowCookie flowCookie = SdnMudConstants.SRC_MAC_MATCH_DROP_COOKIE;
+		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
+		short tableId = sdnmudProvider.getDropTable();
+		int timeout = sdnmudProvider.getMudReporterMinTimeout();
+		Flow flow = FlowUtils.createDestinationMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
+	
+	private void installDstMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		FlowCookie flowCookie = SdnMudConstants.DST_MAC_MATCH_DROP_COOKIE;
+		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
+		short tableId = sdnmudProvider.getDropTable();
+		int timeout = sdnmudProvider.getMudReporterMinTimeout();
+		Flow flow = FlowUtils.createSourceMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout);
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			boolean isQurarantened, boolean isBlocked, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
@@ -730,35 +774,66 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 				} else if (cookie.equals(SdnMudConstants.DROP_FLOW_COOKIE)) {
 					LOG.info("Saw an ACL violation - device is misbehaving.");
-					// TBD -- generate event and send to update service.
-					if (dropRuleTable.contains(srcMac)) {
+					if (dropRuleMacAddressMap.get(node) != null && dropRuleMacAddressMap.get(node).contains(srcMac)) {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
-					this.dropRuleTable.add(srcMac);
-					this.broadcastAceViolation(srcMac, mudUri);
-					// Start a timer so we will be interrupted again after this period of time.
-					// We don't want to keep getting interrupted
-					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
-
+					this.catalogDroppedPacket(srcMac, dstMac, srcIp, dstIp, node);					
+					
 				} else if (cookie.equals(SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE)) {
 					LOG.info("Saw a TCP SYN ACL violation");
 					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 					// TBD -- generate event and send to update service.
-					if (dropRuleTable.contains(srcMac)) {
+					if (dropRuleMacAddressMap.get(node) != null && dropRuleMacAddressMap.get(node).contains(srcMac)) {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					this.dropRuleTable.add(srcMac);
-					this.broadcastAceViolation(srcMac, mudUri);
-					timer.schedule(new DropRuleTableTimerTask(srcMac), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
-
+					this.catalogDroppedPacket(srcMac, dstMac, srcIp, dstIp, node);
 				}
 
 			}
 
 		}
+	}
+
+	private void catalogDroppedPacket(MacAddress srcMac, MacAddress dstMac, String srcIp, String dstIp, InstanceIdentifier<FlowCapableNode> node) {
+		// TODO Auto-generated method stub
+		// TBD -- generate event and send to update service.
+		
+		Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
+		HashSet<MacAddress> macAddresses = dropRuleMacAddressMap.get(node);
+		if (macAddresses == null) {
+			macAddresses = new HashSet<MacAddress>();
+			dropRuleMacAddressMap.put(node, macAddresses);
+		}
+		macAddresses.add(srcMac);
+		this.broadcastAceViolation(srcMac, mudUri);
+		
+		String nodeId = IdUtils.getNodeUri(node);
+		String srcController = sdnmudProvider.getControllerMappingForAddress(nodeId, srcIp);
+		if ( srcController != null ) {
+			HashSet<String> controllers = this.dropRuleControllerMap.get(nodeId);
+			if ( controllers == null) {
+				controllers = new HashSet<String>();
+				dropRuleControllerMap.put(node,controllers);
+			}
+			controllers.add(srcController);
+		}
+		
+		String dstController = sdnmudProvider.getControllerMappingForAddress(nodeId, dstIp);
+		
+		if (dstController != null ) {
+			HashSet<String> controllers = this.dropRuleControllerMap.get(nodeId);
+			if ( controllers == null) {
+				controllers = new HashSet<String>();
+				dropRuleControllerMap.put(node,controllers);
+			}
+			controllers.add(dstController);
+		}
+		// Start a timer so we will be interrupted again after this period of time.
+		// We don't want to keep getting interrupted
+		timer.schedule(new DropRuleTableTimerTask(node,srcMac, srcController, dstController), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+		
 	}
 
 	public BigInteger getSrcMetadata(String macAddress) {
@@ -767,6 +842,15 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	public BigInteger getDstMetadata(String macAddress) {
 		return this.dstMetadataMap.get(macAddress);
+	}
+	
+	/**
+	 * Get collection of MACs dropped at a node.
+	 * @param node
+	 * @return
+	 */
+	public Collection<MacAddress> getDroppedMacs(InstanceIdentifier<FlowCapableNode> node) {
+		return this.dropRuleMacAddressMap.get(node);
 	}
 
 }

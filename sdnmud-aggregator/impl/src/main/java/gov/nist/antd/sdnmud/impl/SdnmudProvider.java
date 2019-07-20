@@ -181,6 +181,8 @@ public class SdnmudProvider {
 
 	private Uri lastMudUri;
 
+	private DroppedPacketsScanner droppedPacketsScanner;
+
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			OpendaylightFlowStatisticsService flowStatisticsService,
 			OpendaylightDirectStatisticsService directStatisticsService,
@@ -336,6 +338,10 @@ public class SdnmudProvider {
 
 		// Latency of 10 seconds for the scan.
 		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
+		
+		this.droppedPacketsScanner = new DroppedPacketsScanner(this);
+		
+		new Timer(true).schedule(droppedPacketsScanner, 0, 5*1000);
 
 		LOG.info("start() <--");
 
@@ -648,8 +654,10 @@ public class SdnmudProvider {
 
 	}
 	
-	public void addControllerMap(String nodeId, String name, String address) {
+	public void addControllerMap(String nodeId, String name, String addressStr) {
 		HashMap<String, List<Ipv4Address>> map = this.controllerMap.get(nodeId);
+		Ipv4Address address = new Ipv4Address(addressStr);
+		
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();
 			this.controllerMap.put(nodeId, map);
@@ -665,6 +673,18 @@ public class SdnmudProvider {
 		this.configStateChanged++;
 	}
 	
+	public String getControllerMappingForAddress( String nodeId, String addressStr) {
+		Ipv4Address address = new Ipv4Address(addressStr);
+		HashMap<String,List<Ipv4Address> > map = this.controllerMap.get(nodeId);
+		for (String controller : map.keySet() ) {
+			List<Ipv4Address> addresses = map.get(controller);
+			if ( addresses.contains(address))  {
+				return controller;
+			}
+		}
+		return null;
+	}
+	
 
 	/**
 	 * @param nodeUri
@@ -673,6 +693,8 @@ public class SdnmudProvider {
 	public Map<String, List<Ipv4Address>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
 	}
+	
+	
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
 		if(controllerClassMaps.get(nodeUri) == null) return null;
@@ -757,6 +779,14 @@ public class SdnmudProvider {
 	
 	public OpendaylightFlowStatisticsService getFlowStatisticsService() {
 		return this.flowStatisticsService;
+	}
+	
+	public int getMudReporterMinTimeout() {
+		return this.sdnmudConfig.getMfgIdRuleCacheTimeout().intValue();
+	}
+	
+	public DroppedPacketsScanner getDroppedPacketsScanner() {
+		return this.droppedPacketsScanner;
 	}
 
 }
