@@ -8,7 +8,6 @@ module ietf-mud-reporter-extension {
   }
 
   import ietf-inet-types {
-
     prefix "inet";
   }
 
@@ -56,8 +55,8 @@ module ietf-mud-reporter-extension {
   grouping mud-reporter-extension {
       description
          "Reporter information  grouping";
-      container reporter {
 
+      container reporter {
         description "Reporter information";
         leaf report-uri {
           type inet:uri;

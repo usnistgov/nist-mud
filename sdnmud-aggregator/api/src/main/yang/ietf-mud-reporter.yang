@@ -26,7 +26,6 @@ module ietf-mud-reporter {
      Copyright (c) 2019 IETF Trust and the persons identified as
      authors of the code.  All rights reserved.
 
-
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject to
      the license terms contained in, the Simplified BSD License set
@@ -212,17 +211,19 @@ module ietf-mud-reporter {
              known.";
         }
       }
-      uses class-drop-count;
-      list ace-match-count {
+
+      list drop-counts {
+         uses drop-count;
+      }
+
+      list match-counts {
         uses pass-count;
       }
     }
   }
 
-
   grouping pass-count {
     description
-
      "Count of packets for each passing MUD ACE. in the MUD file.
       The ACE's are named with the <name of the ACL> / <name of ACE>";
     leaf ace-name {
@@ -239,36 +240,34 @@ module ietf-mud-reporter {
     }
   }
 
-  grouping class-drop-count {
+  grouping drop-count {
     description
       "Violating packet related to this MUD file are classfied.";
-    leaf manufacturer {
-      type string;
-      description
-        "manufacturer name";
-    }
-    leaf model {
-      type string;
-      description
-        "model name";
-    }
-    leaf local-networks {
-      type boolean;
-      description
-        "this packet matches the local networks
+    choice drop-type {
+    case  model {
+        leaf name {
+         type string;
+         description
+           "model name";
+         }
+     }
+     case local-networks {
+       description
+         "this packet matches the local networks
          classification";
-
-    }
-    leaf controller {
+     }
+     case controller {
+      leaf name {
       type string;
       description
         "controller name";
-    }
-    leaf default {
+      }
+     }
+     case default {
       description
         "Default classification -- Could not classify dropped packet
         using one of the classifications above. ";
-      type boolean;
+      }
     }
     leaf drop-count {
 
