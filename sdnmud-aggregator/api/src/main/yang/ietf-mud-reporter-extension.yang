@@ -8,9 +8,9 @@ module ietf-mud-reporter-extension {
   }
 
   import ietf-inet-types {
+
     prefix "inet";
   }
-
 
   organization
     "IETF OPSAWG (Ops Area) Working Group";
@@ -57,23 +57,13 @@ module ietf-mud-reporter-extension {
       description
          "Reporter information  grouping";
       container reporter {
+
         description "Reporter information";
         leaf report-uri {
           type inet:uri;
-
           description
              "Restful endpoint for reporter information.";
           }
-        leaf frequency {
-          type uint32
-          {
-            range "60..max";
-          }
-          default 1440;
-          description
-            "The minimum period of time in minutes that a deployment
-             should report.";
-        }
       }
   }
 

@@ -164,6 +164,9 @@ interface SdnMudConstants {
 	static final Integer SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY = SRC_BASE_PRIORITY + 5;
 	//static final Integer SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY = DST_MATCHED_DROP_PACKET_FLOW_PRIORITY;
 	static final boolean MUDMAKER_HACK = true;
+	static final FlowCookie SRC_MAC_MATCH_DROP_COOKIE = IdUtils.createFlowCookie("SRC_MAC_MATCH_DROP");
+	static final FlowCookie DST_MAC_MATCH_DROP_COOKIE = IdUtils.createFlowCookie("DST_MAC_MATCH_DROP");
+	
 	
 
 }

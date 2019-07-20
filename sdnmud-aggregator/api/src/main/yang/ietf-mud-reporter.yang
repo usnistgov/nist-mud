@@ -26,6 +26,7 @@ module ietf-mud-reporter {
      Copyright (c) 2019 IETF Trust and the persons identified as
      authors of the code.  All rights reserved.
 
+
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject to
      the license terms contained in, the Simplified BSD License set
@@ -68,40 +69,53 @@ module ietf-mud-reporter {
     list mud-report {
       key "time";
       description
-
         "individual records.";
+
+      leaf enforcement-point-id {
+        type string;
+        description
+           "Identifying information for the enforcement-point
+
+            (e.g. switch) that is making this report. ";
+      }
+
       leaf time {
         type yang:timestamp;
         description
           "when this happened.";
       }
+
       leaf opaqueidentifier {
         type string;
         description
-          "This is an identifier that maps to a particular
+          "REMOVE This is an identifier that maps to a particular
            device.  Its value MUST NOT be mappable back to
            any identifying information about the device.  It
            may be a suitable hash, such as SHA256.";
       }
+
       leaf direction {
         type enumeration {
           enum to-device {
             description
-              "packet was traveling toward the device";
+              "REMOVE packet was traveling toward the device";
           }
           enum from-device {
             description
-              "packet was traveling away from the device";
+              "REMOVE packet was traveling away from the device";
           }
         }
         description
           "which way packet is going";
       }
+
+
       leaf mycontrollers {
         type uint32;
         description
           "how many entries for my-controller.";
       }
+
       list controllers {
         key "uri";
         description
@@ -110,6 +124,7 @@ module ietf-mud-reporter {
           type inet:uri;
           description
             "the class URI of this controller";
+
         }
         leaf count {
           type uint32;
@@ -125,12 +140,15 @@ module ietf-mud-reporter {
              node to the manufacturer.";
         }
       }
+
       leaf samemanufacturers {
         type uint32;
         description
           "number of devices matching same
            manufacturer.";
       }
+
+
       list manufacturers {
         key "authority";
         description
@@ -153,7 +171,9 @@ module ietf-mud-reporter {
              node to the manufacturer.";
         }
       }
+
       list models {
+
         key "uri";
         description
           "list of models and how many there were.";
@@ -193,13 +213,35 @@ module ietf-mud-reporter {
         }
       }
       uses class-drop-count;
+      list ace-match-count {
+        uses pass-count;
+      }
+    }
+  }
+
+
+  grouping pass-count {
+    description
+
+     "Count of packets for each passing MUD ACE. in the MUD file.
+      The ACE's are named with the <name of the ACL> / <name of ACE>";
+    leaf ace-name {
+      type string;
+      description
+                "Name of ACE";
+    }
+
+    leaf packet-count {
+      type uint64;
+      description
+       "Pass count (count of number of packets that matched
+        this ACE and made it through";
     }
   }
 
   grouping class-drop-count {
     description
-      "Src (in case packet is Inbound to device) or Destination (in case packet is outbound from device)
-       fields of acl violating  packet are classfied.";
+      "Violating packet related to this MUD file are classfied.";
     leaf manufacturer {
       type string;
       description
@@ -229,9 +271,10 @@ module ietf-mud-reporter {
       type boolean;
     }
     leaf drop-count {
-      type uint32;
+
+      type uint64;
       description
-        "number of packets dropped for this classification";
+        "Measure of dropped packets for this classification.";
     }
   }
 }
