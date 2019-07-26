@@ -9,6 +9,10 @@ module sdnmud {
   import ietf-yang-types {
     prefix yang;
   }
+
+  import ietf-mud-reporter {
+    prefix mr;
+  }
   
   organization
     "NIST Advanced Networking Technologies Division.";
@@ -549,6 +553,23 @@ rpc get-dst-mac-classification {
 
          }
        }
+   }
+
+   rpc get-mud-reports {
+      input {
+        leaf mud-url {
+	   description
+               "The mud uri for which to deliver the report";
+           type inet:uri;
+	}
+      }
+
+      output {
+         container report {
+           description "MUD report";
+           uses mr:mud-reporter-grouping;
+         }
+      }
    }
 
 }

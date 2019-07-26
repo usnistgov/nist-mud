@@ -179,8 +179,6 @@ public class SdnmudProvider {
 
 	private OpendaylightDirectStatisticsService directStatisticsService;
 
-	private Uri lastMudUri;
-
 	private DroppedPacketsScanner droppedPacketsScanner;
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
@@ -341,8 +339,8 @@ public class SdnmudProvider {
 		
 		this.droppedPacketsScanner = new DroppedPacketsScanner(this);
 		
-		new Timer(true).schedule(droppedPacketsScanner, 0, 5*1000);
-
+		new Timer(true).schedule(droppedPacketsScanner, 0, 1000);
+		
 		LOG.info("start() <--");
 
 	}
@@ -395,6 +393,7 @@ public class SdnmudProvider {
 		this.sdnmudServiceRegistration.close();
 		this.mudProfileRegistration.close();
 		this.quaranteneDevicesListenerRegistration.close();
+		this.droppedPacketsScanner.cancel();		
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -782,6 +781,10 @@ public class SdnmudProvider {
 	
 	public DroppedPacketsScanner getDroppedPacketsScanner() {
 		return this.droppedPacketsScanner;
+	}
+
+	public Mud getMud(Uri mudUrl) {
+		return this.uriToMudMap.get(mudUrl.getValue());
 	}
 
 }

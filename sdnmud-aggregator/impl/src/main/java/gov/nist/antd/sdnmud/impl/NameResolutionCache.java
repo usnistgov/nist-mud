@@ -4,6 +4,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
@@ -42,7 +43,16 @@ public class NameResolutionCache {
 			} else
 				return false;
 		}
+		
+		public String getDomainName() {
+			return domainName;
+		}
+		
+		public Ipv4Address getAddress() {
+			return this.address;
+		}
 	}
+
 
 	private ArrayList<Ipv4Address> resolveDefaultDomain(String domainName) {
 
@@ -86,8 +96,8 @@ public class NameResolutionCache {
 		ArrayList<Ipv4Address> retval = new ArrayList<Ipv4Address>();
 		if (lookupCache.get(node) != null) {
 			for (LookupEntry entry : lookupCache.get(node)) {
-				if (entry.domainName.equals(hostName)) {
-					retval.add(entry.address);
+				if (entry.getDomainName().equals(hostName)) {
+					retval.add(entry.getAddress());
 				}
 			}
 		}
@@ -102,6 +112,18 @@ public class NameResolutionCache {
 
 	public void removeCacheLookup(InstanceIdentifier<FlowCapableNode> node) {
 		this.lookupCache.remove(node);
+	}
+	
+	public ArrayList<LookupEntry> getNameResolutions(InstanceIdentifier<FlowCapableNode> node) {
+		return this.lookupCache.get(node);
+	}
+	
+	public HashSet<String> getNames(InstanceIdentifier<FlowCapableNode> node) {
+		HashSet<String> retval = new HashSet<String>();
+		for (LookupEntry lookupEntry : this.lookupCache.get(node)) {
+			retval.add(lookupEntry.getDomainName());
+		}
+		return retval;
 	}
 
 }

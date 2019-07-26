@@ -32,6 +32,12 @@ import org.opendaylight.controller.md.sal.binding.api.ReadWriteTransaction;
 import org.opendaylight.controller.md.sal.common.api.data.LogicalDatastoreType;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+//import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.collector.rev190621.post.mud.report.input.MudReport;
+
+import 	org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.mud.reporter.extension.ReporterBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporter;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.QuarantineDevice;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInputBuilder;
@@ -57,6 +63,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudMetadataMappingInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudMetadataMappingOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudMetadataMappingOutputBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudReportsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudReportsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudReportsOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUnmappedAddressesOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetPacketCountOutput;
@@ -71,6 +80,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.UnquarantineInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRule;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRuleBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.reports.output.ReportBuilder;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
@@ -526,6 +536,25 @@ public class SdnmudServiceImpl implements SdnmudService {
 			}
 		}
 		return Futures.immediateFuture(RpcResultBuilder.<Void>success().build());
+	}
+
+	@Override
+	public Future<RpcResult<GetMudReportsOutput>> getMudReports(GetMudReportsInput input) {
+		Uri mudUrl = input.getMudUrl();
+		
+		GetMudReportsOutputBuilder gmrob = new GetMudReportsOutputBuilder();
+		ReportBuilder reportBuilder = new ReportBuilder();
+		reportBuilder.setMudurl(mudUrl);
+		Mud mud = sdnmudProvider.getMud(mudUrl);
+		if ( mud != null ) {
+			List<MudReport> mudReports = new MudReportSender(sdnmudProvider).getMudReports(mud);
+			reportBuilder.setMudReport(mudReports);
+		} else {
+			List<MudReport> mudReports = new ArrayList<MudReport>();
+			reportBuilder.setMudReport(mudReports);
+		}
+		RpcResult<GetMudReportsOutput> result = RpcResultBuilder.success(gmrob).build();
+		return new CompletedFuture<RpcResult<GetMudReportsOutput>>(result);
 	}
 
 }

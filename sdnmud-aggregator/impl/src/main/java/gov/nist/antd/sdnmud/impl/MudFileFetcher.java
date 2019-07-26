@@ -495,6 +495,7 @@ public class MudFileFetcher {
 					this.sdnmudProvider.getMudCacheDatastoreListener().putMudProfileInCache(mudUrl, cacheTimeout,
 							mudFileStr);
 				}
+				
 
 				String mudStr = gson.toJson(mudFile.get("ietf-mud:mud"));
 

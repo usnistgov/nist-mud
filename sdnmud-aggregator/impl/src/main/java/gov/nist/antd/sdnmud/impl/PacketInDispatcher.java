@@ -750,7 +750,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					
 				} else if (cookie.equals(SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE)) {
 					LOG.info("Saw a TCP SYN ACL violation");
-					Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 					// TBD -- generate event and send to update service.
 					if (dropRuleMacAddressMap.get(node) != null && dropRuleMacAddressMap.get(node).contains(srcMac)) {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
@@ -791,7 +790,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		String dstController = sdnmudProvider.getControllerMappingForAddress(nodeId, dstIp);
 		
 		if (dstController != null ) {
-			HashSet<String> controllers = this.dropRuleControllerMap.get(nodeId);
+			HashSet<String> controllers = this.dropRuleControllerMap.get(node);
 			if ( controllers == null) {
 				controllers = new HashSet<String>();
 				dropRuleControllerMap.put(node,controllers);
@@ -819,6 +818,10 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	 */
 	public Collection<MacAddress> getDroppedMacs(InstanceIdentifier<FlowCapableNode> node) {
 		return this.dropRuleMacAddressMap.get(node);
+	}
+	
+	public Collection<String> getDropRuleControllers(InstanceIdentifier<FlowCapableNode> node) {
+		return this.dropRuleControllerMap.get(node);
 	}
 
 }

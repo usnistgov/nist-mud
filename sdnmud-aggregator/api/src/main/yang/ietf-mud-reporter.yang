@@ -30,6 +30,7 @@ module ietf-mud-reporter {
      without modification, is permitted pursuant to, and subject to
      the license terms contained in, the Simplified BSD License set
      forth in Section 4.c of the IETF Trust's Legal Provisions
+
      Relating to IETF Documents
        (https://trustee.ietf.org/license-info).
 
@@ -74,38 +75,15 @@ module ietf-mud-reporter {
         type string;
         description
            "Identifying information for the enforcement-point
-
-            (e.g. switch) that is making this report. ";
+            (e.g. switch) that is making this report. This is
+            an opaque identifier. ";
       }
+
 
       leaf time {
         type yang:timestamp;
         description
           "when this happened.";
-      }
-
-      leaf opaqueidentifier {
-        type string;
-        description
-          "REMOVE This is an identifier that maps to a particular
-           device.  Its value MUST NOT be mappable back to
-           any identifying information about the device.  It
-           may be a suitable hash, such as SHA256.";
-      }
-
-      leaf direction {
-        type enumeration {
-          enum to-device {
-            description
-              "REMOVE packet was traveling toward the device";
-          }
-          enum from-device {
-            description
-              "REMOVE packet was traveling away from the device";
-          }
-        }
-        description
-          "which way packet is going";
       }
 
 
@@ -130,14 +108,6 @@ module ietf-mud-reporter {
           description
             "number of devices serving this class.";
         }
-        leaf ipaddress {
-
-          type inet:ip-address;
-          description
-            "IP address of the controller.  Note that the MUD
-             reporter MUST NOT transmit this contents of this
-             node to the manufacturer.";
-        }
       }
 
       leaf samemanufacturers {
@@ -148,38 +118,17 @@ module ietf-mud-reporter {
       }
 
 
-      list manufacturers {
-        key "authority";
-        description
-          "list of models and how many there were.";
-        leaf authority {
-          type inet:host;
-          description
-            "the manufacturer domain";
-        }
-        leaf count {
-          type uint32;
-          description
-            "number of devices serving this class.";
-        }
-        leaf ipaddress {
-          type inet:ip-address;
-          description
-            "IP address of the controller.  Note that the MUD
-             reporter MUST NOT transmit this contents of this
-             node to the manufacturer.";
-        }
-      }
 
       list models {
-
         key "uri";
+
         description
-          "list of models and how many there were.";
+          "List of models and how many there were.";
         leaf uri {
           type inet:uri;
           description
             "the URI of this model";
+
         }
         leaf count {
           type uint32;
@@ -195,15 +144,18 @@ module ietf-mud-reporter {
              node to the manufacturer.";
         }
       }
+
       list domains {
         key "hostname";
         description
           "list of hosts, and ip addresses if known.";
+
         leaf hostname {
-          type inet:host;
+          type string;
           description
             "the host listed";
         }
+
         leaf-list ip-addresses {
           type inet:ip-address;
           description
@@ -212,15 +164,26 @@ module ietf-mud-reporter {
         }
       }
 
+      leaf-list opaque-identifier {
+          type string;
+          description
+            "List of opaque identifiers
+             for the devices generating this report. ";
+
+      }
+
       list drop-counts {
          uses drop-count;
       }
 
       list match-counts {
+
         uses pass-count;
       }
     }
+
   }
+
 
   grouping pass-count {
     description
@@ -229,7 +192,7 @@ module ietf-mud-reporter {
     leaf ace-name {
       type string;
       description
-                "Name of ACE";
+             "Name of ACE";
     }
 
     leaf packet-count {
@@ -244,33 +207,41 @@ module ietf-mud-reporter {
     description
       "Violating packet related to this MUD file are classfied.";
     choice drop-type {
-    case  model {
-        leaf name {
+    case blocked {
+      leaf ace-name {
          type string;
          description
-           "model name";
-         }
-     }
-     case local-networks {
-       description
-         "this packet matches the local networks
-         classification";
-     }
-     case controller {
-      leaf name {
-      type string;
-      description
-        "controller name";
+          "No mud rule matched
+           (has a special ace-name of NOMATCH)";
+        }
       }
-     }
-     case default {
-      description
-        "Default classification -- Could not classify dropped packet
-        using one of the classifications above. ";
-      }
-    }
-    leaf drop-count {
 
+     case tcp-blocked {
+       leaf ace-name {
+          type string;
+          description
+           "TCP connection initiated in the wrong direction.";
+        }
+      }
+     }
+
+     leaf direction {
+        type enumeration {
+          enum to-device {
+
+            description
+              "Packet was traveling toward the device";
+          }
+          enum from-device {
+            description
+              "Packet was traveling away from the device";
+          }
+        }
+        description
+          "which way packet is going";
+     }
+
+    leaf drop-count {
       type uint64;
       description
         "Measure of dropped packets for this classification.";
