@@ -14,8 +14,6 @@ import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 public class DroppedPacketsScanner extends TimerTask {
 	private SdnmudProvider sdnmudProvider;
 
-	
-
 	private HashMap<String, PerSwitchDropCount> dropCounterMap = new HashMap<>();
 
 	// Drop count by class.
@@ -64,17 +62,10 @@ public class DroppedPacketsScanner extends TimerTask {
 						String srcModel = IdUtils.getModel(Long.valueOf(srcModelId).intValue()).getValue();
 						String dstModel = IdUtils.getModel(Long.valueOf(dstModelId).intValue()).getValue();
 
-						perSwitchDropCount.incrementModelDropCount(dstModel);
-						perSwitchDropCount.incrementModelDropCount(srcModel);
-						
-						if (srcBlockedFlag) {
-							perSwitchDropCount.incrementBlockedDropCount(srcModel);
-						}
+						perSwitchDropCount.incrementBlockedFromDropCount(srcModel);
 
-						if (dstBlockedFlag) {
-							perSwitchDropCount.incrementBlockedDropCount(dstModel);
-						}
-						
+						perSwitchDropCount.incrementBlockedToDropCount(dstModel);
+
 						if (srcLocalNetworksFlag) {
 							perSwitchDropCount.incrementLocalNetworksDropCount(srcModel);
 						}
@@ -82,6 +73,7 @@ public class DroppedPacketsScanner extends TimerTask {
 						if (dstLocalNetworksFlag) {
 							perSwitchDropCount.incrementLocalNetworksDropCount(srcModel);
 						}
+
 					}
 				}
 			}
@@ -89,11 +81,11 @@ public class DroppedPacketsScanner extends TimerTask {
 		}
 
 	}
-	
+
 	public PerSwitchDropCount getDropCount(String nodeId, String mudUri) {
 		return this.dropCounterMap.get(nodeId);
 	}
-	
+
 	public void deleteDropCounter(String nodeId) {
 		this.dropCounterMap.remove(nodeId);
 	}

@@ -1,11 +1,13 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.util.HashMap;
+import java.util.Map;
 
 class PerSwitchDropCount {
-	private HashMap<String, Integer> modelDropCount = new HashMap<>();
-	private HashMap<String, Integer> localNetworksDropCount = new HashMap<>();
-	private HashMap<String, Integer> blockedDropCount = new HashMap<>();
+	private HashMap<String, Integer> blockedFromDropCount = new HashMap<>();
+	private HashMap<String, Integer> blockedToDropCount = new HashMap<>();
+	private HashMap<String, Integer> controllerDropCount = new HashMap<>();
+    private int localNetworksDropCount = 0;
 
 	private void incrementDropCount(HashMap<String, Integer> dropCountTable, String mudUrl) {
 		Integer dc = dropCountTable.get(mudUrl);
@@ -17,16 +19,34 @@ class PerSwitchDropCount {
 		dropCountTable.put(mudUrl, dc);
 	}
 
-	void incrementModelDropCount(String mudUrl) {
-		incrementDropCount(modelDropCount, mudUrl);
-	}
 
 	void incrementLocalNetworksDropCount(String mudUrl) {
-		incrementDropCount(localNetworksDropCount, mudUrl);
+		this.localNetworksDropCount ++;
 	}
 
-	void incrementBlockedDropCount(String mudUrl) {
-		incrementDropCount(blockedDropCount, mudUrl);
+	void incrementBlockedFromDropCount(String mudUrl) {
+		incrementDropCount(blockedFromDropCount, mudUrl);
+	}
+	
+	void incrementBlockedToDropCount(String mudUrl) {
+		incrementDropCount(blockedToDropCount, mudUrl);
+	}
+	
+	void incrementControllerDropCount(String controllerUrl) {
+		incrementDropCount(controllerDropCount, controllerUrl);
+	}
+	
+	
+	int getLocalNetworksDropCount() {
+		return this.localNetworksDropCount;
+	}
+	
+	Map<String,Integer> getBlockedFromDropCount() {
+		return this.blockedFromDropCount;
+	}
+	
+	Map<String,Integer> getBlockedToDropCount() {
+		return this.blockedFromDropCount;
 	}
 }
 

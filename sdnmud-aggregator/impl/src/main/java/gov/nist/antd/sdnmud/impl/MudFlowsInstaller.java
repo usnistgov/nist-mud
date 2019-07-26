@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -213,11 +214,12 @@ public class MudFlowsInstaller {
 	private void registerTcpSynFlagCheck(String mudUri, String aclName, String aceName,
 			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask,
 			Ipv4Address sourceAddress, int sourcePort, Ipv4Address destinationAddress, int destinationPort,
-			int priority, short tableId) {
+			boolean toDev, int priority, short tableId) {
 
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
-		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/TCP_DIRECTION_CHECK");
+		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/"  +
+		            (toDev ? SdnMudConstants.DROP_ON_TCP_SYN_INBOUND : SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND));
 
 		FlowCookie flowCookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
 
@@ -428,7 +430,6 @@ public class MudFlowsInstaller {
 
 	private void installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(String mudUri,
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
-		// TODO -- pass priority in here
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK.or(SdnMudConstants.SRC_QUARANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.SRC_QUARANTENE_FLAG);
 		FlowId flowId = IdUtils.createFlowId(mudUri + "/QUARANTINE_SRC_DROP");
@@ -445,7 +446,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK.or(SdnMudConstants.DST_QURANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.DST_QUARANTENE_FLAG);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/QUARANTINE_DST_DROP");
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.DROP_ON_DST_MODEL_MATCH  + "/QUARANTINE");
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -570,8 +571,9 @@ public class MudFlowsInstaller {
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (synFlagCheck) {
 			assert protocol == SdnMudConstants.TCP_PROTOCOL;
+			boolean toDev = false;
 			registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, null, srcPort,
-					destinationAddress, destinationPort, priority + 1, sdnmudProvider.getSrcMatchTable());
+					destinationAddress, destinationPort, toDev, priority + 1, sdnmudProvider.getSrcMatchTable());
 		}
 	}
 
@@ -630,8 +632,9 @@ public class MudFlowsInstaller {
 			if (checkTcpSyn) {
 				// Check for TCP SYN when packet arrives at the controller.
 				assert protocol == SdnMudConstants.TCP_PROTOCOL;
+				boolean toDev = true;
 				this.registerTcpSynFlagCheck(mudUri, aclName, aceName, node, metadata, metadataMask, srcAddress,
-						sourcePort, null, destinationPort, priority + 1, sdnmudProvider.getDstMatchTable());
+						sourcePort, null, destinationPort, toDev, priority + 1, sdnmudProvider.getDstMatchTable());
 			}
 
 		} catch (Exception ex) {
@@ -849,7 +852,7 @@ public class MudFlowsInstaller {
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 				srcPort, destinationPort, tableId, priority, newMetadata, newMetadataMask, false, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		if (SdnMudConstants.MUDMAKER_HACK ) {
+		if (SdnMudConstants.MUDMAKER_HACK) {
 			if ((srcPort == -1 && destinationPort != -1) || (destinationPort == -1 && srcPort != -1)) {
 				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName +  "/" + 2);
 				fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
@@ -862,14 +865,13 @@ public class MudFlowsInstaller {
 		if (direction != null) {
 			flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/TCP_DIRECTION_CHECK");
 			FlowCookie cookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
-		
-			if (fromDevice && direction.getName().equals(Direction.ToDevice.getName())) {
-					this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask,  destinationPort, srcPort,
-						priority + 1, sdnmudProvider.getSrcMatchTable());
 
+			if (fromDevice && direction.getName().equals(Direction.ToDevice.getName())) {
+				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort, 
+						priority + 1, sdnmudProvider.getSrcMatchTable());
 			} else if ((!fromDevice) && direction.getName().equals(Direction.FromDevice.getName())) {
 				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort,
-						priority + 1, sdnmudProvider.getSrcMatchTable());
+						 priority + 1, sdnmudProvider.getSrcMatchTable());
 			}
 		}
 	}
@@ -1099,12 +1101,8 @@ public class MudFlowsInstaller {
 			HashSet<String> enabledAceNames = new HashSet<String>();
 			boolean hasQuarantineDevicePolicy = false;
 
-			if (mud.getAugmentation(
-					org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class) != null) {
-				QuarantinedDevicePolicy qdp = mud
-						.getAugmentation(
-								org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class)
-						.getQuarantinedDevicePolicy();
+			if (mud.getAugmentation(org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class) != null) {
+				QuarantinedDevicePolicy qdp = mud.getAugmentation(org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.nist.mud.rev190428.Mud1.class).getQuarantinedDevicePolicy();
 				if (qdp != null) {
 					hasQuarantineDevicePolicy = true;
 					List<EnabledAceNames> aceNames = qdp.getEnabledAceNames();
@@ -1120,7 +1118,10 @@ public class MudFlowsInstaller {
 			} else {
 				hasQuarantineDevicePolicy = false;
 			}
-
+			
+			
+			boolean hasMudReporter = true;
+			// BUG BUG -- this has to be checked.
 			if (sdnmudProvider.getControllerClassMap(cpeNodeId) == null) {
 				LOG.info("Cannot find ControllerClass mapping for the switch  -- not installing ACLs. nodeUrl "
 						+ cpeNodeId);
@@ -1165,7 +1166,7 @@ public class MudFlowsInstaller {
 				 * packet flows that will drop the packet if a MUD rule does not match.
 				 */
 
-				if (hasQuarantineDevicePolicy) {
+				if (hasQuarantineDevicePolicy || hasMudReporter) {
 
 					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node,
 							SdnMudConstants.SRC_MATCHED_DROP_ON_QUARANTINE_PRIORITY);
@@ -1173,8 +1174,9 @@ public class MudFlowsInstaller {
 							SdnMudConstants.DST_MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 
 				}
+				
 
-				if (hasQuarantineDevicePolicy) {
+				if (hasQuarantineDevicePolicy || hasMudReporter ) {
 					// If the packet is quarantined already it will hit this rule first.
 					this.installGotoDropTableOnQuaranteneSrcModelMetadataMatchFlow(mudUri.getValue(), node,
 							SdnMudConstants.SRC_MATCHED_DROP_PACKET_FLOW_PRIORITY + 1);
@@ -1391,5 +1393,36 @@ public class MudFlowsInstaller {
 		this.nameResolutionCache.clear();
 		LOG.info("clearMudRules: done cleaning mud rules");
 	}
+
+	public Collection<String> getDnsNames(String nodeId, String mudUrl) {
+		ArrayList<String> retval = new ArrayList<String>();
+
+		List<NameResolutionCacheEntry> entries = this.nameResolutionCache.get(nodeId);
+
+		if (entries != null) {
+			for (NameResolutionCacheEntry entry : entries) {
+				if ( mudUrl.contentEquals(entry.mudUrl)) {
+			     retval.add(entry.domainName);
+				}
+			}
+		}
+		return retval;
+	}
+	
+	public Collection<String> getControllers(String nodeId, String mudUrl) {
+		ArrayList<String> retval = new ArrayList<String>();
+
+		List<NameResolutionCacheEntry> entries = this.controllerResolutionCache.get(nodeId);
+
+		if (entries != null) {
+			for (NameResolutionCacheEntry entry : entries) {
+				if ( mudUrl.contentEquals(entry.mudUrl)) {
+			     retval.add(entry.domainName);
+				}
+			}
+		}
+		return retval;
+	}
+	
 
 }
