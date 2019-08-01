@@ -77,9 +77,13 @@ class TestAccess(unittest.TestCase) :
         result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a failed icmp pings")
 
-        print "udpping otherman on port 800"
-        result = self.runAndReturnOutput(h1,"python ../unittest/util/udpping.py --port 800 --host 10.0.0.3 --client --quiet")
-        self.assertTrue(int(result) >= 5, "expect successful ping")
+        print "wget otherman on port 800 -- expect success"
+        result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
+
+        print "wget sensor on port 800 from otherman -- expect failure"
+        result = h3.cmdPrint("wget http://10.0.0.1:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
         print "wget get from local net  from server on port 80 running on sensor - this should work"
         h5 = hosts[4]
@@ -281,12 +285,13 @@ def setupServers():
     controller_controller_nist_gov.cmdPrint("python -m SimpleHTTPServer  80&")
     controller_controller_nist_gov.cmdPrint("python -m SimpleHTTPServer  8080&")
     controller_mycontroller_sensor.cmdPrint("python ../unittest/util/udpping.py --port 4000 --server&") 
-    otherman.cmdPrint("python ../unittest/util/udpping.py --port 800 --server&")
+    otherman.cmdPrint("python -m SimpleHTTPServer 800&")
     h9.cmdPrint('python -m SimpleHTTPServer 443&')
     h10.cmdPrint('python -m SimpleHTTPServer 80&')
     #inbound connections allowed on port 80 http
     sensor.cmdPrint("python -m SimpleHTTPServer 80&")
     sensor.cmdPrint("python -m SimpleHTTPServer 8080&")
+    sensor.cmdPrint("python -m SimpleHTTPServer 800&")
     sameman.cmdPrint("python -m SimpleHTTPServer 8888&")
     localnet.cmdPrint("python -m SimpleHTTPServer 888&")
     localnet.cmdPrint("python -m SimpleHTTPServer 80&")
