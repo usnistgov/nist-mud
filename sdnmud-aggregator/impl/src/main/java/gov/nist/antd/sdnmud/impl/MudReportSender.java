@@ -1,224 +1,237 @@
 package gov.nist.antd.sdnmud.impl;
 
-import java.math.BigInteger;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.KeyManagementException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
+import java.security.SignatureException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.DropCount.Direction;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporter;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporterBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.type.BlockedBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.type.TcpBlockedBuilder;
-import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
-
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReportBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.Controllers;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.ControllersBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.Domains;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DomainsBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DropCounts;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DropCountsBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.MatchCounts;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.MatchCountsBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInputBuilder;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.FlowCapableNode;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.inventory.rev130819.tables.table.Flow;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.flow.and.statistics.map.list.FlowAndStatisticsMapList;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
-import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
-import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Map.Entry;
 import java.util.TimerTask;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
-public class MudReportSender  {
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.mud.reporter.extension.Reporter;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Timestamp;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudConfig;
+import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.YangInstanceIdentifier;
+import org.opendaylight.yangtools.yang.data.api.schema.MapEntryNode;
+import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
+import org.opendaylight.yangtools.yang.data.api.schema.stream.NormalizedNodeStreamWriter;
+import org.opendaylight.yangtools.yang.data.api.schema.stream.NormalizedNodeWriter;
+import org.opendaylight.yangtools.yang.data.codec.gson.JSONCodecFactory;
+import org.opendaylight.yangtools.yang.data.codec.gson.JSONNormalizedNodeStreamWriter;
+import org.opendaylight.yangtools.yang.data.codec.gson.JsonWriterFactory;
+import org.opendaylight.yangtools.yang.model.api.SchemaContext;
+import org.opendaylight.yangtools.yang.model.api.SchemaNode;
+import org.opendaylight.yangtools.yang.model.api.SchemaPath;
+import org.opendaylight.yangtools.yang.model.util.SchemaContextUtil;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.IetfMudReporterData;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporter;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporterBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporterGrouping;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReportBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
+import org.apache.http.conn.ssl.TrustStrategy;
+import org.apache.http.conn.ssl.X509HostnameVerifier;
+import org.apache.http.entity.ByteArrayEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+
+public class MudReportSender extends TimerTask {
+
 	private static final Logger LOG = LoggerFactory.getLogger(MudReportSender.class);
+	private SdnmudProvider provider;
+	private HashMap<Uri, Long> lastUpdated = new HashMap<Uri, Long>();
 
-	private SdnmudProvider sdnmudProvider;
-	
-	public MudReportSender(SdnmudProvider sdnmudProvider) {
-		this.sdnmudProvider = sdnmudProvider;
+	public MudReportSender(SdnmudProvider provider) {
+		this.provider = provider;
 	}
-	
-	public List<MudReport>  getMudReports(Mud mud) {
 
-			ArrayList<MudReport> mudReports = new ArrayList<MudReport>();
+	private boolean verifyCertificateChain(Certificate[] certs) throws CertificateException {
 
-			for (String switchId : sdnmudProvider.getCpeSwitches()) {
+		int n = certs.length;
+		for (int i = 0; i < n - 1; i++) {
 
-				MudReportBuilder mudReportBuilder = new MudReportBuilder();
-				mudReportBuilder.setEnforcementPointId(switchId);
-				ArrayList<Controllers> controllersList = new ArrayList<Controllers>();
-
-				Map<String, List<Ipv4Address>> classMapping = sdnmudProvider.getControllerClassMap(switchId);
-				InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId);
-
-				for (String uri : sdnmudProvider.getMudFlowsInstaller().getControllers(switchId,
-						mud.getMudUrl().getValue())) {
-					if (!uri.contentEquals(mud.getMudUrl().getValue())) {
-						ControllersBuilder controllersBuilder = new ControllersBuilder();
-						controllersBuilder.setUri(new Uri(uri));
-						if (classMapping.get(uri) != null) {
-							controllersBuilder.setCount(Long.valueOf(0L));
-						} else {
-							controllersBuilder.setCount(Long.valueOf(classMapping.get(uri).size()));
-
-						}
-						controllersList.add(controllersBuilder.build());
-					}
-				}
-
-				if (!controllersList.isEmpty()) {
-					mudReportBuilder.setControllers(controllersList);
-				}
-
-				// BUGBUG -- mycontroller mapping is wrong.
-
-				Integer myControllerCount = classMapping.get(mud.getMudUrl().getValue()) == null ? 0
-						: classMapping.get(mud.getMudUrl().getValue()).size();
-				if (myControllerCount != 0) {
-					mudReportBuilder.setMycontrollers(Long.valueOf(myControllerCount));
-				}
-				ArrayList<DropCounts> dropCountsList = new ArrayList<DropCounts>();
-
-				/*
-				 * 
-				 * Map<String, Integer> blockedDropCounts =
-				 * perSwitchDropCount.getBlockedFromDropCount();
-				 * 
-				 * for (String url : blockedDropCounts.keySet()) { BlockedBuilder blockedBuilder
-				 * = new BlockedBuilder(); blockedBuilder.setUrl(new Uri(url));
-				 * DropCountsBuilder dcB = new DropCountsBuilder();
-				 * dcB.setDropType(blockedBuilder.build());
-				 * dcB.setDropCount(BigInteger.valueOf(blockedDropCounts.get(url)));
-				 * dcB.setDirection(Direction.FromDevice); dropCountsList.add(dcB.build()); }
-				 * 
-				 * Map<String, Integer> blockedToCounts =
-				 * perSwitchDropCount.getBlockedToDropCount();
-				 * 
-				 * for (String url : blockedToCounts.keySet()) { BlockedBuilder blockedBuilder =
-				 * new BlockedBuilder(); blockedBuilder.setUrl(new Uri(url)); DropCountsBuilder
-				 * dcB = new DropCountsBuilder(); dcB.setDropType(blockedBuilder.build());
-				 * dcB.setDropCount(BigInteger.valueOf(blockedDropCounts.get(url)));
-				 * dcB.setDirection(Direction.ToDevice); dropCountsList.add(dcB.build()); }
-				 * 
-				 * int localNetworksDropCounts = perSwitchDropCount.getLocalNetworksDropCount();
-				 * LocalNetworksBuilder blockedBuilder = new LocalNetworksBuilder();
-				 * DropCountsBuilder dcB = new DropCountsBuilder();
-				 * dcB.setDropCount(BigInteger.valueOf(localNetworksDropCounts));
-				 * dcB.setDropType(blockedBuilder.build()); dropCountsList.add(dcB.build());
-				 * mudReportBuilder.setDropCounts(dropCountsList);
-				 */
-
-				NameResolutionCache nameResolutionCache = this.sdnmudProvider.getNameResolutionCache();
-
-				Collection<String> names = this.sdnmudProvider.getMudFlowsInstaller().getDnsNames(switchId,
-						mud.getMudUrl().getValue());
-				ArrayList<Domains> domainsList = new ArrayList<Domains>();
-
-				for (String name : names) {
-					List<Ipv4Address> addresses = nameResolutionCache.doNameLookup(node, name);
-					if (addresses != null && !addresses.isEmpty()) {
-						DomainsBuilder domainsBuilder = new DomainsBuilder();
-						List<IpAddress> ipAddresses = new ArrayList<IpAddress>();
-						for (Ipv4Address address : addresses) {
-							IpAddress ipAddress = new IpAddress(address);
-							ipAddresses.add(ipAddress);
-						}
-						domainsBuilder.setHostname(name);
-						domainsBuilder.setIpAddresses(ipAddresses);
-						domainsList.add(domainsBuilder.build());
-					}
-				}
-
-				mudReportBuilder.setDomains(domainsList);
-				ArrayList<MatchCounts> matchCountsList = new ArrayList<MatchCounts>();
-				try {
-					Collection<Flow> flows = sdnmudProvider.getFlowCommitWrapper().getFlows(node);
-					MatchCountsBuilder mcb = new MatchCountsBuilder();
-					for (Flow flow : flows) {
-						if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue())) {
-							InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
-							NodeRef nodeRef = new NodeRef(outNode);
-
-							GetFlowStatisticsInputBuilder inputBuilder = new GetFlowStatisticsInputBuilder();
-
-							inputBuilder.setFlowName(flow.getFlowName());
-							inputBuilder.setMatch(flow.getMatch());
-							inputBuilder.setTableId(flow.getTableId());
-							inputBuilder.setInstructions(flow.getInstructions());
-							inputBuilder.setNode(nodeRef);
-
-							GetFlowStatisticsOutput output = sdnmudProvider.getDirectStatisticsService()
-									.getFlowStatistics(inputBuilder.build()).get().getResult();
-							if (output != null && output.getFlowAndStatisticsMapList() != null) {
-								LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
-
-								for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
-									if (flow.getId().getValue()
-											.indexOf(SdnMudConstants.DROP_ON_SRC_MODEL_MATCH) != -1) {
-										DropCountsBuilder dcb1 = new DropCountsBuilder();
-										BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-										blockedBuilder1.setAceName(flow.getFlowName());
-										dcb1.setDropType(blockedBuilder1.build());
-										dcb1.setDropCount(fmaplist.getPacketCount().getValue());
-										dcb1.setDirection(Direction.FromDevice);
-										dropCountsList.add(dcb1.build());
-									} else if (flow.getId().getValue()
-											.indexOf(SdnMudConstants.DROP_ON_DST_MODEL_MATCH) != -1) {
-										DropCountsBuilder dcb1 = new DropCountsBuilder();
-
-										BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-										blockedBuilder1.setAceName(flow.getFlowName());
-										dcb1.setDropType(blockedBuilder1.build());
-										dcb1.setDropCount(fmaplist.getPacketCount().getValue());
-										dcb1.setDirection(Direction.ToDevice);
-										dropCountsList.add(dcb1.build());
-									} else if (flow.getId().getValue().indexOf(SdnMudConstants.DROP_ON_TCP_SYN_INBOUND) != -1) {
-										DropCountsBuilder dcb1 = new DropCountsBuilder();
-										dcb1.setDirection(Direction.ToDevice);
-									    dcb1.setDropCount(fmaplist.getPacketCount().getValue());
-									    TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									    bb.setAceName(flow.getFlowName());
-									    dropCountsList.add(dcb1.build());
-									} else if ( flow.getId().getValue().indexOf(SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND) != -1) {
-										DropCountsBuilder dcb1 = new DropCountsBuilder();
-										dcb1.setDirection(Direction.FromDevice);
-									    dcb1.setDropCount(fmaplist.getPacketCount().getValue());
-									    TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									    bb.setAceName(flow.getFlowName());
-									    dropCountsList.add(dcb1.build());
-									} else {
-										mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-										mcb.setAceName(flow.getFlowName());
-										matchCountsList.add(mcb.build());
-									}
-								}
-							} else {
-								LOG.info("null FlowAndStatisticsMapList");
-							}
-						}
-					}
-				} catch (Exception ex) {
-					LOG.error("Exception getting flow stats ", ex);
-				}
-				mudReportBuilder.setMatchCounts(matchCountsList);
-				mudReports.add(mudReportBuilder.build());
-
+			X509Certificate cert = (X509Certificate) certs[i];
+			cert.checkValidity();
+			X509Certificate issuer = (X509Certificate) certs[i + 1];
+			if (cert.getIssuerX500Principal().equals(issuer.getSubjectX500Principal()) == false) {
+				return false;
 			}
-		    return mudReports;
+			try {
+				cert.verify(issuer.getPublicKey());
+			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException e) {
+				return false;
+			}
+		}
+		X509Certificate last = (X509Certificate) certs[n - 1];
+		
+		if (last.getIssuerX500Principal().equals(last.getSubjectX500Principal())) {
+			// Issuer == subject means it is self signed.
+			try {
+				last.verify(last.getPublicKey());
+				TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+				tmf.init((KeyStore) null);
+				X509TrustManager defaultTm = null;
+				for (TrustManager tm : tmf.getTrustManagers()) {
+					if (tm instanceof X509TrustManager) {
+						defaultTm = (X509TrustManager) tm;
+						break;
+					}
+				}
+				if (defaultTm == null) {
+					LOG.error("Could not find default TM");
+					return false;
+				}
+				boolean verified = false;
+				for (Certificate cf : defaultTm.getAcceptedIssuers()) {
+					if (cf.equals(last)) {
+						LOG.info("Trust chain verified");
+						verified = true;
+					}
+				}
+				return verified;
+			} catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchProviderException | SignatureException
+					| KeyStoreException e) {
+				return false;
+			}
+		}
+
+		return false;
+
+	}
+
+	private void doPost(String reporterUri, String report) throws NoSuchAlgorithmException, KeyStoreException, KeyManagementException,
+			ClientProtocolException, IOException {
+		
+		X509HostnameVerifier hv;
+		SdnmudConfig sdnmudConfig = provider.getSdnmudConfig();
+		SSLContextBuilder builder = new SSLContextBuilder();
+
+		if (!sdnmudConfig.isStrictHostnameVerify()) {
+			hv = SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER;
+		} else {
+			hv = SSLConnectionSocketFactory.STRICT_HOSTNAME_VERIFIER;
+		}
+
+		if (sdnmudConfig.isTrustSelfSignedCert()) {
+			builder.loadTrustMaterial(null, new TrustSelfSignedStrategy());
+		} else {
+			TrustStrategy trustStrategy = new TrustStrategy() {
+				@Override
+				public boolean isTrusted(X509Certificate[] certs, String authType) throws CertificateException {
+					return verifyCertificateChain(certs);
+				}
+			};
+
+			builder.loadTrustMaterial(null, trustStrategy);
+		}
+
+		SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(builder.build(), hv);
+
+		CloseableHttpClient httpclient = HttpClients.custom().setSSLSocketFactory(sslsf).build();
+
+		HttpPost httpPost = new HttpPost(reporterUri);
+		HttpEntity entity = new ByteArrayEntity(report.getBytes("UTF-8"));
+		httpPost.setEntity(entity);
+
+		CloseableHttpResponse response = httpclient.execute(httpPost);
+		if ( response.getStatusLine().getStatusCode() != 200) {
+			LOG.error("Error posting log record");
+		}
+	}
+
+	private String doConvert(SchemaPath schemaPath, NormalizedNode<?, ?> data, JSONCodecFactory codecFactory) {
+		final StringWriter writer = new StringWriter();
+		final JsonWriter jsonWriter = JsonWriterFactory.createJsonWriter(writer);
+		final NormalizedNodeStreamWriter jsonStream;
+		if (data instanceof MapEntryNode) {
+			jsonStream = JSONNormalizedNodeStreamWriter.createNestedWriter(codecFactory, schemaPath, null, jsonWriter);
+		} else {
+			jsonStream = JSONNormalizedNodeStreamWriter.createExclusiveWriter(codecFactory, schemaPath, null,
+					jsonWriter);
+		}
+		final NormalizedNodeWriter nodeWriter = NormalizedNodeWriter.forStreamWriter(jsonStream);
+		try {
+			nodeWriter.write(data);
+			nodeWriter.flush();
+			String jsonValue = writer.toString();
+			return jsonValue;
+		} catch (IOException e) {
+			LOG.error("Error converting normalized ndoe to string", e);
+			return null;
+		}
+	}
+
+	@Override
+	public void run() {
+		Collection<Mud> mudFiles = provider.getMudProfiles();
+
+		for (Mud mud : mudFiles) {
+			Uri mudUrl = mud.getMudUrl();
+			long currentTime = System.currentTimeMillis();
+
+			if (mud.getAugmentation(Mud1.class) != null) {
+				Reporter reporter = mud.getAugmentation(Mud1.class).getReporter();
+				if (reporter != null) {
+					// int intervalMillis = reporter.getFrequency().intValue() *60* 1000;
+					int intervalMillis = reporter.getFrequency().intValue() * 100;
+					long currentTimeMilis = System.currentTimeMillis();
+					if (!lastUpdated.containsKey(mudUrl)
+							|| (currentTimeMilis - lastUpdated.get(mudUrl)) >= intervalMillis) {
+						MudReporterBuilder mudReporterBuilder = new MudReporterBuilder();
+						List<MudReport> mudReportList = new ArrayList<MudReport>();
+
+						for (String switchId : provider.getCpeSwitches()) {
+							MudReport mudReport = new MudReportGenerator(provider).getMudReport(mud, switchId);
+							mudReportList.add(mudReport);
+
+						}
+						mudReporterBuilder.setMudReport(mudReportList);
+						mudReporterBuilder.setMudurl(mudUrl);
+						MudReporter mudReporter = mudReporterBuilder.build();
+						InstanceIdentifier<MudReporter> ii = InstanceIdentifier.create(MudReporter.class);
+						BindingNormalizedNodeSerializer codec = provider.getBindingNormalizedNodeSerializer();
+						Entry<YangInstanceIdentifier, NormalizedNode<?, ?>> e = codec.toNormalizedNode(ii, mudReporter);
+						YangInstanceIdentifier yii = e.getKey();
+						NormalizedNode<?, ?> nn = e.getValue();
+						SchemaContext sc = provider.getDomSchemaService().getGlobalContext();
+						JSONCodecFactory codecFactory = JSONCodecFactory.createLazy(sc);
+						SchemaPath schemaPath = SchemaPath.create(true, MudReporter.QNAME);
+						SchemaPath parent = schemaPath.getParent();
+						LOG.info("MUD REPORT = " + doConvert(parent, nn, codecFactory));
+
+					}
+				}
+			}
+		}
+
 	}
 
 }

@@ -553,6 +553,7 @@ public class SdnmudServiceImpl implements SdnmudService {
 			List<MudReport> mudReports = new ArrayList<MudReport>();
 			reportBuilder.setMudReport(mudReports);
 		}
+		gmrob.setReport(reportBuilder.build());
 		RpcResult<GetMudReportsOutput> result = RpcResultBuilder.success(gmrob).build();
 		return new CompletedFuture<RpcResult<GetMudReportsOutput>>(result);
 	}

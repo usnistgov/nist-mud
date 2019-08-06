@@ -179,7 +179,9 @@ public class SdnmudProvider {
 
 	private OpendaylightDirectStatisticsService directStatisticsService;
 
-	private DroppedPacketsScanner droppedPacketsScanner;
+	private DOMSchemaService domSchemaService;
+
+	private MudReportSender mudReporter;
 
 	public SdnmudProvider(final DataBroker dataBroker, SdnmudConfig sdnmudConfig, SalFlowService flowService,
 			OpendaylightFlowStatisticsService flowStatisticsService,
@@ -337,9 +339,12 @@ public class SdnmudProvider {
 		// Latency of 10 seconds for the scan.
 		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
 		
-		this.droppedPacketsScanner = new DroppedPacketsScanner(this);
+		//this.droppedPacketsScanner = new DroppedPacketsScanner(this);
 		
-		new Timer(true).schedule(droppedPacketsScanner, 0, 1000);
+		//new Timer(true).schedule(droppedPacketsScanner, 0, 1000);
+		
+		this.mudReporter = new MudReportSender(this);
+		new Timer(true).schedule(mudReporter, 5*1000, 1000);
 		
 		LOG.info("start() <--");
 
@@ -393,7 +398,6 @@ public class SdnmudProvider {
 		this.sdnmudServiceRegistration.close();
 		this.mudProfileRegistration.close();
 		this.quaranteneDevicesListenerRegistration.close();
-		this.droppedPacketsScanner.cancel();		
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -784,10 +788,6 @@ public class SdnmudProvider {
 		return this.sdnmudConfig.getMfgIdRuleCacheTimeout().intValue();
 	}
 	
-	public DroppedPacketsScanner getDroppedPacketsScanner() {
-		return this.droppedPacketsScanner;
-	}
-
 	public Mud getMud(Uri mudUrl) {
 		return this.uriToMudMap.get(mudUrl.getValue());
 	}

@@ -59,6 +59,8 @@ import org.opendaylight.openflowplugin.api.OFConstants;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.mud.reporter.extension.Reporter;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.AceViolationNotificationBuilder;
 import org.opendaylight.yang.gen.v1.urn.nist.params.xml.ns.yang.nist.mud.device.association.rev170915.Mapping;
@@ -128,9 +130,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	private HashSet<Flow> flowTable = new HashSet<Flow>();
 	// The set of mac addresses that were seen when a packet was dropped.
 	// This tracks ACL violations.
-	
-	private HashMap<InstanceIdentifier<FlowCapableNode>,HashSet<MacAddress>> dropRuleMacAddressMap = new HashMap<>();
-	
+
+	private HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<MacAddress>> dropRuleMacAddressMap = new HashMap<>();
+
 	private HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<String>> dropRuleControllerMap = new HashMap<>();
 
 	private Timer timer = new Timer();
@@ -175,7 +177,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		private String srcController;
 		private String dstController;
 
-		public DropRuleTableTimerTask(InstanceIdentifier<FlowCapableNode> node, MacAddress macAddress, String srcControllerUrl, String dstControllerUrl) {
+		public DropRuleTableTimerTask(InstanceIdentifier<FlowCapableNode> node, MacAddress macAddress,
+				String srcControllerUrl, String dstControllerUrl) {
 			this.macAddress = macAddress;
 			this.srcController = srcControllerUrl;
 			this.dstController = dstControllerUrl;
@@ -190,17 +193,17 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					dropRuleMacAddressMap.remove(node);
 				}
 			}
-			
-			if ( srcController != null ) {
+
+			if (srcController != null) {
 				HashSet<String> controllers = dropRuleControllerMap.get(node);
-				if ( controllers != null )  {
+				if (controllers != null) {
 					controllers.remove(srcController);
 				}
 			}
-			
-			if (dstController != null ) {
+
+			if (dstController != null) {
 				HashSet<String> controllers = dropRuleControllerMap.get(node);
-				if ( controllers != null )  {
+				if (controllers != null) {
 					controllers.remove(dstController);
 				}
 			}
@@ -442,24 +445,38 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.broadcastStateChange();
 
 	}
-	
+
+	private Reporter getReporter(Mud mud) {
+
+
+		// org/opendaylight/yang/gen/v1/urn/ietf/params/xml/ns/yang/ietf/mud/reporter/extension/rev190621/Mud1.java
+		if (mud.getAugmentation(
+				org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1.class) != null) {
+			Reporter reporter = mud.getAugmentation(
+					org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1.class)
+					.getReporter();
+			return reporter;
+		}
+		return null;
+	}
+
 	// Block a specific MAC address. TODO -- add code to invoke this.
-	
-	private void installSrcMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+
+	private void installSrcMacMatchAndDropRule(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = SdnMudConstants.SRC_MAC_MATCH_DROP_COOKIE;
 		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
 		short tableId = sdnmudProvider.getDropTable();
-		int timeout = sdnmudProvider.getMudReporterMinTimeout();
-		Flow flow = FlowUtils.createDestinationMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout);
+		int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
+		Flow flow = FlowUtils.createDestinationMacMatchDropFlow(srcMac, tableId, flowId, flowCookie, timeout);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
 	}
-	
-	private void installDstMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+
+	private void installDstMacMatchAndDropRule(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
 		FlowCookie flowCookie = SdnMudConstants.DST_MAC_MATCH_DROP_COOKIE;
 		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
 		short tableId = sdnmudProvider.getDropTable();
-		int timeout = sdnmudProvider.getMudReporterMinTimeout();
-		Flow flow = FlowUtils.createSourceMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout);
+		int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
+		Flow flow = FlowUtils.createSourceMacMatchDropFlow(srcMac, tableId, flowId, flowCookie, timeout);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
 	}
 
@@ -507,11 +524,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.broadcastStateChange();
 	}
 
-	
-	
-	
-	
-	
 	/**
 	 *
 	 */
@@ -533,30 +545,27 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.dstMetadataMap.clear();
 
 	}
-	
-	
+
 	private void installSrcMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
 		String flowIdStr = SdnMudConstants.SRC_MAC_DROP_FLOW_ID_PREFIX;
 		FlowId flowId = IdUtils.createFlowId(flowIdStr);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createSrcMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(), timeout);
+		Flow flow = FlowUtils.createSrcMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(),
+				timeout);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 	}
-	
-	
-	
+
 	private void installDstMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
 		String flowIdStr = SdnMudConstants.DST_MAC_DROP_FLOW_ID_PREFIX;
 		FlowId flowId = IdUtils.createFlowId(flowIdStr);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createDstMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(), timeout);
+		Flow flow = FlowUtils.createDstMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(),
+				timeout);
 		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
 
 	}
-	
-	
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -610,11 +619,11 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		LOG.debug("onPacketReceived : matchInPortUri = " + matchInPortUri + " nodeId  " + nodeId + " tableId " + tableId
 				+ " srcMac " + srcMac.getValue() + " dstMac " + dstMac.getValue() + "etherType = " + etherType);
 
-		if ( node == null) {
+		if (node == null) {
 			LOG.error("Node not found " + nodeId);
 			return;
 		}
-		
+
 		this.packetInCounter++;
 
 		if (etherType == SdnMudConstants.ETHERTYPE_LLDP) {
@@ -649,7 +658,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (isLocalAddress) {
 						this.unclassifiedMacAddresses.add(srcMac);
 					}
-					installSrcMacMatchDrop(srcMac, node);
+				    this.installSrcMacMatchAndDropRule(srcMac, node);
 				}
 
 				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
@@ -663,8 +672,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					boolean isQurantine = this.isQuarantene(dstMac);
 					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
 					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
-							mudUri.getValue(), node);
-					installDstMacMatchDrop(dstMac, node);
+							mudUri.getValue(), node);					
+				    this.installDstMacMatchAndDropRule(dstMac, node);
 				}
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
@@ -683,8 +692,9 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
 							mudUri.getValue(), node);
 					// Broadcast notifications for mappings seen at the switch.
-					installDstMacMatchDrop(dstMac, node);
+				    this.installDstMacMatchAndDropRule(dstMac, node);
 				}
+				
 
 			} else if (tableId == sdnmudProvider.getSrcMatchTable()) {
 				this.mudRelatedPacketInCounter++;
@@ -709,21 +719,21 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								MappingBuilder mb = new MappingBuilder();
 								ArrayList<MacAddress> macAddresses = new ArrayList<>();
 								Uri mudUri = new Uri(mudUrl);
-								
+
 								HashSet<MacAddress> currentMacAddresses = sdnmudProvider.getMappingDataStoreListener()
 										.getMapping().get(mudUri);
 								macAddresses.add(srcMac);
 								if (currentMacAddresses != null) {
 									macAddresses.addAll(currentMacAddresses);
 								}
-								
+
 								mb.setDeviceId(macAddresses);
 								mb.setMudUrl(mudUri);
 								InstanceIdentifier<Mapping> mappingId = InstanceIdentifier.builder(Mapping.class)
 										.build();
-								
+
 								ReadWriteTransaction tx = sdnmudProvider.getDataBroker().newReadWriteTransaction();
-								
+
 								tx.put(LogicalDatastoreType.CONFIGURATION, mappingId, mb.build());
 								try {
 									tx.submit().get();
@@ -761,7 +771,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 								InetAddress inetAddress = arecord.getAddress();
 
 								// Add it to the resolution cache of the MudFlows installer
-								LOG.info("A record Name = " + record.getName() + " address = " + inetAddress.getHostAddress());
+								LOG.info("A record Name = " + record.getName() + " address = "
+										+ inetAddress.getHostAddress());
 								sdnmudProvider.getNameResolutionCache().addCacheLookup(node,
 										record.getName().toString(true), inetAddress.getHostAddress());
 								sdnmudProvider.getMudFlowsInstaller().fixupDnsNameResolution(IdUtils.getNodeUri(node),
@@ -778,8 +789,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 						LOG.debug("DROP rule -- already saw the src MAC -- ingoring packet");
 						return;
 					}
-					this.catalogDroppedPacket(srcMac, dstMac, srcIp, dstIp, node);					
-					
+					this.catalogDroppedPacket(srcMac, dstMac, srcIp, dstIp, node);
+
 				} else if (cookie.equals(SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE)) {
 					LOG.info("Saw a TCP SYN ACL violation");
 					// TBD -- generate event and send to update service.
@@ -795,10 +806,8 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 	}
 
-	private void catalogDroppedPacket(MacAddress srcMac, MacAddress dstMac, String srcIp, String dstIp, InstanceIdentifier<FlowCapableNode> node) {
-		// TODO Auto-generated method stub
-		// TBD -- generate event and send to update service.
-		
+	private void catalogDroppedPacket(MacAddress srcMac, MacAddress dstMac, String srcIp, String dstIp,
+			InstanceIdentifier<FlowCapableNode> node) {
 		Uri mudUri = sdnmudProvider.getMappingDataStoreListener().getMudUri(srcMac);
 		HashSet<MacAddress> macAddresses = dropRuleMacAddressMap.get(node);
 		if (macAddresses == null) {
@@ -807,32 +816,33 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		}
 		macAddresses.add(srcMac);
 		this.broadcastAceViolation(srcMac, mudUri);
-		
+
 		String nodeId = IdUtils.getNodeUri(node);
 		String srcController = sdnmudProvider.getControllerMappingForAddress(nodeId, srcIp);
-		if ( srcController != null ) {
-			HashSet<String> controllers = this.dropRuleControllerMap.get(nodeId);
-			if ( controllers == null) {
+		if (srcController != null) {
+			HashSet<String> controllers = this.dropRuleControllerMap.get(node);
+			if (controllers == null) {
 				controllers = new HashSet<String>();
-				dropRuleControllerMap.put(node,controllers);
+				dropRuleControllerMap.put(node, controllers);
 			}
 			controllers.add(srcController);
 		}
-		
+
 		String dstController = sdnmudProvider.getControllerMappingForAddress(nodeId, dstIp);
-		
-		if (dstController != null ) {
+
+		if (dstController != null) {
 			HashSet<String> controllers = this.dropRuleControllerMap.get(node);
-			if ( controllers == null) {
+			if (controllers == null) {
 				controllers = new HashSet<String>();
-				dropRuleControllerMap.put(node,controllers);
+				dropRuleControllerMap.put(node, controllers);
 			}
 			controllers.add(dstController);
 		}
 		// Start a timer so we will be interrupted again after this period of time.
 		// We don't want to keep getting interrupted
-		timer.schedule(new DropRuleTableTimerTask(node,srcMac, srcController, dstController), SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
-		
+		timer.schedule(new DropRuleTableTimerTask(node, srcMac, srcController, dstController),
+				SdnMudConstants.DROP_RULE_TIMEOUT * 1000 / 2);
+
 	}
 
 	public BigInteger getSrcMetadata(String macAddress) {
@@ -842,16 +852,17 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	public BigInteger getDstMetadata(String macAddress) {
 		return this.dstMetadataMap.get(macAddress);
 	}
-	
+
 	/**
 	 * Get collection of MACs dropped at a node.
+	 * 
 	 * @param node
 	 * @return
 	 */
 	public Collection<MacAddress> getDroppedMacs(InstanceIdentifier<FlowCapableNode> node) {
 		return this.dropRuleMacAddressMap.get(node);
 	}
-	
+
 	public Collection<String> getDropRuleControllers(InstanceIdentifier<FlowCapableNode> node) {
 		return this.dropRuleControllerMap.get(node);
 	}

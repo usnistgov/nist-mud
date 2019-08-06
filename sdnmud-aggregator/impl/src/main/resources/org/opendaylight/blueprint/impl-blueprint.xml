@@ -38,6 +38,10 @@
         odl:type="default" 
      />
 
+    <reference id = "domSchemaService" 
+        interface="org.opendaylight.mdsal.dom.api.DOMSchemaService"
+    />
+
 	<odl:rpc-service id="salFlowService"
     interface="org.opendaylight.yang.gen.v1.urn.opendaylight.flow.service.rev130819.SalFlowService" />
 
