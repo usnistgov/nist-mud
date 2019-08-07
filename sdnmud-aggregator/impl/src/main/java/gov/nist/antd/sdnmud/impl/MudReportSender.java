@@ -1,6 +1,7 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -22,6 +23,7 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509TrustManager;
 
+import org.opendaylight.mdsal.binding.dom.codec.api.BindingNormalizedNodeSerializer;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.mud.reporter.extension.Reporter;
@@ -49,6 +51,9 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporte
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReportBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.stream.JsonWriter;
+
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -195,13 +200,11 @@ public class MudReportSender extends TimerTask {
 
 		for (Mud mud : mudFiles) {
 			Uri mudUrl = mud.getMudUrl();
-			long currentTime = System.currentTimeMillis();
-
 			if (mud.getAugmentation(Mud1.class) != null) {
 				Reporter reporter = mud.getAugmentation(Mud1.class).getReporter();
 				if (reporter != null) {
 					// int intervalMillis = reporter.getFrequency().intValue() *60* 1000;
-					int intervalMillis = reporter.getFrequency().intValue() * 100;
+					int intervalMillis = provider.getSdnmudConfig().getReporterFrequency().intValue() * 1000;
 					long currentTimeMilis = System.currentTimeMillis();
 					if (!lastUpdated.containsKey(mudUrl)
 							|| (currentTimeMilis - lastUpdated.get(mudUrl)) >= intervalMillis) {

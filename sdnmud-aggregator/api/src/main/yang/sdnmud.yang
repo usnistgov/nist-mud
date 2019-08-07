@@ -109,6 +109,12 @@ module sdnmud {
                 (i.e. on signature verification failure or failure to fetch the mud profile)";
       }
 
+      leaf reporter-frequency {
+            type uint32;
+            description 
+               "How often to send mud-reporter reports (seconds).";
+
+      }
 
   }
 

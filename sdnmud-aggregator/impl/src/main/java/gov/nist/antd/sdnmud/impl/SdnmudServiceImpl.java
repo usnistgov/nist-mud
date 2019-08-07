@@ -547,7 +547,7 @@ public class SdnmudServiceImpl implements SdnmudService {
 		reportBuilder.setMudurl(mudUrl);
 		Mud mud = sdnmudProvider.getMud(mudUrl);
 		if ( mud != null ) {
-			List<MudReport> mudReports = new MudReportSender(sdnmudProvider).getMudReports(mud);
+			List<MudReport> mudReports = new MudReportGenerator(sdnmudProvider).getMudReports(mud);
 			reportBuilder.setMudReport(mudReports);
 		} else {
 			List<MudReport> mudReports = new ArrayList<MudReport>();

@@ -71,6 +71,7 @@ import org.opendaylight.yangtools.concepts.ListenerRegistration;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.opendaylight.mdsal.dom.api.DOMSchemaService;
 
 public class SdnmudProvider {
 
@@ -107,7 +108,7 @@ public class SdnmudProvider {
 	private HashMap<String, List<Uri>> nodeToMudUriMap = new HashMap<>();
 
 	// Aces name to ace map.
-	private  HashMap<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
+	private HashMap<String, Aces> nameToAcesMap = new HashMap<String, Aces>();
 
 	// A map between a mac address and the associated FlowCapableNodes where MUD
 	// profiles were installed.
@@ -117,7 +118,7 @@ public class SdnmudProvider {
 
 	private HashMap<String, HashMap<String, List<Ipv4Address>>> controllerMap = new HashMap<>();
 
-	//private HashSet<String> routerMacAddresses = new HashSet<String>();
+	// private HashSet<String> routerMacAddresses = new HashSet<String>();
 
 	private FlowCommitWrapper flowCommitWrapper;
 
@@ -126,7 +127,7 @@ public class SdnmudProvider {
 	private DOMDataBroker domDataBroker;
 
 	private SchemaService schemaService;
-	
+
 	private OpendaylightFlowStatisticsService flowStatisticsService;
 
 	private BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer;
@@ -166,11 +167,11 @@ public class SdnmudProvider {
 	private RpcRegistration<SdnmudService> sdnmudServiceRegistration;
 
 	private HashSet<String> cpeNodes = new HashSet<String>();
-	
-	private HashMap<String,ControllerclassMapping> controllerClassMaps = new HashMap<String,ControllerclassMapping>();
+
+	private HashMap<String, ControllerclassMapping> controllerClassMaps = new HashMap<String, ControllerclassMapping>();
 
 	private NameResolutionCache nameResolutionCache;
-	
+
 	private NotificationPublishService notificationPublishService;
 
 	private QuaranteneDevicesListener quaranteneDevicesListener;
@@ -187,7 +188,8 @@ public class SdnmudProvider {
 			OpendaylightFlowStatisticsService flowStatisticsService,
 			OpendaylightDirectStatisticsService directStatisticsService,
 			PacketProcessingService packetProcessingService, NotificationService notificationService,
-			DOMDataBroker domDataBroker, SchemaService schemaService, NotificationPublishService notificationPublishService,
+			DOMDataBroker domDataBroker, SchemaService schemaService, DOMSchemaService domSchemaService,
+			NotificationPublishService notificationPublishService,
 			BindingNormalizedNodeSerializer bindingNormalizedNodeSerializer, RpcProviderRegistry rpcProviderRegistry) {
 
 		LOG.info("SdnMudProvider: SdnMudProvider - init");
@@ -198,13 +200,16 @@ public class SdnmudProvider {
 		this.notificationPublishService = notificationPublishService;
 		this.domDataBroker = domDataBroker;
 		this.schemaService = schemaService;
+		this.domSchemaService = domSchemaService;
 		this.bindingNormalizedNodeSerializer = bindingNormalizedNodeSerializer;
 		this.rpcProviderRegistry = rpcProviderRegistry;
 		this.flowService = flowService;
 		this.flowStatisticsService = flowStatisticsService;
 		this.directStatisticsService = directStatisticsService;
-		//this.flowStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightFlowStatisticsService.class);
-		//this.directStatisticsService = rpcProviderRegistry.getRpcService(OpendaylightDirectStatisticsService.class);
+		// this.flowStatisticsService =
+		// rpcProviderRegistry.getRpcService(OpendaylightFlowStatisticsService.class);
+		// this.directStatisticsService =
+		// rpcProviderRegistry.getRpcService(OpendaylightDirectStatisticsService.class);
 		this.sdnmudConfig = sdnmudConfig;
 		Security.addProvider(new BouncyCastleProvider());
 		if (sdnmudConfig.getDropRuleTable() < sdnmudConfig.getTableStart() + 4) {
@@ -241,7 +246,7 @@ public class SdnmudProvider {
 	private static InstanceIdentifier<MudCache> getMudCacheWildCardPath() {
 		return InstanceIdentifier.create(MudCache.class);
 	}
-	
+
 	private static InstanceIdentifier<QuarantineDevice> getQuaranteneDevicesWildCardPath() {
 		return InstanceIdentifier.create(QuarantineDevice.class);
 	}
@@ -259,7 +264,7 @@ public class SdnmudProvider {
 		this.nameResolutionCache = new NameResolutionCache();
 		/* Listener for flow miss packets sent to the controller */
 		this.packetInDispatcher = new PacketInDispatcher(this);
-	
+
 		/* Register listener for configuration state change */
 		InstanceIdentifier<SdnmudConfig> configWildCardPath = getConfigWildCardPath();
 		final DataTreeIdentifier<SdnmudConfig> configId = new DataTreeIdentifier<SdnmudConfig>(
@@ -272,7 +277,8 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<Mud> treeId = new DataTreeIdentifier<Mud>(LogicalDatastoreType.CONFIGURATION,
 				mudWildCardPath);
 		this.mudProfileDataStoreListener = new MudProfileDataStoreListener(dataBroker, this);
-		this.mudProfileRegistration = this.dataBroker.registerDataTreeChangeListener(treeId, mudProfileDataStoreListener);
+		this.mudProfileRegistration = this.dataBroker.registerDataTreeChangeListener(treeId,
+				mudProfileDataStoreListener);
 
 		/* Register a data tree change listener for ACL profiles */
 		final InstanceIdentifier<Acls> aclWildCardPath = getAclWildCardPath();
@@ -280,9 +286,10 @@ public class SdnmudProvider {
 				aclWildCardPath);
 		this.aclDataStoreListener = new AclDataStoreListener(dataBroker, this);
 		this.aclRegistration = this.dataBroker.registerDataTreeChangeListener(aclTreeId, aclDataStoreListener);
-				
+
 		/*
-		 * Instance of mud file fetcher. Should be set before mapping datastore registration.
+		 * Instance of mud file fetcher. Should be set before mapping datastore
+		 * registration.
 		 */
 		this.mudFileFetcher = new MudFileFetcher(this);
 
@@ -294,7 +301,8 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<Mapping> mappingTreeId = new DataTreeIdentifier<Mapping>(
 				LogicalDatastoreType.CONFIGURATION, mappingWildCardPath);
 		this.mappingDataStoreListener = new MappingDataStoreListener(this);
-		this.mappingRegistration = this.dataBroker.registerDataTreeChangeListener(mappingTreeId, mappingDataStoreListener);
+		this.mappingRegistration = this.dataBroker.registerDataTreeChangeListener(mappingTreeId,
+				mappingDataStoreListener);
 
 		/*
 		 * Mud cache manager.
@@ -303,16 +311,17 @@ public class SdnmudProvider {
 		final DataTreeIdentifier<MudCache> mudCacheTreeId = new DataTreeIdentifier<MudCache>(
 				LogicalDatastoreType.CONFIGURATION, mudCacheWildCardPath);
 		this.mudCacheDatastoreListener = new MudCacheDataStoreListener(this);
-		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId, mudCacheDatastoreListener);
+		this.mudCacheRegistration = this.dataBroker.registerDataTreeChangeListener(mudCacheTreeId,
+				mudCacheDatastoreListener);
 
 		final InstanceIdentifier<QuarantineDevice> quaranteneDevicesWildCardPath = getQuaranteneDevicesWildCardPath();
-		final DataTreeIdentifier<QuarantineDevice> quaranteneDevicesId  = new DataTreeIdentifier<QuarantineDevice>(LogicalDatastoreType.CONFIGURATION,
-				quaranteneDevicesWildCardPath);
+		final DataTreeIdentifier<QuarantineDevice> quaranteneDevicesId = new DataTreeIdentifier<QuarantineDevice>(
+				LogicalDatastoreType.CONFIGURATION, quaranteneDevicesWildCardPath);
 		this.quaranteneDevicesListener = new QuaranteneDevicesListener(this);
-		this.quaranteneDevicesListenerRegistration = this.dataBroker.registerDataTreeChangeListener(quaranteneDevicesId, quaranteneDevicesListener);
+		this.quaranteneDevicesListenerRegistration = this.dataBroker.registerDataTreeChangeListener(quaranteneDevicesId,
+				quaranteneDevicesListener);
 		this.packetInDispatcherRegistration = this.getNotificationService()
 				.registerNotificationListener(packetInDispatcher);
-		
 
 		/*
 		 * Register a data tree change listener for Controller Class mapping. A
@@ -338,18 +347,12 @@ public class SdnmudProvider {
 
 		// Latency of 10 seconds for the scan.
 		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
-		
-		//this.droppedPacketsScanner = new DroppedPacketsScanner(this);
-		
-		//new Timer(true).schedule(droppedPacketsScanner, 0, 1000);
-		
-		this.mudReporter = new MudReportSender(this);
-		new Timer(true).schedule(mudReporter, 5*1000, 1000);
+
 		
 		LOG.info("start() <--");
 
 	}
-	
+
 	public MudCacheDataStoreListener getMudCacheDatastoreListener() {
 		return this.mudCacheDatastoreListener;
 	}
@@ -362,23 +365,24 @@ public class SdnmudProvider {
 		return (short) (this.sdnmudConfig.getTableStart().shortValue() + 1);
 	}
 
-	/* public short getSdnmudRulesTable() {
-		return (short) (this.sdnmudConfig.getTableStart() + 2);
-	} */
-	
 	public short getSrcMatchTable() {
-		return (short)(this.sdnmudConfig.getTableStart() + 2);
+		return (short) (this.sdnmudConfig.getTableStart() + 2);
 	}
+
 	public short getDstMatchTable() {
-		return (short)(this.sdnmudConfig.getTableStart() + 3);
+		return (short) (this.sdnmudConfig.getTableStart() + 3);
 	}
-	
+
 	public short getNormalRulesTable() {
-		return (short)(this.sdnmudConfig.getBroadcastRuleTable().shortValue());
+		return (short) (this.sdnmudConfig.getBroadcastRuleTable().shortValue());
 	}
 
 	public short getDropTable() {
-		return (short) (this.sdnmudConfig.getDropRuleTable().shortValue());
+		if (sdnmudConfig.getDropRuleTable() != null) {
+			return (this.sdnmudConfig.getDropRuleTable().shortValue());
+		} else {
+			return (short) (getNormalRulesTable() + 1);
+		}
 	}
 
 	/**
@@ -398,6 +402,9 @@ public class SdnmudProvider {
 		this.sdnmudServiceRegistration.close();
 		this.mudProfileRegistration.close();
 		this.quaranteneDevicesListenerRegistration.close();
+		if ( mudReporter != null) {
+			this.mudReporter.cancel();
+		}
 	}
 
 	public StateChangeScanner getStateChangeScanner() {
@@ -421,7 +428,7 @@ public class SdnmudProvider {
 	public AclDataStoreListener getAclDataStoreListener() {
 		return aclDataStoreListener;
 	}
-	
+
 	public QuaranteneDevicesListener getQuaranteneDevicesListener() {
 		return this.quaranteneDevicesListener;
 	}
@@ -572,7 +579,6 @@ public class SdnmudProvider {
 		return this.nodeToMudUriMap.get(cpeNodeId);
 	}
 
-
 	public Collection<String> getCpeSwitches() {
 		return this.cpeNodes;
 	}
@@ -600,7 +606,7 @@ public class SdnmudProvider {
 	public SchemaService getSchemaService() {
 		return this.schemaService;
 	}
-	
+
 	public OpendaylightDirectStatisticsService getDirectStatisticsService() {
 		return this.directStatisticsService;
 	}
@@ -627,7 +633,7 @@ public class SdnmudProvider {
 	 * @return -- Aces list for the acl name
 	 */
 	public Aces getAces(Uri mudUrl, String aclName) {
-		LOG.info("getAces [" + mudUrl.getValue() + "/"+ aclName +"]" );
+		LOG.info("getAces [" + mudUrl.getValue() + "/" + aclName + "]");
 		return this.nameToAcesMap.get(mudUrl.getValue().hashCode() + "/" + aclName);
 	}
 
@@ -644,7 +650,6 @@ public class SdnmudProvider {
 			map = new HashMap<>();
 			this.controllerMap.put(nodeId, map);
 		}
-		
 
 		for (Controller controller : controllerMapping.getController()) {
 			String name = controller.getUri().getValue();
@@ -652,42 +657,40 @@ public class SdnmudProvider {
 			map.put(name, addresses);
 		}
 
-
 		this.configStateChanged++;
 
 	}
-	
+
 	public void addControllerMap(String nodeId, String name, String addressStr) {
 		HashMap<String, List<Ipv4Address>> map = this.controllerMap.get(nodeId);
 		Ipv4Address address = new Ipv4Address(addressStr);
-		
+
 		if (this.controllerMap.get(nodeId) == null) {
 			map = new HashMap<>();
 			this.controllerMap.put(nodeId, map);
 		}
-		
+
 		List<Ipv4Address> addresses = map.get(name);
-		if ( addresses == null) {
+		if (addresses == null) {
 			addresses = new ArrayList<Ipv4Address>();
-			map.put(name,addresses);
+			map.put(name, addresses);
 		}
 		addresses.add(new Ipv4Address(address));
 
 		this.configStateChanged++;
 	}
-	
-	public String getControllerMappingForAddress( String nodeId, String addressStr) {
+
+	public String getControllerMappingForAddress(String nodeId, String addressStr) {
 		Ipv4Address address = new Ipv4Address(addressStr);
-		HashMap<String,List<Ipv4Address> > map = this.controllerMap.get(nodeId);
-		for (String controller : map.keySet() ) {
+		HashMap<String, List<Ipv4Address>> map = this.controllerMap.get(nodeId);
+		for (String controller : map.keySet()) {
 			List<Ipv4Address> addresses = map.get(controller);
-			if ( addresses.contains(address))  {
+			if (addresses.contains(address)) {
 				return controller;
 			}
 		}
 		return null;
 	}
-	
 
 	/**
 	 * @param nodeUri
@@ -696,16 +699,16 @@ public class SdnmudProvider {
 	public Map<String, List<Ipv4Address>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
 	}
-	
-	
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
-		if(controllerClassMaps.get(nodeUri) == null) return null;
+		if (controllerClassMaps.get(nodeUri) == null)
+			return null;
 		return this.controllerClassMaps.get(nodeUri).getLocalNetworks();
 	}
 
 	public Collection<String> getLocalNetworksExclude(String nodeUri) {
-		if(controllerClassMaps.get(nodeUri) == null) return null;
+		if (controllerClassMaps.get(nodeUri) == null)
+			return null;
 		return this.controllerClassMaps.get(nodeUri).getLocalNetworksExcludedHosts();
 	}
 
@@ -733,6 +736,11 @@ public class SdnmudProvider {
 	 */
 	public void setSdnmudConfig(SdnmudConfig sdnmudConfig) {
 		this.sdnmudConfig = sdnmudConfig;
+		if ( sdnmudConfig.getReporterFrequency() != null) {
+			this.mudReporter = new MudReportSender(this);
+			new Timer(true).schedule(mudReporter, sdnmudConfig.getReporterFrequency()/2*1000, 
+					sdnmudConfig.getReporterFrequency()/2*1000);
+		}
 	}
 
 	public SdnmudConfig getSdnmudConfig() {
@@ -743,7 +751,6 @@ public class SdnmudProvider {
 		return this.packetInDispatcher;
 	}
 
-	
 	/**
 	 * @return
 	 */
@@ -756,40 +763,41 @@ public class SdnmudProvider {
 		this.nameToAcesMap.clear();
 		this.uriToMudMap.clear();
 	}
-	
-	
 
 	public MudFileFetcher getMudFileFetcher() {
 		return mudFileFetcher;
 	}
 
 	public boolean isWirelessSwitch(String nodeUri) {
-		return this.controllerClassMaps.get(nodeUri) != null &&
-				this.controllerClassMaps.get(nodeUri).isWireless();
+		return this.controllerClassMaps.get(nodeUri) != null && this.controllerClassMaps.get(nodeUri).isWireless();
 	}
 
 	public short getTableStart() {
 		return this.sdnmudConfig.getTableStart().shortValue();
 	}
-	
+
 	public NameResolutionCache getNameResolutionCache() {
 		return this.nameResolutionCache;
 	}
-	
+
 	public NotificationPublishService getNotificationPublishService() {
 		return this.notificationPublishService;
 	}
-	
+
 	public OpendaylightFlowStatisticsService getFlowStatisticsService() {
 		return this.flowStatisticsService;
 	}
-	
+
 	public int getMudReporterMinTimeout() {
 		return this.sdnmudConfig.getMfgIdRuleCacheTimeout().intValue();
 	}
-	
+
 	public Mud getMud(Uri mudUrl) {
 		return this.uriToMudMap.get(mudUrl.getValue());
+	}
+
+	public DOMSchemaService getDomSchemaService() {
+		return domSchemaService;
 	}
 
 }

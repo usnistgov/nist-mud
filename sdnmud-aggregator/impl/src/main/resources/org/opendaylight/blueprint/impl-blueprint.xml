@@ -76,6 +76,7 @@
 		<argument ref="packetNotificationService" />
 		<argument ref="domDataBroker" />
 		<argument ref="schemaService" />
+		<argument ref="domSchemaService" />
         <argument ref="notificationPublishService" />
 		<argument ref="bindingNormalizedNodeSerializer" />
         <argument ref="rpcRegistry" />
