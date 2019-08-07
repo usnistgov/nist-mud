@@ -619,7 +619,7 @@ public class SdnmudProvider {
 	 */
 	public Aces getAces(Uri mudUrl, String aclName) {
 		LOG.info("getAces [" + mudUrl.getValue() + "/"+ aclName +"]" );
-		return this.nameToAcesMap.get(mudUrl.getValue() + "/" + aclName);
+		return this.nameToAcesMap.get(mudUrl.getValue().hashCode() + "/" + aclName);
 	}
 
 	/**
