@@ -37,7 +37,7 @@ public class FlowCommitWrapper {
 
 	private DataBroker dataBrokerService;
 
-	private HashMap<InstanceIdentifier<FlowCapableNode>, ArrayList<Flow>> flowTable = new HashMap<InstanceIdentifier<FlowCapableNode>, ArrayList<Flow>>();
+	private HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<Flow>> flowTable = new HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<Flow>>();
 
 	public FlowCommitWrapper(DataBroker dataBrokerService) {
 		this.dataBrokerService = dataBrokerService;
@@ -59,9 +59,9 @@ public class FlowCommitWrapper {
 		modification.merge(LogicalDatastoreType.CONFIGURATION, path1, flow, true);
 		try {
 			modification.submit().get();
-			ArrayList<Flow> flows = this.flowTable.get(flowNodeIdent);
+			HashSet<Flow> flows = this.flowTable.get(flowNodeIdent);
 			if (flows == null) {
-				flows = new ArrayList<Flow>();
+				flows = new HashSet<Flow>();
 				flowTable.put(flowNodeIdent, flows);
 			}
 			flows.add(flow);
@@ -186,7 +186,7 @@ public class FlowCommitWrapper {
 		}
 
 		if (flowTable.get(flowCapableNode) != null) {
-			ArrayList<Flow> newFlowEntries = new ArrayList<Flow>();
+			HashSet<Flow> newFlowEntries = new HashSet<Flow>();
 
 			for (Flow flow : flowTable.get(flowCapableNode)) {
 				if (!flow.getId().getValue().startsWith(uriPrefix)) {
@@ -203,7 +203,7 @@ public class FlowCommitWrapper {
 	}
 
 	synchronized public void deleteFlows(InstanceIdentifier<FlowCapableNode> flowCapableNode) {
-		ArrayList<Flow> flows = this.flowTable.get(flowCapableNode);
+		HashSet<Flow> flows = this.flowTable.get(flowCapableNode);
 		if (flows != null) {
 			for (Flow flow : flows) {
 				FlowKey flowKey = flow.getKey();
@@ -214,7 +214,7 @@ public class FlowCommitWrapper {
 		}
 	}
 
-	public List<Flow> getFlows(InstanceIdentifier<FlowCapableNode> node) {
+	public Collection<Flow> getFlows(InstanceIdentifier<FlowCapableNode> node) {
 		return flowTable.get(node);
 	}
 

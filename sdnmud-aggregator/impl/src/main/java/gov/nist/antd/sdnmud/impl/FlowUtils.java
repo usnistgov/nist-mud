@@ -23,6 +23,7 @@ package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -83,6 +84,8 @@ public class FlowUtils {
 	private static final Logger LOG = LoggerFactory.getLogger(FlowUtils.class);
 
 	private static AtomicLong instructionKey = new AtomicLong(0x0);
+	
+	private static HashMap<FlowId, FlowBuilder> flowTable = new HashMap<FlowId,FlowBuilder>();
 
 	private FlowUtils() {
 		// Only static methods in this class
@@ -550,7 +553,10 @@ public class FlowUtils {
 
 	}
 
+	/**********************************************************************************/
+
 	static FlowBuilder createUnconditionalDropPacketFlow(short table, FlowId flowId, FlowCookie flowCookie) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		Instruction dropInstruction = createDropInstruction();
 		InstructionsBuilder isb = new InstructionsBuilder();
@@ -562,11 +568,11 @@ public class FlowUtils {
 				.setKey(new FlowKey(flowId)).setCookie(flowCookie)
 				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
 
-	/**********************************************************************************/
 
 	static FlowBuilder createMetadataMatchGoToTableFlow(FlowCookie flowCookie, BigInteger metadata,
 			BigInteger metadataMask, FlowId flowId, Short tableId, BigInteger newMetadata, BigInteger newMetadataMask,
@@ -574,6 +580,7 @@ public class FlowUtils {
 		LOG.info("FlowUtils: createMetadataMatchGoToTable " + flowCookie.getValue().toString(16) + " metadata "
 				+ metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId " + tableId
 				+ " targetTable " + dropTableId);
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
@@ -588,6 +595,7 @@ public class FlowUtils {
 				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
@@ -597,6 +605,7 @@ public class FlowUtils {
 		LOG.info("FlowUtils: createMetadataMatchGoToTableAndSendToController " + flowCookie.getValue().toString(16)
 				+ " metadata " + metadata.toString(16) + " metadataMask " + metadataMask.toString(16) + " tableId "
 				+ tableId + " targetTable " + targetTableId);
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
@@ -613,11 +622,13 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
 	static FlowBuilder createUnconditionalGoToNextTableFlow(short table, FlowId flowId, FlowCookie flowCookie) {
 		LOG.info("createGoToTableFlow ");
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(table)
 				.setFlowName("unconditionalGoToTable:" + (short) (table + 1)).setId(flowId).setKey(new FlowKey(flowId))
@@ -635,13 +646,14 @@ public class FlowUtils {
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
 
 	static FlowBuilder createEthernetMatchSendPacketToControllerFlow(BigInteger metadata, BigInteger metadataMask,
 			boolean forwardFlag, Short tableId, FlowId flowId, FlowCookie flowCookie) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		// createIpV4Match(matchBuilder);
 		createEthernetTypeMatch(matchBuilder, 0x0800);
@@ -661,11 +673,13 @@ public class FlowUtils {
 				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,sendToControllerFlow);
 		return sendToControllerFlow;
 	}
 
 	static FlowBuilder createIpMatchSendPacketToControllerFlow(BigInteger metadata, BigInteger metadataMask,
 			boolean forwardFlag, Short tableId, FlowId flowId, FlowCookie flowCookie) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createIpV4Match(matchBuilder);
 		createEthernetTypeMatch(matchBuilder, 0x0800);
@@ -685,6 +699,7 @@ public class FlowUtils {
 				.setPriority(SdnMudConstants.UNCONDITIONAL_DROP_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,sendToControllerFlow);
 		return sendToControllerFlow;
 	}
 
@@ -692,6 +707,7 @@ public class FlowUtils {
 			boolean sendToController) {
 
 		LOG.info("createPermitPacketsToDhcpServerFlow ");
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsToDhcpServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -718,6 +734,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
@@ -726,6 +743,7 @@ public class FlowUtils {
 			boolean sendToController) {
 
 		LOG.info("createPermitPacketsFromDhcpServerFlow ");
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId).setFlowName("permitPacketsFromDhcpServerFlow")
 				.setId(flowId).setKey(new FlowKey(flowId)).setCookie(flowCookie);
@@ -744,6 +762,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
@@ -752,6 +771,8 @@ public class FlowUtils {
 			Ipv4Address address, int srcPort, int destinationPort, short protocol, boolean sendToController,
 			Short tableId, int priority, BigInteger newMetadata, BigInteger newMetadataMask, FlowId flowId,
 			FlowCookie flowCookie) {
+
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 
@@ -777,6 +798,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
@@ -787,6 +809,7 @@ public class FlowUtils {
 		LOG.info("createMetadataSrcIpAndPortMatchGoTo metadata = " + metadata.toString(16) + " metadataMask = "
 				+ metadataMask.toString(16) + " ipv4Address = " + address.getValue() + " destinationPort = " + srcPort
 				+ " protocol " + protocol + " tableId " + tableId + " flowId " + flowId);
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		short targetTable = (short) (tableId + 1);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
@@ -809,12 +832,14 @@ public class FlowUtils {
 				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
 	static FlowBuilder createMetadaProtocolAndSrcDestPortMatchGoToTable(BigInteger metadata, BigInteger metadataMask,
 			short protocol, int srcPort, int destPort, short tableId, int priority, BigInteger newMetadata,
 			BigInteger newMetadataMask, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
 		createEthernetTypeMatch(matchBuilder, 0x800);
@@ -844,11 +869,13 @@ public class FlowUtils {
 				.setPriority(priority).setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
 	static FlowBuilder createSourceMacMatchSetMetadataGoToNextTableFlow(MacAddress srcMac, BigInteger metadata,
 			BigInteger metadataMask, short tableId, FlowId flowId, FlowCookie flowCookie, int timeout) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetSourceMatch(matchBuilder, srcMac);
@@ -862,12 +889,14 @@ public class FlowUtils {
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
 	static FlowBuilder createDestMacMatchSetMetadataAndGoToNextTableFlow(MacAddress dstMac, BigInteger metadata,
 			BigInteger metadataMask, short tableId, FlowId flowId, FlowCookie flowCookie, int timeout) {
 
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		// createEthernetDestNoEthTypeMatch(matchBuilder, dstMac);
 		createEthernetDestMatch(matchBuilder, dstMac);
@@ -882,12 +911,13 @@ public class FlowUtils {
 				.setHardTimeout(2 * timeout).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,fb);
 		return fb;
 	}
 
 	static FlowBuilder createDestAddressPortProtocolMatchGoToNextFlow(Ipv4Address dnsAddress, int port, short protocol,
 			short tableId,  short nextTable, int priority, boolean sendPacketToController, FlowId flowId, FlowCookie flowCookie) {
-
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName(String.format("permitPacketsToServerFlow(address=%s:%d,protocol=%d,sendToController=%b",
 						dnsAddress.getValue(), port, protocol, sendPacketToController))
@@ -905,12 +935,15 @@ public class FlowUtils {
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(priority).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
 
 	static FlowBuilder createSrcAddressPortProtocolMatchGoToNextFlow(Ipv4Address address, int port, short protocol,
 			short tableId, short nextTable, 
 			int priority, boolean sendToController, FlowId flowId, FlowCookie flowCookie) {
+		
+		if ( flowTable.get(flowId) != null ) return flowTable.get(flowId);
 
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName(String.format("SrcAddressPortProtocolMatchGoToNextFlow(address=%s:%d protocol=%d)",
@@ -929,6 +962,7 @@ public class FlowUtils {
 		flowBuilder.setMatch(match).setInstructions(isb.build()).setPriority(priority).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
 
@@ -936,6 +970,7 @@ public class FlowUtils {
 			short tableId, BigInteger metadata, BigInteger metadataMask, int timeout, FlowId flowId,
 			FlowCookie flowCookie) {
 
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		FlowBuilder flowBuilder = new FlowBuilder().setTableId(tableId)
 				.setFlowName(String.format("srcIpAddressProtocolMatchGoToNext(address=%s,%d, protocol=%d)",
 						srcIp.getValue(), port, protocol))
@@ -953,15 +988,16 @@ public class FlowUtils {
 				.setPriority(SdnMudConstants.MAX_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2)
 				.setIdleTimeout(timeout).setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
 
 	public static FlowBuilder createMetadataTcpSynSrcIpSrcPortDestIpDestPortMatchToToNextTableFlow(BigInteger metadata,
 			BigInteger metadataMask, Ipv4Address srcIp, int sourcePort, Ipv4Address dstIp, int dstPort, Short tableId,
 			int priority, Short targetTableId, FlowId flowId, FlowCookie flowCookie, int timeout) {
-		// TODO Auto-generated method stub
-		MatchBuilder matchBuilder = new MatchBuilder();
 
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
+		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		FlowUtils.createSrcDestIpv4Match(matchBuilder, srcIp, dstIp);
 		FlowUtils.createSrcDstProtocolPortMatch(matchBuilder, SdnMudConstants.TCP_PROTOCOL, sourcePort, dstPort);
@@ -985,6 +1021,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
@@ -992,6 +1029,8 @@ public class FlowUtils {
 	public static FlowBuilder createMetadataTcpSynSrcPortAndDstPortMatchToToNextTableFlow(BigInteger metadata,
 			BigInteger metadataMask, int srcPort, int dstPort, Short tableId, int priotity, Short targetTableId,
 			FlowId flowId, FlowCookie flowCookie, int timeout) {
+
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createSrcDstProtocolPortMatch(matchBuilder, SdnMudConstants.TCP_PROTOCOL, srcPort, dstPort);
@@ -1013,6 +1052,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(timeout / 2).setIdleTimeout(timeout)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
@@ -1027,6 +1067,7 @@ public class FlowUtils {
 	 */
 	public static FlowBuilder createMetadataMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
 			short tableId, short targetTableId, int priority, FlowId flowId, FlowCookie flowCookie, String flowName) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetTypeMatch(matchBuilder, 0x800);
 		createMetadataMatch(matchBuilder, metadata, metadataMask);
@@ -1043,12 +1084,14 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(0).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
 
 	public static FlowBuilder createNormalFlow(boolean outputToInport, short table, FlowId flowId,
 			FlowCookie flowCookie) {
 
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		Instruction normal;
 		if (!outputToInport) {
 			normal = FlowUtils.createNormalInstruction();
@@ -1068,6 +1111,7 @@ public class FlowUtils {
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
 				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(0).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
+        flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 	}
 

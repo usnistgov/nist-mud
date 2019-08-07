@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
 
 
 public class IdUtils {
-	private static AtomicLong flowIdInc = new AtomicLong();
+    static AtomicLong flowIdInc = new AtomicLong();
 	private static ArrayList<String> manufacturers = new ArrayList<String>();
 	private static ArrayList<String> models = new ArrayList<String>();
 	static {
@@ -85,10 +85,14 @@ public class IdUtils {
 		return nodeChild.firstIdentifierOf(FlowCapableNode.class);
 	}
 
+	/*
 	public static FlowId createFlowId(String prefix) {
 		return new FlowId(prefix + "/" + String.valueOf(flowIdInc.getAndIncrement()));
 	}
-
+	*/
+	public static FlowId createFlowId(String prefix) {
+		return new FlowId(prefix );
+	}
 	public static FlowCookie createFlowCookie(String flowCookieId) {
 		return new FlowCookie(BigInteger.valueOf(Math.abs(getFlowHash(flowCookieId))));
 	}
@@ -193,6 +197,10 @@ public class IdUtils {
 			LOG.info("Models = " + models + " modelId " + modelId);
 			return new Uri(SdnMudConstants.UNCLASSIFIED);
 		}
+	}
+
+	public static FlowId createNodeFlowId(String nodeId) {
+		return new FlowId(nodeId + "/" + flowIdInc.getAndIncrement());
 	}
 
 }
