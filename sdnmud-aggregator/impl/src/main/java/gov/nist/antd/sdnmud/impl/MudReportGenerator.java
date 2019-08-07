@@ -174,7 +174,7 @@ public class MudReportGenerator {
 								if (flow.getId().getValue().indexOf(SdnMudConstants.DROP_ON_SRC_MODEL_MATCH) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getFlowName());
+									blockedBuilder1.setAceName(flow.getId().getValue());
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.FromDevice);
@@ -182,9 +182,8 @@ public class MudReportGenerator {
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_DST_MODEL_MATCH) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
-
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getFlowName());
+									blockedBuilder1.setAceName(flow.getId().getValue());
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.ToDevice);
@@ -195,7 +194,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.ToDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getFlowName());
+									bb.setAceName(flow.getId().getValue());
 									dropCountsList.add(dcb1.build());
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND) != -1) {
@@ -203,11 +202,11 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.FromDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getFlowName());
+									bb.setAceName(flow.getId().getValue());
 									dropCountsList.add(dcb1.build());
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									mcb.setAceName(flow.getFlowName());
+									mcb.setAceName(flow.getId().getValue());
 									matchCountsList.add(mcb.build());
 								}
 							}
