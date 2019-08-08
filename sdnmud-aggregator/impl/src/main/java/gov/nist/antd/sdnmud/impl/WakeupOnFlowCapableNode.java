@@ -76,7 +76,10 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private void installSendIpPacketToControllerFlow(String nodeUri, short tableId,
 			InstanceIdentifier<FlowCapableNode> node, BigInteger metadata, BigInteger metadataMask) {
-		FlowId flowId = IdUtils.createNodeFlowId(nodeUri);
+		
+		
+		FlowId flowId = IdUtils.createFlowId(String.format("SEND_PACKET_TO_CONTROLLER:%d:%d:%d",
+				tableId, metadata, metadataMask));
 		FlowCookie flowCookie = SdnMudConstants.SEND_TO_CONTROLLER_FLOW_COOKIE;
 
 		boolean forwardFlag = this.sdnmudProvider.getSdnmudConfig() != null
@@ -88,23 +91,9 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		this.sdnmudProvider.getFlowWriter().writeFlow(fb, node);
 	}
 
-	/**
-	 * @param nodePath
-	 * @param srcDeviceManufacturerStampTable
-	 * @param metadata
-	 * @param metadataMask
-	 */
-	private void installToDhcpFlow(String nodeUri, InstanceIdentifier<FlowCapableNode> nodePath, Short tableId,
-			BigInteger metadata, BigInteger metadataMask) {
-		FlowId flowId = IdUtils.createNodeFlowId(nodeUri);
-		FlowCookie flowCookie = SdnMudConstants.BYPASS_DHCP_FLOW_COOKIE;
-		FlowBuilder fb = FlowUtils.createToDhcpServerMatchGoToNextTableFlow(tableId, sdnmudProvider.getNormalRulesTable(), 
-				flowCookie, flowId, true);
-		this.sdnmudProvider.getFlowWriter().writeFlow(fb, nodePath);
-	}
 
 	private void installUnconditionalGoToTable(String nodeUri, InstanceIdentifier<FlowCapableNode> node, short table) {
-		FlowId flowId = IdUtils.createNodeFlowId(nodeUri);
+		FlowId flowId = IdUtils.createFlowId(String.format("UNCONDITIONAL_GO_TO_NEXT:%d", table));
 		FlowCookie flowCookie = SdnMudConstants.UNCLASSIFIED_FLOW_COOKIE;
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
 				flowCookie);
@@ -117,7 +106,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 		if (this.normalFlows.get(nodeUri) != null) {
 			sdnmudProvider.getFlowWriter().deleteFlows(node, this.normalFlows.get(nodeUri));
 		}
-		FlowId flowId = IdUtils.createNodeFlowId(nodeUri);
+		FlowId flowId = IdUtils.createFlowId("NORMAL_WIRELESS");
 		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
 		assert sdnmudProvider.isWirelessSwitch(nodeUri);
 		FlowBuilder fb = FlowUtils.createNormalFlow(true, sdnmudProvider.getNormalRulesTable(), flowId, flowCookie);
@@ -127,7 +116,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	private void installUnditionalDropPacket(String nodeId, InstanceIdentifier<FlowCapableNode> nodePath,
 			Short dropPacketTable) {
 		FlowCookie flowCookie = IdUtils.createFlowCookie(nodeId);
-		FlowId flowId = IdUtils.createNodeFlowId(nodeId);
+		FlowId flowId = IdUtils.createFlowId("UNCONDITIONAL_DROP:" + dropPacketTable);
 
 		FlowBuilder flow = FlowUtils.createUnconditionalDropPacketFlow(dropPacketTable, flowId, flowCookie);
 		this.sdnmudProvider.getFlowWriter().writeFlow(flow, nodePath);
@@ -212,7 +201,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 	}
 
 	private void installUnconditionalGoToTable(InstanceIdentifier<FlowCapableNode> node, short table) {
-		FlowId flowId = IdUtils.createNodeFlowId(IdUtils.getNodeUri(node));
+		FlowId flowId = IdUtils.createFlowId("GotoNext:" + table);
 		FlowCookie flowCookie = IdUtils.createFlowCookie("GoToNext");
 		FlowBuilder unconditionalGoToNextFlow = FlowUtils.createUnconditionalGoToNextTableFlow(table, flowId,
 				flowCookie);
@@ -221,7 +210,7 @@ public class WakeupOnFlowCapableNode implements DataTreeChangeListener<FlowCapab
 
 	private synchronized void installNormalFlow(InstanceIdentifier<FlowCapableNode> node, String nodeUri) {
 		LOG.info("install normal flow");
-		FlowId flowId = IdUtils.createNodeFlowId(IdUtils.getNodeUri(node));
+		FlowId flowId = IdUtils.createFlowId("WIRED_NORMAL");
 		FlowCookie flowCookie = IdUtils.createFlowCookie("NORMAL");
 		// Assume we are dealing with a WIRED switch unless otherwise configured.
 		FlowBuilder fb = FlowUtils.createNormalFlow(false, sdnmudProvider.getNormalRulesTable(), flowId, flowCookie);

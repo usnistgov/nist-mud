@@ -259,8 +259,13 @@ public class MudFileFetcher {
 		try {
 			// Get the response
 			if (response.getStatusLine().getStatusCode() == 200) {
-				int len = (int)response.getEntity().getContentLength();
+				int len = Long.valueOf(response.getEntity().getContentLength()).intValue();
+				
 				LOG.info("content-length = " + len);
+				if (len < 0 ) {
+					LOG.error("negative content length returned " + len);
+					throw new IOException("negative content length " + len);
+				}
 				int bytesRead = 0;
 				while (bytesRead != len) {
 				    int nr = response.getEntity().getContent().read(data, bytesRead, len);
