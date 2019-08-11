@@ -698,6 +698,10 @@ public class SdnmudProvider {
 	public void clearConfigStateChanged() {
 		this.configStateChanged--;
 	}
+	
+	public void updateConfigStateChanged() {
+		this.configStateChanged ++;
+	}
 
 	/**
 	 * @param sdnmudConfig
@@ -725,6 +729,7 @@ public class SdnmudProvider {
 	public void clearMudRules() {
 		this.nodeToMudUriMap.clear();
 		this.nameToAcesMap.clear();
+		this.uriToMudMap.clear();
 	}
 	
 	

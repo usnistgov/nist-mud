@@ -32,29 +32,35 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.stream.JsonReader;
 
 public class DatastoreUpdater {
-	
+
 	private static final Logger LOG = LoggerFactory.getLogger(DatastoreUpdater.class);
 
 	private SchemaService schemaService;
 
 	private DOMDataBroker domDataBroker;
-	
-	
-	private void importFromNormalizedNode(final DOMDataReadWriteTransaction rwTrx, final LogicalDatastoreType type,
-			final NormalizedNode<?, ?> data) throws TransactionCommitFailedException, ReadFailedException, InterruptedException, ExecutionException {
+
+	private SdnmudProvider sdnmudProvider;
+
+	private void importFromNormalizedNode(final LogicalDatastoreType type, final NormalizedNode<?, ?> data)
+			throws TransactionCommitFailedException, ReadFailedException, InterruptedException, ExecutionException {
 		if (data instanceof NormalizedNodeContainer) {
 			@SuppressWarnings("unchecked")
+			DOMDataReadWriteTransaction rwTrx = domDataBroker.newReadWriteTransaction();
+
 			YangInstanceIdentifier yid = YangInstanceIdentifier.create(data.getIdentifier());
 			// rwTrx.put(type, yid, data);
+			rwTrx = domDataBroker.newReadWriteTransaction();
 			rwTrx.merge(type, yid, data);
 			rwTrx.submit().get();
+
 		} else {
 			throw new IllegalStateException("Root node is not instance of NormalizedNodeContainer");
 		}
 	}
 
-	public  void writeToDatastore(String jsonData, QName qname) throws TransactionCommitFailedException, IOException,
-			ReadFailedException, SchemaSourceException, YangSyntaxErrorException, InterruptedException, ExecutionException {
+	public void writeToDatastore(String jsonData, QName qname)
+			throws TransactionCommitFailedException, IOException, ReadFailedException, SchemaSourceException,
+			YangSyntaxErrorException, InterruptedException, ExecutionException {
 		LOG.info("jsonData = " + jsonData);
 
 		byte bytes[] = jsonData.getBytes();
@@ -81,17 +87,16 @@ public class DatastoreUpdater {
 					reader.setLenient(true);
 					// The side effect of this parse is a write to the builder.
 					jsonParser.parse(reader);
-					DOMDataReadWriteTransaction rwTrx = domDataBroker.newReadWriteTransaction();
-					importFromNormalizedNode(rwTrx, LogicalDatastoreType.CONFIGURATION, builder.build());
+					importFromNormalizedNode(LogicalDatastoreType.CONFIGURATION, builder.build());
 				}
 			}
 		}
 
 	}
-	
-	
+
 	public DatastoreUpdater(SdnmudProvider sdnmudProvider) {
 		this.domDataBroker = sdnmudProvider.getDomDataBroker();
 		this.schemaService = sdnmudProvider.getSchemaService();
+		this.sdnmudProvider = sdnmudProvider;
 	}
 }
