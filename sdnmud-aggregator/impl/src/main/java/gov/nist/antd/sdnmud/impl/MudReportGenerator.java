@@ -151,6 +151,7 @@ public class MudReportGenerator {
 			MatchCountsBuilder mcb = new MatchCountsBuilder();
 
 			if (flows != null) {
+				int beginIndex = mud.getMudUrl().getValue().length() + 1; 
 
 				for (Flow flow : flows) {
 					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue())) {
@@ -174,7 +175,7 @@ public class MudReportGenerator {
 								if (flow.getId().getValue().indexOf(SdnMudConstants.DROP_ON_SRC_MODEL_MATCH) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getId().getValue());
+									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.FromDevice);
@@ -183,7 +184,7 @@ public class MudReportGenerator {
 										.indexOf(SdnMudConstants.DROP_ON_DST_MODEL_MATCH) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getId().getValue());
+									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.ToDevice);
@@ -194,7 +195,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.ToDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getId().getValue());
+									bb.setAceName(flow.getId().getValue().substring(beginIndex));
 									dropCountsList.add(dcb1.build());
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND) != -1) {
@@ -202,11 +203,11 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.FromDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getId().getValue());
+									bb.setAceName(flow.getId().getValue().substring(beginIndex));
 									dropCountsList.add(dcb1.build());
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									mcb.setAceName(flow.getId().getValue());
+									mcb.setAceName(flow.getId().getValue().substring(beginIndex));
 									matchCountsList.add(mcb.build());
 								}
 							}

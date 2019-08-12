@@ -467,7 +467,7 @@ public class MudFlowsInstaller {
 			int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/NO_FROM_DEV_ACE_MATCH_DROP");
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -483,7 +483,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/NO_TO_DEV_ACE_MATCH_DROP");
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;

@@ -175,6 +175,7 @@ public class MudReportSender extends TimerTask {
 	private String doConvert(SchemaPath schemaPath, NormalizedNode<?, ?> data, JSONCodecFactory codecFactory) {
 		final StringWriter writer = new StringWriter();
 		final JsonWriter jsonWriter = JsonWriterFactory.createJsonWriter(writer);
+		jsonWriter.setIndent("    ");
 		final NormalizedNodeStreamWriter jsonStream;
 		if (data instanceof MapEntryNode) {
 			jsonStream = JSONNormalizedNodeStreamWriter.createNestedWriter(codecFactory, schemaPath, null, jsonWriter);
