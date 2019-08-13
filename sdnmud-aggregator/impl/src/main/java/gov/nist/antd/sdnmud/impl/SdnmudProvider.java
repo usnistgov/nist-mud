@@ -347,7 +347,6 @@ public class SdnmudProvider {
 
 		// Latency of 10 seconds for the scan.
 		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
-
 		
 		LOG.info("start() <--");
 
@@ -699,6 +698,8 @@ public class SdnmudProvider {
 	public Map<String, List<Ipv4Address>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
 	}
+	
+	
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
 		if (controllerClassMaps.get(nodeUri) == null)
@@ -787,11 +788,11 @@ public class SdnmudProvider {
 	public OpendaylightFlowStatisticsService getFlowStatisticsService() {
 		return this.flowStatisticsService;
 	}
-
+	
 	public int getMudReporterMinTimeout() {
 		return this.sdnmudConfig.getMfgIdRuleCacheTimeout().intValue();
 	}
-
+	
 	public Mud getMud(Uri mudUrl) {
 		return this.uriToMudMap.get(mudUrl.getValue());
 	}

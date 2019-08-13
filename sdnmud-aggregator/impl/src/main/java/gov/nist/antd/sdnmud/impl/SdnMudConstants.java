@@ -133,7 +133,8 @@ interface SdnMudConstants {
 	// Cache timeout for network and model stamping flow rules.
 	static final int ETHERTYPE_LLDP = 0x88cc;
 	static final BigInteger DEFAULT_METADATA_MASK = BigInteger.ZERO;
-	static final BigInteger DEFAULT_METADATA = new BigInteger("FFFFFFFFFFFFFFFF",16);
+	static final BigInteger DEFAULT_METADATA = new BigInteger("FFFFFFFFFFFFFFFF",16);	
+	//static final BigInteger DEFAULT_METADATA = BigInteger.ZERO;
 
 	static final String DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX = "/sdnmud/destMacMatchSetMetadataAndGoToNextTable/";
 
@@ -142,10 +143,12 @@ interface SdnMudConstants {
 	static final String METADATA_MATCH_DROP = "/sdnmud/metadataMatchDrop/";
 	static final String SRC_MAC_DROP_FLOW_ID_PREFIX = "/sdmud/srcMacDrop/";
 	static final String DST_MAC_DROP_FLOW_ID_PREFIX = "/sdmud/dstMacDrop/";
-	static final String DROP_ON_SRC_MODEL_MATCH = "dropOnSrcModelMatch";
-	static final String DROP_ON_DST_MODEL_MATCH = "dropOnDstModelMatch";
-	static final String DROP_ON_TCP_SYN_INBOUND = "dropOnTcpToDevMatch";
-	static final String DROP_ON_TCP_SYN_OUTBOUND = "dropOnTcpFromDevMatch";
+	//static final String DROP_ON_SRC_MODEL_MATCH = "dropOnSrcModelMatch";
+	//static final String DROP_ON_DST_MODEL_MATCH = "dropOnDstModelMatch";
+	static final String DROP_ON_TCP_SYN_INBOUND = "TCP_DIRECTION_INBOUND";
+	static final String DROP_ON_TCP_SYN_OUTBOUND = "TCP_DIRECTION_OUTBOUND";
+	static final String NO_FROM_DEV_ACE_MATCH_DROP = "NOMATCH_FROMDEV";
+	static final String NO_TO_DEV_ACE_MATCH_DROP = "NOMATCH_TODEV";
 
 
 	// Default drop rule timeout.
@@ -175,9 +178,6 @@ interface SdnMudConstants {
 	static final boolean MUDMAKER_HACK = true;
 	static final FlowCookie SRC_MAC_MATCH_DROP_COOKIE = IdUtils.createFlowCookie("SRC_MAC_MATCH_DROP");
 	static final FlowCookie DST_MAC_MATCH_DROP_COOKIE = IdUtils.createFlowCookie("DST_MAC_MATCH_DROP");
-	static final String NO_FROM_DEV_ACE_MATCH_DROP = "NO_FROM_DEV_ACE";
-	static final String NO_TO_DEV_ACE_MATCH_DROP = "NO_TO_DEV_ACE";
-	
 	
 
 }

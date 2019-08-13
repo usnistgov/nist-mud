@@ -193,7 +193,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					dropRuleMacAddressMap.remove(node);
 				}
 			}
-
 			if (srcController != null) {
 				HashSet<String> controllers = dropRuleControllerMap.get(node);
 				if (controllers != null) {
@@ -445,6 +444,26 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		this.broadcastStateChange();
 
 	}
+	
+	// Block a specific MAC address. TODO -- add code to invoke this.
+	
+	private void installSrcMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		FlowCookie flowCookie = SdnMudConstants.SRC_MAC_MATCH_DROP_COOKIE;
+		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
+		short tableId = sdnmudProvider.getDropTable();
+		int timeout = sdnmudProvider.getMudReporterMinTimeout();
+		Flow flow = FlowUtils.createDestinationMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout).build();
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
+	
+	private void installDstMacMatchAndDropRule( MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
+		FlowCookie flowCookie = SdnMudConstants.DST_MAC_MATCH_DROP_COOKIE;
+		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
+		short tableId = sdnmudProvider.getDropTable();
+		int timeout = sdnmudProvider.getMudReporterMinTimeout();
+		Flow flow = FlowUtils.createSourceMacMatchDropFlow( srcMac, tableId, flowId, flowCookie , timeout).build();
+		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
+	}
 
 	private Reporter getReporter(Mud mud) {
 
@@ -460,25 +479,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 		return null;
 	}
 
-	// Block a specific MAC address. TODO -- add code to invoke this.
-
-	private void installSrcMacMatchAndDropRule(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
-		FlowCookie flowCookie = SdnMudConstants.SRC_MAC_MATCH_DROP_COOKIE;
-		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
-		short tableId = sdnmudProvider.getDropTable();
-		int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createDestinationMacMatchDropFlow(srcMac, tableId, flowId, flowCookie, timeout);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
-	}
-
-	private void installDstMacMatchAndDropRule(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
-		FlowCookie flowCookie = SdnMudConstants.DST_MAC_MATCH_DROP_COOKIE;
-		FlowId flowId = IdUtils.createFlowId("DROP:" + srcMac.getValue());
-		short tableId = sdnmudProvider.getDropTable();
-		int timeout = sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createSourceMacMatchDropFlow(srcMac, tableId, flowId, flowCookie, timeout);
-		sdnmudProvider.getFlowCommitWrapper().writeFlow(flow, node);
-	}
 
 	private void installDstMacMatchStampManufacturerModelFlowRules(MacAddress dstMac, boolean isLocalAddress,
 			boolean isQurarantened, boolean isBlocked, String mudUri, InstanceIdentifier<FlowCapableNode> node) {
@@ -546,26 +546,6 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 	}
 
-	private void installSrcMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
-		String flowIdStr = SdnMudConstants.SRC_MAC_DROP_FLOW_ID_PREFIX;
-		FlowId flowId = IdUtils.createFlowId(flowIdStr);
-		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
-		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createSrcMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(),
-				timeout);
-		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
-	}
-
-	private void installDstMacMatchDrop(MacAddress srcMac, InstanceIdentifier<FlowCapableNode> node) {
-		String flowIdStr = SdnMudConstants.DST_MAC_DROP_FLOW_ID_PREFIX;
-		FlowId flowId = IdUtils.createFlowId(flowIdStr);
-		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
-		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
-		Flow flow = FlowUtils.createDstMacMatchDropFlow(srcMac, flowId, flowCookie, sdnmudProvider.getDropTable(),
-				timeout);
-		sdnmudProvider.getFlowWriter().writeFlow(flow, node);
-
-	}
 
 	@SuppressWarnings("unchecked")
 	@Override
@@ -852,19 +832,19 @@ public class PacketInDispatcher implements PacketProcessingListener {
 	public BigInteger getDstMetadata(String macAddress) {
 		return this.dstMetadataMap.get(macAddress);
 	}
-
+	
 	/**
 	 * Get collection of MACs dropped at a node.
-	 * 
 	 * @param node
 	 * @return
 	 */
 	public Collection<MacAddress> getDroppedMacs(InstanceIdentifier<FlowCapableNode> node) {
 		return this.dropRuleMacAddressMap.get(node);
 	}
-
+	
 	public Collection<String> getDropRuleControllers(InstanceIdentifier<FlowCapableNode> node) {
 		return this.dropRuleControllerMap.get(node);
 	}
+
 
 }

@@ -413,7 +413,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/NO_ACE_MATCH_DROP");
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -447,7 +447,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK.or(SdnMudConstants.DST_QURANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.DST_QUARANTENE_FLAG);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.DROP_ON_DST_MODEL_MATCH + "/QUARANTINE");
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP + "/QUARANTINE");
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -864,16 +864,16 @@ public class MudFlowsInstaller {
 		}
 
 		if (direction != null) {
-			flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/TCP_DIRECTION_CHECK");
 			FlowCookie cookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
-
 			if (fromDevice && direction.getName().equals(Direction.ToDevice.getName())) {
-
+				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/" + SdnMudConstants.DROP_ON_TCP_SYN_INBOUND);
 				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort,
 						priority + 1, sdnmudProvider.getSrcMatchTable());
 			} else if ((!fromDevice) && direction.getName().equals(Direction.FromDevice.getName())) {
+				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/"  + SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND);
+
 				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort,
-						priority + 1, sdnmudProvider.getSrcMatchTable());
+						 priority + 1, sdnmudProvider.getSrcMatchTable());
 			}
 		}
 	}
@@ -1122,7 +1122,6 @@ public class MudFlowsInstaller {
 			} else {
 				hasQuarantineDevicePolicy = false;
 			}
-
 			// BUG BUG -- this has to be checked.
 			if (sdnmudProvider.getControllerClassMap(cpeNodeId) == null) {
 				LOG.info("Cannot find ControllerClass mapping for the switch  -- not installing ACLs. nodeUrl "
@@ -1175,6 +1174,7 @@ public class MudFlowsInstaller {
 							SdnMudConstants.DST_MATCHED_DROP_ON_QUARANTINE_PRIORITY);
 
 				}
+				
 
 				if (hasQuarantineDevicePolicy) {
 					// If the packet is quarantined already it will hit this rule first.

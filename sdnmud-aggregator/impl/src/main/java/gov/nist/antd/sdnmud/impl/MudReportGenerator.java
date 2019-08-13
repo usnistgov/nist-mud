@@ -3,6 +3,7 @@ package gov.nist.antd.sdnmud.impl;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -92,7 +93,7 @@ public class MudReportGenerator {
 		if (myControllerCount != 0) {
 			mudReportBuilder.setMycontrollers(Long.valueOf(myControllerCount));
 		}
-		ArrayList<DropCounts> dropCountsList = new ArrayList<DropCounts>();
+		HashSet<DropCounts> dropCountsSet = new HashSet<DropCounts>();
 
 		/*
 		 * 
@@ -145,7 +146,7 @@ public class MudReportGenerator {
 		}
 
 		mudReportBuilder.setDomains(domainsList);
-		ArrayList<MatchCounts> matchCountsList = new ArrayList<MatchCounts>();
+		HashSet<MatchCounts> matchCountsSet = new HashSet<MatchCounts>();
 		try {
 			Collection<Flow> flows = sdnmudProvider.getFlowCommitWrapper().getFlows(node);
 			MatchCountsBuilder mcb = new MatchCountsBuilder();
@@ -154,13 +155,15 @@ public class MudReportGenerator {
 				int beginIndex = mud.getMudUrl().getValue().length() + 1; 
 
 				for (Flow flow : flows) {
-					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue())) {
+					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue()) && 
+							(flow.getTableId() == sdnmudProvider.getSrcMatchTable() || 
+							flow.getTableId() == sdnmudProvider.getDstMatchTable())) {
 						InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
 						NodeRef nodeRef = new NodeRef(outNode);
 
 						GetFlowStatisticsInputBuilder inputBuilder = new GetFlowStatisticsInputBuilder();
 
-						inputBuilder.setFlowName(flow.getId().getValue());
+						inputBuilder.setFlowName(flow.getFlowName());
 						inputBuilder.setMatch(flow.getMatch());
 						inputBuilder.setTableId(flow.getTableId());
 						inputBuilder.setInstructions(flow.getInstructions());
@@ -170,25 +173,25 @@ public class MudReportGenerator {
 								.getFlowStatistics(inputBuilder.build()).get().getResult();
 						if (output != null && output.getFlowAndStatisticsMapList() != null) {
 							LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
-
+							LOG.info("flow ID = " + flow.getId());
 							for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
-								if (flow.getId().getValue().indexOf(SdnMudConstants.DROP_ON_SRC_MODEL_MATCH) != -1) {
-									DropCountsBuilder dcb1 = new DropCountsBuilder();
+								if (flow.getId().getValue().indexOf(SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP) != -1) {
+									DropCountsBuilder dcb1 = new DropCountsBuilder();		
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
 									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.FromDevice);
-									dropCountsList.add(dcb1.build());
+									dropCountsSet.add(dcb1.build());
 								} else if (flow.getId().getValue()
-										.indexOf(SdnMudConstants.DROP_ON_DST_MODEL_MATCH) != -1) {
+										.indexOf(SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
 									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
 									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
 									dcb1.setDropType(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.ToDevice);
-									dropCountsList.add(dcb1.build());
+									dropCountsSet.add(dcb1.build());
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_INBOUND) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
@@ -196,7 +199,8 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									bb.setAceName(flow.getId().getValue().substring(beginIndex));
-									dropCountsList.add(dcb1.build());
+									dcb1.setDropType(bb.build());
+									dropCountsSet.add(dcb1.build());						;			
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
@@ -204,12 +208,14 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									bb.setAceName(flow.getId().getValue().substring(beginIndex));
-									dropCountsList.add(dcb1.build());
+									dcb1.setDropType(bb.build());
+									dropCountsSet.add(dcb1.build());
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
 									mcb.setAceName(flow.getId().getValue().substring(beginIndex));
-									matchCountsList.add(mcb.build());
+									matchCountsSet.add(mcb.build());
 								}
+								break;
 							}
 						}
 					} else {
@@ -220,8 +226,8 @@ public class MudReportGenerator {
 		} catch (Exception ex) {
 			LOG.error("Exception getting flow stats ", ex);
 		}
-		mudReportBuilder.setMatchCounts(matchCountsList);
-		mudReportBuilder.setDropCounts(dropCountsList);
+		mudReportBuilder.setMatchCounts(new ArrayList(matchCountsSet));
+		mudReportBuilder.setDropCounts(new ArrayList<DropCounts>(dropCountsSet));
 
 		return mudReportBuilder.build();
 	}

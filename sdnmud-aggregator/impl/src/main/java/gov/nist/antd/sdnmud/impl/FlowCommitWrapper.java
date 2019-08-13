@@ -37,6 +37,7 @@ public class FlowCommitWrapper {
 
 	private DataBroker dataBrokerService;
 
+	// Set of flows that have been written to a node.
 	private HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<Flow>> flowTable = new HashMap<InstanceIdentifier<FlowCapableNode>, HashSet<Flow>>();
 
 	public FlowCommitWrapper(DataBroker dataBrokerService) {
@@ -64,7 +65,7 @@ public class FlowCommitWrapper {
 				flows = new HashSet<Flow>();
 				flowTable.put(flowNodeIdent, flows);
 			}
-			flows.add(flow);
+		    flows.add(flow);
 		} catch (InterruptedException | ExecutionException e) {
 			LOG.error("Error writing transaction to data store", e);
 		}

@@ -637,7 +637,8 @@ public class FlowUtils {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<>();
-		Instruction wmd = createWriteMetadataInstruction(flowCookie.getValue(), new BigInteger("ffffffffffffffff", 16));
+		Instruction wmd = createWriteMetadataInstruction(SdnMudConstants.DEFAULT_METADATA, 
+				SdnMudConstants.DEFAULT_METADATA_MASK);
 		instructions.add(wmd);
 		short nextTable = (short) (table + 1);
 		Instruction ins = createGoToTableInstruction(nextTable);
@@ -1100,14 +1101,6 @@ public class FlowUtils {
 
 	}
 
-	/**
-	 * @param metadataMask
-	 * @param metadataMask2
-	 * @param tableId
-	 * @param flowId
-	 * @param flowCookie
-	 * @return
-	 */
 	public static FlowBuilder createMetadataMatchGoToNextTableFlow(BigInteger metadata, BigInteger metadataMask,
 			short tableId, short targetTableId, int priority, FlowId flowId, FlowCookie flowCookie, String flowName) {
         if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
@@ -1158,8 +1151,9 @@ public class FlowUtils {
 		return flowBuilder;
 	}
 
-	public static Flow createMetadataMatchDropFlow(BigInteger metadata, BigInteger metadataMask,short tableId, FlowId flowId, 
+	public static FlowBuilder createMetadataMatchDropFlow(BigInteger metadata, BigInteger metadataMask,short tableId, FlowId flowId, 
 			FlowCookie flowCookie, int timeout) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder  = new MatchBuilder();
 		FlowUtils.createMetadataMatch(matchBuilder, metadata, metadataMask);
 		Instruction dropInstruction = FlowUtils.createDropInstruction();
@@ -1173,13 +1167,15 @@ public class FlowUtils {
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(insb.build())
 				.setPriority(SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY + 1).setBufferId(OFConstants.ANY)
 				.setHardTimeout(timeout).setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-		return flowBuilder.build();
+        flowTable.put(flowId,flowBuilder);
+		return flowBuilder;
 		
 	}
 
 	
-	public static Flow createSourceMacMatchDropFlow(MacAddress srcMac, short tableId, FlowId flowId,
+	public static FlowBuilder createSourceMacMatchDropFlow(MacAddress srcMac, short tableId, FlowId flowId,
 			FlowCookie flowCookie, int timeout) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetSourceMatch(matchBuilder, srcMac);
 		Instruction dropInstruction = FlowUtils.createDropInstruction();
@@ -1195,13 +1191,13 @@ public class FlowUtils {
 				.setPriority(SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY).setBufferId(OFConstants.ANY)
 				.setHardTimeout(timeout).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
-
-		return fb.build();
-	
+        flowTable.put(flowId,fb);
+		return fb;
 	}
 	
-	public static Flow createDestinationMacMatchDropFlow(MacAddress destinationMac, short tableId, FlowId flowId,
+	public static FlowBuilder createDestinationMacMatchDropFlow(MacAddress destinationMac, short tableId, FlowId flowId,
 			FlowCookie flowCookie, int timeout) {
+        if (flowTable.get(flowId) != null ) return flowTable.get(flowId);
 		MatchBuilder matchBuilder = new MatchBuilder();
 		createEthernetDestMatch(matchBuilder, destinationMac);
 		Instruction dropInstruction = FlowUtils.createDropInstruction();
@@ -1218,8 +1214,8 @@ public class FlowUtils {
 				.setHardTimeout(timeout).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
-		return fb.build();
-	
+        flowTable.put(flowId,fb);
+		return fb;
 	}
 
 }

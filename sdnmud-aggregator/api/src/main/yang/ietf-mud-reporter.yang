@@ -15,8 +15,8 @@ module ietf-mud-reporter {
   contact
     "WG Web: http://tools.ietf.org/wg/opsawg/
      WG List: opsawg@ietf.org
-     Author: Eliot Lear
-     lear@cisco.com
+     Author: Eliot Lear, M. Ranganathan
+     lear@cisco.com, mranga@nist.gov
     ";
   description
 
@@ -177,7 +177,6 @@ module ietf-mud-reporter {
       }
 
       list match-counts {
-
         uses pass-count;
       }
     }
@@ -212,7 +211,7 @@ module ietf-mud-reporter {
          type string;
          description
           "No mud rule matched
-           (has a special ace-name of NOMATCH)";
+           (has a special ace-name of NOMATCH_FROM or NOMATCH_TO)";
         }
       }
 
