@@ -636,7 +636,7 @@ public class FlowUtils {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<>();
-		Instruction wmd = createWriteMetadataInstruction(flowCookie.getValue(), new BigInteger("ffffffffffffffff", 16));
+		Instruction wmd = createWriteMetadataInstruction(SdnMudConstants.DEFAULT_METADATA, SdnMudConstants.DEFAULT_METADATA_MASK);
 		instructions.add(wmd);
 		short nextTable = (short) (table + 1);
 		Instruction ins = createGoToTableInstruction(nextTable);
