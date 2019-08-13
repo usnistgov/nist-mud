@@ -623,7 +623,7 @@ public class FlowUtils {
 				.setBufferId(OFConstants.ANY).setHardTimeout(duration).setIdleTimeout(0)
 				.setFlags(new FlowModFlags(false, false, false, false, false));
 
-        flowTable.put(flowId,fb);
+                flowTable.put(flowId,fb);
 		return fb;
 	}
 
@@ -637,8 +637,7 @@ public class FlowUtils {
 
 		MatchBuilder matchBuilder = new MatchBuilder();
 		ArrayList<Instruction> instructions = new ArrayList<>();
-		Instruction wmd = createWriteMetadataInstruction(SdnMudConstants.DEFAULT_METADATA, 
-				SdnMudConstants.DEFAULT_METADATA_MASK);
+		Instruction wmd = createWriteMetadataInstruction(SdnMudConstants.DEFAULT_METADATA, SdnMudConstants.DEFAULT_METADATA_MASK);
 		instructions.add(wmd);
 		short nextTable = (short) (table + 1);
 		Instruction ins = createGoToTableInstruction(nextTable);
@@ -648,7 +647,7 @@ public class FlowUtils {
 		flowBuilder.setMatch(matchBuilder.build()).setInstructions(isb.build())
 				.setPriority(SdnMudConstants.UNCONDITIONAL_GOTO_PRIORITY).setBufferId(OFConstants.ANY).setHardTimeout(0)
 				.setIdleTimeout(0).setFlags(new FlowModFlags(false, false, false, false, false));
-        flowTable.put(flowId,flowBuilder);
+                flowTable.put(flowId,flowBuilder);
 		return flowBuilder;
 
 	}
