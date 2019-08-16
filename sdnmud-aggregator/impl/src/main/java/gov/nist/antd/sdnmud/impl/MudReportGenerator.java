@@ -250,7 +250,9 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.ToDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getId().getValue().substring(beginIndex));
+									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									String aceName = aceNames[0] + "/" + aceNames[1];
+									bb.setAceName(aceName);
 									dcb1.setDropReason(bb.build());
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
 									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
@@ -267,7 +269,9 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.FromDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									bb.setAceName(flow.getId().getValue().substring(beginIndex));
+									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									String aceName = aceNames[0] + "/" + aceNames[1];
+									bb.setAceName(aceName);
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
 									dcb1.setDropReason(bb.build());
 									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
@@ -280,7 +284,9 @@ public class MudReportGenerator {
 									}
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									mcb.setAceName(flow.getId().getValue().substring(beginIndex));
+									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									String aceName = aceNames[0] + "/" + aceNames[1];
+									mcb.setAceName(aceName);							
 									if (matchCountsSet.get(flow.getId().getValue()) == null	) {
 										matchCountsSet.put(flow.getId().getValue(), mcb.build());
 									} else if (fmaplist.getPacketCount().getValue().longValue() > 

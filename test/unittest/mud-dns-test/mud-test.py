@@ -46,8 +46,7 @@ class TestAccess(unittest.TestCase) :
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
         # Start a web server there.
-        h9.cmdPrint('python ../util/http-server.py -H 203.0.113.13&')
-        result = h4.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
+        result = h4.cmdPrint("wget http://203.0.113.13 --no-dns-cache --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
 
@@ -64,8 +63,8 @@ class TestAccess(unittest.TestCase) :
         # Check to see if the result was unsuccessful.
         # Start a web server there.
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) != None, "Expecting successful get")
+        result = h1.cmdPrint("wget http://203.0.113.13 --no-dns-cache --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) is None, "Expecting failed get")
 
 
 
@@ -320,13 +319,13 @@ if __name__ == '__main__':
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
 
-    print "uploaded mud rules ", str(r)
-    net.pingAll(timeout=1)
-    h1.cmdPrint("nslookup www.nist.local")
-    h1.cmdPrint("nslookup www.antd.local")
+    #print "uploaded mud rules ", str(r)
+    #net.pingAll(timeout=1)
+    #h1.cmdPrint("nslookup www.nist.local")
+    #h1.cmdPrint("nslookup www.antd.local")
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
-        net.pingAll(timeout=1)
+        #net.pingAll(timeout=1)
         unittest.main()
         #clean_mud_rules(controller_addr)
     else:
