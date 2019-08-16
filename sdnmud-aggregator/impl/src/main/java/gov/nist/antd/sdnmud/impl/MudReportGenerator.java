@@ -1,8 +1,11 @@
 package gov.nist.antd.sdnmud.impl;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,14 +13,10 @@ import java.util.Map;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.IpAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Ipv4Address;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.Mud1;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.DropCount;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.DropCount.Direction;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporter;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporterBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.type.BlockedBuilder;
-import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.type.TcpBlockedBuilder;
-import org.opendaylight.yangtools.yang.data.api.schema.NormalizedNode;
-
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.reason.NomatchBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.drop.count.drop.reason.TcpBlockedBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReportBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.Controllers;
@@ -26,9 +25,12 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporte
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DomainsBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DropCounts;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.DropCountsBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.ManufacturersBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.MatchCounts;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.MatchCountsBuilder;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.mud.report.ModelsBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.MacAddress;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.yang.types.rev130715.Timestamp;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsInputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.direct.statistics.rev160511.GetFlowStatisticsOutput;
@@ -40,10 +42,6 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.N
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.TimerTask;
-
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 
 public class MudReportGenerator {
 	private static final Logger LOG = LoggerFactory.getLogger(MudReportGenerator.class);
@@ -52,6 +50,28 @@ public class MudReportGenerator {
 
 	public MudReportGenerator(SdnmudProvider sdnmudProvider) {
 		this.sdnmudProvider = sdnmudProvider;
+	}
+
+	private static String getMd5(String input) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("MD5");
+
+			byte[] messageDigest = md.digest(input.getBytes());
+			// Convert byte array into signum representation
+			BigInteger no = new BigInteger(1, messageDigest);
+
+			// Convert message digest into hex value
+			String hashtext = no.toString(16);
+			while (hashtext.length() < 32) {
+				hashtext = "0" + hashtext;
+			}
+			return hashtext;
+		}
+
+		// For specifying wrong message digest algorithms
+		catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public MudReport getMudReport(Mud mud, String switchId) {
@@ -67,7 +87,7 @@ public class MudReportGenerator {
 		InstanceIdentifier<FlowCapableNode> node = sdnmudProvider.getNode(switchId);
 
 		for (String uri : sdnmudProvider.getMudFlowsInstaller().getControllers(switchId, mud.getMudUrl().getValue())) {
-			if (!uri.contentEquals(mud.getMudUrl().getValue())) {
+			if (!uri.equals(mud.getMudUrl().getValue())) {
 				ControllersBuilder controllersBuilder = new ControllersBuilder();
 				controllersBuilder.setUri(new Uri(uri));
 				if (classMapping.get(uri) == null) {
@@ -78,6 +98,20 @@ public class MudReportGenerator {
 				}
 				controllersList.add(controllersBuilder.build());
 			}
+		}
+
+		if (classMapping.get(SdnMudConstants.DNS_SERVER_URI) != null) {
+			ControllersBuilder controllersBuilder = new ControllersBuilder();
+			controllersBuilder.setUri(new Uri(SdnMudConstants.DNS_SERVER_URI));
+			controllersBuilder.setCount((long) classMapping.get(SdnMudConstants.DNS_SERVER_URI).size());
+			controllersList.add(controllersBuilder.build());
+		}
+
+		if (classMapping.get(SdnMudConstants.NTP_SERVER_URI) != null) {
+			ControllersBuilder controllersBuilder = new ControllersBuilder();
+			controllersBuilder.setUri(new Uri(SdnMudConstants.NTP_SERVER_URI));
+			controllersBuilder.setCount((long) classMapping.get(SdnMudConstants.NTP_SERVER_URI).size());
+			controllersList.add(controllersBuilder.build());
 		}
 
 		if (!controllersList.isEmpty()) {
@@ -93,36 +127,38 @@ public class MudReportGenerator {
 		if (myControllerCount != 0) {
 			mudReportBuilder.setMycontrollers(Long.valueOf(myControllerCount));
 		}
-		HashSet<DropCounts> dropCountsSet = new HashSet<DropCounts>();
 
-		/*
-		 * 
-		 * Map<String, Integer> blockedDropCounts =
-		 * perSwitchDropCount.getBlockedFromDropCount();
-		 * 
-		 * for (String url : blockedDropCounts.keySet()) { BlockedBuilder blockedBuilder
-		 * = new BlockedBuilder(); blockedBuilder.setUrl(new Uri(url));
-		 * DropCountsBuilder dcB = new DropCountsBuilder();
-		 * dcB.setDropType(blockedBuilder.build());
-		 * dcB.setDropCount(BigInteger.valueOf(blockedDropCounts.get(url)));
-		 * dcB.setDirection(Direction.FromDevice); dropCountsList.add(dcB.build()); }
-		 * 
-		 * Map<String, Integer> blockedToCounts =
-		 * perSwitchDropCount.getBlockedToDropCount();
-		 * 
-		 * for (String url : blockedToCounts.keySet()) { BlockedBuilder blockedBuilder =
-		 * new BlockedBuilder(); blockedBuilder.setUrl(new Uri(url)); DropCountsBuilder
-		 * dcB = new DropCountsBuilder(); dcB.setDropType(blockedBuilder.build());
-		 * dcB.setDropCount(BigInteger.valueOf(blockedDropCounts.get(url)));
-		 * dcB.setDirection(Direction.ToDevice); dropCountsList.add(dcB.build()); }
-		 * 
-		 * int localNetworksDropCounts = perSwitchDropCount.getLocalNetworksDropCount();
-		 * LocalNetworksBuilder blockedBuilder = new LocalNetworksBuilder();
-		 * DropCountsBuilder dcB = new DropCountsBuilder();
-		 * dcB.setDropCount(BigInteger.valueOf(localNetworksDropCounts));
-		 * dcB.setDropType(blockedBuilder.build()); dropCountsList.add(dcB.build());
-		 * mudReportBuilder.setDropCounts(dropCountsList);
-		 */
+		HashSet<String> manufacturers = sdnmudProvider.getMudFlowsInstaller().getManufacturerMatches(mud.getMudUrl());
+
+		if (manufacturers != null && manufacturers.size() > 0) {
+			Map<Uri, HashSet<MacAddress>> mappings = sdnmudProvider.getMappingDataStoreListener().getMapping();
+			for (Uri uri : mappings.keySet()) {
+				for (String man : manufacturers) {
+					if (uri.getValue().indexOf(man) != -1) {
+						int count = mappings.get(uri).size();
+						ManufacturersBuilder mfgb = new ManufacturersBuilder();
+						mfgb.setCount(Long.valueOf(count));
+						mfgb.setAuthority(man);
+					}
+				}
+			}
+		}
+
+		HashSet<String> models = sdnmudProvider.getMudFlowsInstaller().getModelMatches(mud.getMudUrl());
+
+		if (models != null && models.size() > 0) {
+			Map<Uri, HashSet<MacAddress>> mappings = sdnmudProvider.getMappingDataStoreListener().getMapping();
+			for (Uri uri : mappings.keySet()) {
+				for (String model : models) {
+					if (uri.getValue().equals(model)) {
+						int count = mappings.get(uri).size();
+						ModelsBuilder mfgb = new ModelsBuilder();
+						mfgb.setCount(Long.valueOf(count));
+						mfgb.setUri(new Uri(model));
+					}
+				}
+			}
+		}
 
 		NameResolutionCache nameResolutionCache = this.sdnmudProvider.getNameResolutionCache();
 
@@ -146,18 +182,20 @@ public class MudReportGenerator {
 		}
 
 		mudReportBuilder.setDomains(domainsList);
-		HashSet<MatchCounts> matchCountsSet = new HashSet<MatchCounts>();
+		HashMap<String, MatchCounts> matchCountsSet = new HashMap<String, MatchCounts>();
+		HashMap<String,DropCounts> dropCountsSet = new HashMap<String,DropCounts>();
+
 		try {
 			Collection<Flow> flows = sdnmudProvider.getFlowCommitWrapper().getFlows(node);
 			MatchCountsBuilder mcb = new MatchCountsBuilder();
 
 			if (flows != null) {
-				int beginIndex = mud.getMudUrl().getValue().length() + 1; 
+				int beginIndex = mud.getMudUrl().getValue().length() + 1;
 
 				for (Flow flow : flows) {
-					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue()) && 
-							(flow.getTableId() == sdnmudProvider.getSrcMatchTable() || 
-							flow.getTableId() == sdnmudProvider.getDstMatchTable())) {
+					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue())
+							&& (flow.getTableId() == sdnmudProvider.getSrcMatchTable()
+									|| flow.getTableId() == sdnmudProvider.getDstMatchTable())) {
 						InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);
 						NodeRef nodeRef = new NodeRef(outNode);
 
@@ -176,22 +214,36 @@ public class MudReportGenerator {
 							LOG.info("flow ID = " + flow.getId());
 							for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
 								if (flow.getId().getValue().indexOf(SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP) != -1) {
-									DropCountsBuilder dcb1 = new DropCountsBuilder();		
-									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
-									dcb1.setDropType(blockedBuilder1.build());
+									DropCountsBuilder dcb1 = new DropCountsBuilder();
+									NomatchBuilder blockedBuilder1 = new NomatchBuilder();
+									dcb1.setDropReason(blockedBuilder1.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.FromDevice);
-									dropCountsSet.add(dcb1.build());
+									dcb1.setReason(DropCount.Reason.Nomatch);
+									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
+										dropCountsSet.put(flow.getId().getValue(),dcb1.build());
+									} else {
+										if ( dcb1.getDropCount().longValue() >  
+										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
+										}
+									}
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
-									BlockedBuilder blockedBuilder1 = new BlockedBuilder();
-									blockedBuilder1.setAceName(flow.getId().getValue().substring(beginIndex));
-									dcb1.setDropType(blockedBuilder1.build());
+									NomatchBuilder bb = new NomatchBuilder();
+									dcb1.setDropReason(bb.build());
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									dcb1.setDirection(Direction.ToDevice);
-									dropCountsSet.add(dcb1.build());
+									dcb1.setReason(DropCount.Reason.Nomatch);
+									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
+										dropCountsSet.put(flow.getId().getValue(),dcb1.build());
+									} else {
+										if ( dcb1.getDropCount().longValue() >  
+										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
+										}
+									}
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_INBOUND) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
@@ -199,8 +251,16 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									bb.setAceName(flow.getId().getValue().substring(beginIndex));
-									dcb1.setDropType(bb.build());
-									dropCountsSet.add(dcb1.build());						;			
+									dcb1.setDropReason(bb.build());
+									dcb1.setReason(DropCount.Reason.ConnectionBlock);
+									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
+										dropCountsSet.put(flow.getId().getValue(),dcb1.build());
+									} else {
+										if ( dcb1.getDropCount().longValue() >  
+										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
+										}
+									}
 								} else if (flow.getId().getValue()
 										.indexOf(SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
@@ -208,14 +268,27 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									bb.setAceName(flow.getId().getValue().substring(beginIndex));
-									dcb1.setDropType(bb.build());
-									dropCountsSet.add(dcb1.build());
+									dcb1.setReason(DropCount.Reason.ConnectionBlock);
+									dcb1.setDropReason(bb.build());
+									if ( dropCountsSet.get(flow.getId().getValue()) == null ) {
+										dropCountsSet.put(flow.getId().getValue(),dcb1.build());
+									} else {
+										if ( dcb1.getDropCount().longValue() >  
+										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
+										}
+									}
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
 									mcb.setAceName(flow.getId().getValue().substring(beginIndex));
-									matchCountsSet.add(mcb.build());
+									if (matchCountsSet.get(flow.getId().getValue()) == null	) {
+										matchCountsSet.put(flow.getId().getValue(), mcb.build());
+									} else if (fmaplist.getPacketCount().getValue().longValue() > 
+									     matchCountsSet.get(flow.getId().getValue()).getPacketCount().longValue()) {
+										matchCountsSet.put(flow.getId().getValue(), mcb.build());
+
+									}
 								}
-								break;
 							}
 						}
 					} else {
@@ -223,11 +296,22 @@ public class MudReportGenerator {
 					}
 				}
 			}
+
+			mudReportBuilder.setMatchCounts(new ArrayList<MatchCounts>(matchCountsSet.values()));
+			mudReportBuilder.setDropCounts(new ArrayList<DropCounts>(dropCountsSet.values()));
+
+			Collection<MacAddress> macAddresses = sdnmudProvider.getMappingDataStoreListener().getMacs(mud.getMudUrl());
+
+			List<String> opaqueIdentifiers = new ArrayList<String>();
+			for (MacAddress macAddress : macAddresses) {
+				opaqueIdentifiers.add(getMd5(macAddress.getValue()));
+			}
+			mudReportBuilder.setOpaqueIdentifier(opaqueIdentifiers);
+
 		} catch (Exception ex) {
 			LOG.error("Exception getting flow stats ", ex);
 		}
-		mudReportBuilder.setMatchCounts(new ArrayList(matchCountsSet));
-		mudReportBuilder.setDropCounts(new ArrayList<DropCounts>(dropCountsSet));
+		// now gather up a list of offending MAC addresses
 
 		return mudReportBuilder.build();
 	}

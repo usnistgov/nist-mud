@@ -801,4 +801,8 @@ public class SdnmudProvider {
 		return domSchemaService;
 	}
 
+	public HashMap<String, List<Ipv4Address>> getControllerMap(String nodeId) {
+		return this.controllerMap.get(nodeId);
+	}
+
 }

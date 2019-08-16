@@ -4,6 +4,7 @@
         "key-pass" : "changeit",
         "trust-self-signed-cert" : true,
         "mfg-id-rule-cache-timeout": 100,
-        "relaxed-acl" : false
+        "relaxed-acl" : false,
+        "reporter-frequency" : 10
   }
 }

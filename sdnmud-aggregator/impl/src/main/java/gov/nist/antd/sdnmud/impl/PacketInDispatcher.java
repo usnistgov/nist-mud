@@ -638,7 +638,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					if (isLocalAddress) {
 						this.unclassifiedMacAddresses.add(srcMac);
 					}
-				    this.installSrcMacMatchAndDropRule(srcMac, node);
+				    //this.installSrcMacMatchAndDropRule(srcMac, node);
 				}
 
 				if (!dstMacRuleTable.containsKey(dstMac.getValue())) {
@@ -653,7 +653,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					boolean isBlocked = this.sdnmudProvider.getMappingDataStoreListener().isBlocked(dstMac);
 					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
 							mudUri.getValue(), node);					
-				    this.installDstMacMatchAndDropRule(dstMac, node);
+				    //this.installDstMacMatchAndDropRule(dstMac, node);
 				}
 
 			} else if (tableId == sdnmudProvider.getDstDeviceManufacturerStampTable()) {
@@ -672,7 +672,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 					installDstMacMatchStampManufacturerModelFlowRules(dstMac, isLocalAddress, isQurantine, isBlocked,
 							mudUri.getValue(), node);
 					// Broadcast notifications for mappings seen at the switch.
-				    this.installDstMacMatchAndDropRule(dstMac, node);
+				    //this.installDstMacMatchAndDropRule(dstMac, node);
 				}
 				
 

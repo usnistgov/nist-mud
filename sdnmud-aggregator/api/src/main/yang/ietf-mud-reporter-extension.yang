@@ -12,12 +12,15 @@ module ietf-mud-reporter-extension {
   }
 
   organization
+
     "IETF OPSAWG (Ops Area) Working Group";
   contact
     "WG Web: http://tools.ietf.org/wg/opsawg/
      WG List: opsawg@ietf.org
      Author: Eliot Lear
      lear@cisco.com
+     Author: Mudumbai Ranganathan
+     mranga@nist.gov
     ";
   description
 
@@ -55,10 +58,10 @@ module ietf-mud-reporter-extension {
   grouping mud-reporter-extension {
       description
          "Reporter information  grouping";
-
       container reporter {
         description "Reporter information";
         leaf report-uri {
+
           type inet:uri;
           description
              "Restful endpoint for reporter information.";

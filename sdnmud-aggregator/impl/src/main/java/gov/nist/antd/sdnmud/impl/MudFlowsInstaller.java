@@ -69,6 +69,10 @@ public class MudFlowsInstaller {
 	private HashMap<String, List<NameResolutionCacheEntry>> nameResolutionCache = new HashMap<String, List<NameResolutionCacheEntry>>();
 	private HashMap<String, List<NameResolutionCacheEntry>> controllerResolutionCache = new HashMap<String, List<NameResolutionCacheEntry>>();
 
+	// Tracking for reporter
+	private HashMap<String,HashSet<String>> modelMatches = new HashMap<String,HashSet<String>>();
+	private HashMap<String,HashSet<String>> manufacturerMatches = new HashMap<String,HashSet<String>>();
+	
 	private enum MatchesType {
 		CONTROLLER_MAPPING, SAME_MANUFACTURER, MANUFACTURER, MODEL, MY_CONTROLLER, LOCAL_NETWORKS, DNS_MATCH,
 		UNKNOWN_MATCH;
@@ -108,6 +112,27 @@ public class MudFlowsInstaller {
 			this.qFlag = qFlag;
 		}
 	}
+	
+	public HashSet<String> getModelMatches(Uri mudUri) {
+		HashSet<String> models = this.modelMatches.get(mudUri.getValue());
+		if ( models == null ) {
+			models = new HashSet<String>();
+			models.add(mudUri.getValue());
+			this.modelMatches.put(mudUri.getValue(), models);
+		}
+		return models;
+	}
+	
+	public HashSet<String> getManufacturerMatches(Uri mudUri) {
+		HashSet<String> mans = this.manufacturerMatches.get(mudUri.getValue());
+		if ( mans == null ) {
+			mans = new HashSet<String>();
+			this.manufacturerMatches.put(mudUri.getValue(), mans);
+		}
+		return mans;
+	}
+	
+	
 
 	/**
 	 * Cache a pending match - we install flow rules by snooping the name
@@ -687,15 +712,16 @@ public class MudFlowsInstaller {
 		Direction direction = getDirectionInitiated(matches);
 		Short protocol = getProtocol(matches);
 
-		/*
-		 * For TCP send a packet to the controller to enforce direction initiated
-		 */
 		int priority = !qFlag ? SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
+		boolean mudmakerHack = false;
+		if (SdnMudConstants.MUDMAKER_HACK) {
+			mudmakerHack = modelId == dstModelId;
+		}
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, true, flowCookie, node);
+				newMetadata, newMetadataMask, direction, true, flowCookie, node,mudmakerHack);
 
 	}
 
@@ -725,9 +751,15 @@ public class MudFlowsInstaller {
 		int priority = !qFlag ? SdnMudConstants.SRC_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
+		boolean mudmakerHack = false;
+		if (SdnMudConstants.MUDMAKER_HACK ) {
+			// Workaround for mudmaker bug
+			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
+			mudmakerHack = myManufacturer == manufacturerId;
+		}
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, true, flowCookie, node);
+				newMetadata, newMetadataMask, direction, true, flowCookie, node,mudmakerHack);
 
 	}
 
@@ -755,7 +787,7 @@ public class MudFlowsInstaller {
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, false, flowCookie, node);
+				newMetadata, newMetadataMask, direction, false, flowCookie, node,false);
 
 	}
 
@@ -780,7 +812,7 @@ public class MudFlowsInstaller {
 
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, true, flowCookie, node);
+				newMetadata, newMetadataMask, direction, true, flowCookie, node,false);
 
 	}
 
@@ -806,9 +838,15 @@ public class MudFlowsInstaller {
 
 		int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
+		
+		boolean mudmakerHack = false;
+		if (SdnMudConstants.MUDMAKER_HACK) {
+			mudmakerHack = modelId == srcModelId;
+		}
+	
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, false, flowCookie, node);
+				newMetadata, newMetadataMask, direction, false, flowCookie, node, mudmakerHack);
 	}
 
 	private void installPermitFromManufacturerToDeviceFlowRule(InstanceIdentifier<FlowCapableNode> node, String mudUri,
@@ -837,23 +875,31 @@ public class MudFlowsInstaller {
 
 		int priority = !qFlag ? SdnMudConstants.DST_MATCHED_GOTO_FLOW_PRIORITY
 				: SdnMudConstants.DST_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
-
+		boolean mudmakerHack = false;
+		if (SdnMudConstants.MUDMAKER_HACK ) {
+			// Workaround for mudmaker bug
+			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
+			mudmakerHack = myManufacturer == manufacturerId;
+		}
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
-				newMetadata, newMetadataMask, direction, false, flowCookie, node);
+				newMetadata, newMetadataMask, direction, false, flowCookie, node,mudmakerHack);
 
 	}
 
 	private void installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(String mudUri, String aclName, String aceName,
 			BigInteger metadata, BigInteger metadataMask, short protocol, int srcPort, int destinationPort,
 			short tableId, int priority, BigInteger newMetadata, BigInteger newMetadataMask, Direction direction,
-			boolean fromDevice, FlowCookie flowCookie, InstanceIdentifier<FlowCapableNode> node) {
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/" + 1);
+			boolean fromDevice, FlowCookie flowCookie, InstanceIdentifier<FlowCapableNode> node, boolean mudmakerHack) {
+		
+	    // HACK ALERT MUDMAKER_HACK should go away when mudmaker is fixed.
+		
+		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + (mudmakerHack? "/" + 1: ""));
 
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 				srcPort, destinationPort, tableId, priority, newMetadata, newMetadataMask, false, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
-		if (SdnMudConstants.MUDMAKER_HACK) {
+		if (mudmakerHack) {
 			if ((srcPort == -1 && destinationPort != -1) || (destinationPort == -1 && srcPort != -1)) {
 				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName +  "/" + 2);
 				fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
@@ -1326,13 +1372,16 @@ public class MudFlowsInstaller {
 										String manufacturer = getManufacturer(matches);
 										this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
 												aclName, aceName, manufacturer, matches, matchesType, qFlag);
+										getManufacturerMatches(mudUri).add(manufacturer);
 									} else if (matchesType == MatchesType.SAME_MANUFACTURER) {
 										String manufacturer = IdUtils.getAuthority(mudUri.getValue());
 										this.installPermitFromManufacturerToDeviceFlowRule(node, mudUri.getValue(),
 												aclName, aceName, manufacturer, matches, matchesType, qFlag);
+										getManufacturerMatches(mudUri).add(manufacturer);
 									} else if (matchesType == MatchesType.MODEL) {
 										this.installPermitFromModelToDeviceRule(node, mudUri.getValue(), aclName,
 												aceName, matches, matchesType, qFlag);
+										getModelMatches(mudUri).add(getModel(matches));
 									}
 								} else {
 									LOG.error("DENY rules not implemented");

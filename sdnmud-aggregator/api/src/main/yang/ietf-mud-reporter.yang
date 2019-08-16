@@ -15,8 +15,8 @@ module ietf-mud-reporter {
   contact
     "WG Web: http://tools.ietf.org/wg/opsawg/
      WG List: opsawg@ietf.org
-     Author: Eliot Lear, M. Ranganathan
-     lear@cisco.com, mranga@nist.gov
+     Author: Eliot Lear
+     lear@cisco.com
     ";
   description
 
@@ -28,9 +28,9 @@ module ietf-mud-reporter {
 
      Redistribution and use in source and binary forms, with or
      without modification, is permitted pursuant to, and subject to
+
      the license terms contained in, the Simplified BSD License set
      forth in Section 4.c of the IETF Trust's Legal Provisions
-
      Relating to IETF Documents
        (https://trustee.ietf.org/license-info).
 
@@ -77,8 +77,8 @@ module ietf-mud-reporter {
            "Identifying information for the enforcement-point
             (e.g. switch) that is making this report. This is
             an opaque identifier. ";
-      }
 
+      }
 
       leaf time {
         type yang:timestamp;
@@ -126,6 +126,25 @@ module ietf-mud-reporter {
           "List of models and how many there were.";
         leaf uri {
           type inet:uri;
+
+          description
+            "the URI of this model";
+        }
+        leaf count {
+          type uint32;
+          description
+            "number of devices serving this class.";
+
+        }
+      }
+
+      list manufacturers {
+        key "authority";
+
+        description
+          "List of models and how many there were.";
+        leaf authority {
+          type string;
           description
             "the URI of this model";
 
@@ -135,13 +154,6 @@ module ietf-mud-reporter {
           description
             "number of devices serving this class.";
 
-        }
-        leaf ipaddress {
-          type inet:ip-address;
-          description
-            "IP address of the controller.  Note that the MUD
-             reporter MUST NOT transmit this contents of this
-             node to the manufacturer.";
         }
       }
 
@@ -173,10 +185,16 @@ module ietf-mud-reporter {
       }
 
       list drop-counts {
+         description
+            "List of packet counts for dropped packets 
+             and the reason why they were dropped";
          uses drop-count;
       }
 
       list match-counts {
+         description
+            "List of packet counts for packets that were 
+             not dropped.";
         uses pass-count;
       }
     }
@@ -205,29 +223,37 @@ module ietf-mud-reporter {
   grouping drop-count {
     description
       "Violating packet related to this MUD file are classfied.";
-    choice drop-type {
-    case blocked {
-      leaf ace-name {
-         type string;
-         description
-          "No mud rule matched
-           (has a special ace-name of NOMATCH_FROM or NOMATCH_TO)";
-        }
+    leaf reason {
+        type enumeration {
+            enum nomatch {
+               description 
+               "No matching mud rule was found";
+            }
+            enum connection-block {
+                  description 
+                  "Connection was blocked";
+           }
+       }
+    }
+    choice drop-reason {
+      description
+        "Reason for packet being dropped";
+      case nomatch {
+          description
+           "No mud rule matched";
       }
-
-     case tcp-blocked {
-       leaf ace-name {
+      case tcp-blocked {
+        leaf ace-name {
           type string;
           description
-           "TCP connection initiated in the wrong direction.";
-        }
-      }
+            "ACE name for the MUD ACE that specified the direction of initiation.
+            TCP connection initiated in the wrong direction.";
+          }
+       }
      }
-
      leaf direction {
         type enumeration {
           enum to-device {
-
             description
               "Packet was traveling toward the device";
           }

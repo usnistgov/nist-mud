@@ -27,6 +27,9 @@
           }
         ]
       }
+    },
+    "ietf-mud-reporter-extension:reporter" :{
+          "report-uri" : "http://localhost:8080"
     }
   },
   "ietf-access-control-list:acls": {

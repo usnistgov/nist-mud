@@ -1,9 +1,9 @@
 {
  "mapping":
    { 
-     "device-id": [ "00:00:00:00:00:a1",
-		    "00:00:00:00:00:a2",
-		    "00:00:00:00:00:a3" ],
-     "mud-url": "file://mudfile-controllerclass-test.json"
+     "device-id": [ "00:00:00:00:00:A1",
+		    "00:00:00:00:00:A2",
+		    "00:00:00:00:00:A3" ],
+     "mud-url": "file://mudfile-dns-test.json"
    }
 }

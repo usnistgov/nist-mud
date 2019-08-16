@@ -51,13 +51,21 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(re.search("100%",result) != None, "Expecting a successful get")
 
 
-    def testHttpGetExpectFail(self):
-        print "Wgetting from antd.local -- this should fail with MUD"
+    #def testHttpGetExpectFail(self):
+    #    print "Wgetting from antd.local -- this should fail with MUD"
+    #    # Check to see if the result was unsuccessful.
+    #    # Start a web server there.
+    #    h1 = hosts[0]
+    #    result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
+    #    self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+
+    def testHttpGetExpectPass (self):
+        print "Wgetting from nist.local -- this should fail with MUD"
         # Check to see if the result was unsuccessful.
         # Start a web server there.
         h1 = hosts[0]
-        result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+        result = h1.cmdPrint("wget http://www.nist.local --timeout 20  --tries 1 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) != None, "Expecting successful get")
 
 
 
