@@ -2,6 +2,15 @@
 
 You will need an emulation Linux Virtual machine that runs mininet.
 
+Install dnsmasq on your emulation vm.
+
+       sudo apt-get install dnsmasq
+
+Install python requests on your emulation vm
+
+       sudo pip install python-requests
+
+
 In order for DNS to work on mininet hosts you should not be using local caching. 
 Edit /etc/NetworkManager/NetworkManager.conf and comment out. 
 

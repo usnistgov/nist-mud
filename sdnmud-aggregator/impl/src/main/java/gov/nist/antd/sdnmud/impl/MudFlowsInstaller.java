@@ -716,9 +716,11 @@ public class MudFlowsInstaller {
 				: SdnMudConstants.SRC_MATCHED_GOTO_ON_QUARANTENE_PRIORITY;
 
 		boolean mudmakerHack = false;
+
 		if (SdnMudConstants.MUDMAKER_HACK) {
 			mudmakerHack = modelId == dstModelId;
 		}
+ 		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, direction, true, flowCookie, node,mudmakerHack);
@@ -757,6 +759,8 @@ public class MudFlowsInstaller {
 			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
 			mudmakerHack = myManufacturer == manufacturerId;
 		}
+
+		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
 				newMetadata, newMetadataMask, direction, true, flowCookie, node,mudmakerHack);
@@ -843,6 +847,7 @@ public class MudFlowsInstaller {
 		if (SdnMudConstants.MUDMAKER_HACK) {
 			mudmakerHack = modelId == srcModelId;
 		}
+		mudmakerHack = true;
 	
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
@@ -881,6 +886,7 @@ public class MudFlowsInstaller {
 			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
 			mudmakerHack = myManufacturer == manufacturerId;
 		}
+		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
 				newMetadata, newMetadataMask, direction, false, flowCookie, node,mudmakerHack);
