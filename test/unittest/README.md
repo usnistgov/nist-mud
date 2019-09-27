@@ -32,7 +32,7 @@ Add a fake hosts in /etc/dnsmasq.hosts of the *emulation* machine only  by addin
       203.0.113.14    www.antd.local
       203.0.113.15    printer.nist.local
 
-Add the following to /etc/hosts on the *emulation* machine only:
+Add the following to /etc/hosts on the *emulation* machine only in order to avoid timeouts:
  
      203.0.113.13	www.nist.local
      203.0.113.14	www.antd.local

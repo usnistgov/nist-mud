@@ -427,7 +427,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 
 		int timeout = this.sdnmudProvider.getSdnmudConfig().getMfgIdRuleCacheTimeout().intValue();
 
-		String flowIdStr = SdnMudConstants.SRC_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
+		String flowIdStr = mudUri  + "/"
 				+ srcMac.getValue() + "/" + metadata.toString(16);
 
 		FlowId flowId = new FlowId(flowIdStr);
@@ -506,8 +506,7 @@ public class PacketInDispatcher implements PacketProcessingListener {
 				.or(SdnMudConstants.DST_MAC_BLOCKED_MASK);
 		FlowCookie flowCookie = SdnMudConstants.DST_MANUFACTURER_MODEL_FLOW_COOKIE;
 
-		String flowIdStr = SdnMudConstants.DEST_MAC_MATCH_SET_METADATA_AND_GOTO_NEXT_FLOWID_PREFIX + "/"
-				+ dstMac.getValue() + "/" + metadata.toString(16);
+		String flowIdStr = mudUri + "/" + dstMac.getValue() + "/" + metadata.toString(16);
 
 		FlowId flowId = new FlowId(flowIdStr);
 		Flow flow = FlowUtils.createDestMacMatchSetMetadataAndGoToNextTableFlow(dstMac, metadata, metadataMask,

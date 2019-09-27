@@ -193,7 +193,7 @@ public class MudReportGenerator {
 				int beginIndex = mud.getMudUrl().getValue().length() + 1;
 
 				for (Flow flow : flows) {
-					if (flow.getId().getValue().startsWith(mud.getMudUrl().getValue())
+					if (flow.getId().getValue().startsWith(Integer.toString(mud.getMudUrl().getValue().hashCode()))
 							&& (flow.getTableId() == sdnmudProvider.getSrcMatchTable()
 									|| flow.getTableId() == sdnmudProvider.getDstMatchTable())) {
 						InstanceIdentifier<Node> outNode = node.firstIdentifierOf(Node.class);

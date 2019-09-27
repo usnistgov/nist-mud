@@ -33,6 +33,7 @@ hosts = []
 class TestAccess(unittest.TestCase) :
 
     def setUp(self):
+        time.sleep(10)
         pass
 
     def tearDown(self):
@@ -47,6 +48,8 @@ class TestAccess(unittest.TestCase) :
 
 
     def testAccessControl(self):
+
+
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local:443 --timeout 30  --tries 2  -O foo.html --delete-after ")
@@ -69,17 +72,22 @@ class TestAccess(unittest.TestCase) :
         result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a failed pings")
 
-	print "Fetching from antd.local from sensor -- this should fail"
+        print "Fetching from antd.local from sensor -- this should fail"
         result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
+
+
+        h1 = hosts[0]
 
         print  "icmp ping otherman -- this should fail"
         result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a failed icmp pings")
 
+
         print "wget otherman on port 800 -- expect success"
         result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
+
 
         print "wget sensor on port 800 from otherman -- expect failure"
         result = h3.cmdPrint("wget http://10.0.0.1:800 --tries 2 --timeout 20   -O foo.html --delete-after ")

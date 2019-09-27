@@ -244,7 +244,7 @@ public class MudFlowsInstaller {
 
 		// Insert a flow which will drop the packet if it sees a Syn
 		// flag.
-		FlowId fid = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/"
+		FlowId fid = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName + "/"
 				+ (toDev ? SdnMudConstants.DROP_ON_TCP_SYN_INBOUND : SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND));
 
 		FlowCookie flowCookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
@@ -438,7 +438,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -458,7 +458,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK.or(SdnMudConstants.SRC_QUARANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.SRC_QUARANTENE_FLAG);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/QUARANTINE_SRC_DROP");
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/QUARANTINE_SRC_DROP");
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -472,7 +472,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK.or(SdnMudConstants.DST_QURANTENE_MASK);
 		BigInteger metadata = createSrcModelMetadata(mudUri, true).or(SdnMudConstants.DST_QUARANTENE_FLAG);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP + "/QUARANTINE");
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP + "/QUARANTINE");
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -492,7 +492,7 @@ public class MudFlowsInstaller {
 			int priority) {
 		BigInteger metadataMask = SdnMudConstants.SRC_MODEL_MASK;
 		BigInteger metadata = createSrcModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -508,7 +508,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> node, int priority) {
 		BigInteger metadataMask = SdnMudConstants.DST_MODEL_MASK;
 		BigInteger metadata = createDstModelMetadata(mudUri);
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP);
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + SdnMudConstants.NO_TO_DEV_ACE_MATCH_DROP);
 		FlowCookie flowCookie = SdnMudConstants.DROP_FLOW_COOKIE;
 		BigInteger newMetadata = SdnMudConstants.DEFAULT_METADATA;
 		BigInteger newMetadataMask = SdnMudConstants.DEFAULT_METADATA_MASK;
@@ -615,7 +615,7 @@ public class MudFlowsInstaller {
 		int srcPort = getSourcePort(matches);
 		for (Ipv4Address address : addresses) {
 			String flowSpec = matchesType.toString();
-			FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName);
+			FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName);
 			Direction direction = getDirectionInitiated(matches);
 			if (direction != null) {
 				LOG.info("MudFlowsInstaller: directionInitiated = " + direction.getName());
@@ -679,7 +679,7 @@ public class MudFlowsInstaller {
 
 		for (Ipv4Address address : addresses) {
 			Direction direction = getDirectionInitiated(matches);
-			FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName);
+			FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName);
 			if (direction != null) {
 				LOG.info("MudFlowsInstaller : InstallePermitFromAddressToDeviceFlowRules : direction "
 						+ direction.getName());
@@ -720,6 +720,7 @@ public class MudFlowsInstaller {
 		if (SdnMudConstants.MUDMAKER_HACK) {
 			mudmakerHack = modelId == dstModelId;
 		}
+		// BUGBUG - revisit when MUDMAKER is fixed
  		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
@@ -759,7 +760,7 @@ public class MudFlowsInstaller {
 			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
 			mudmakerHack = myManufacturer == manufacturerId;
 		}
-
+		// BUGBUG - revisit when MUDMAKER is fixed
 		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getSrcMatchTable(), priority,
@@ -847,6 +848,7 @@ public class MudFlowsInstaller {
 		if (SdnMudConstants.MUDMAKER_HACK) {
 			mudmakerHack = modelId == srcModelId;
 		}
+		// BUGBUG - revisit when MUDMAKER is fixed
 		mudmakerHack = true;
 	
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
@@ -886,6 +888,7 @@ public class MudFlowsInstaller {
 			int myManufacturer = IdUtils.getManfuacturerId(IdUtils.getAuthority(mudUri));
 			mudmakerHack = myManufacturer == manufacturerId;
 		}
+		// BUGBUG - revisit when MUDMAKER is fixed
 		mudmakerHack = true;
 		this.installMetadaProtocolAndSrcDestPortMatchGoToNextFlow(mudUri, aclName, aceName, metadata, mask,
 				protocol.shortValue(), sourcePort, destinationPort, sdnmudProvider.getDstMatchTable(), priority,
@@ -898,16 +901,16 @@ public class MudFlowsInstaller {
 			short tableId, int priority, BigInteger newMetadata, BigInteger newMetadataMask, Direction direction,
 			boolean fromDevice, FlowCookie flowCookie, InstanceIdentifier<FlowCapableNode> node, boolean mudmakerHack) {
 		
-	    // HACK ALERT MUDMAKER_HACK should go away when mudmaker is fixed.
+	       // HACK ALERT MUDMAKER_HACK should go away when mudmaker is fixed.
 		
-		FlowId flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + (mudmakerHack? "/" + 1: ""));
+		FlowId flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName + (mudmakerHack? "/" + 1: ""));
 
 		FlowBuilder fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 				srcPort, destinationPort, tableId, priority, newMetadata, newMetadataMask, false, flowId, flowCookie);
 		this.sdnmudProvider.getFlowCommitWrapper().writeFlow(fb, node);
 		if (mudmakerHack) {
 			if ((srcPort == -1 && destinationPort != -1) || (destinationPort == -1 && srcPort != -1)) {
-				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName +  "/" + 2);
+				flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName +  "/" + 2);
 				fb = FlowUtils.createMetadaProtocolAndSrcDestPortMatchGoToTable(metadata, metadataMask, protocol,
 						destinationPort, srcPort, tableId, priority, newMetadata, newMetadataMask, false, flowId,
 						flowCookie);
@@ -918,11 +921,11 @@ public class MudFlowsInstaller {
 		if (direction != null) {
 			FlowCookie cookie = SdnMudConstants.TCP_SYN_MATCH_CHECK_COOKIE;
 			if (fromDevice && direction.getName().equals(Direction.ToDevice.getName())) {
-				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/" + SdnMudConstants.DROP_ON_TCP_SYN_INBOUND);
+				flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName + "/" + SdnMudConstants.DROP_ON_TCP_SYN_INBOUND);
 				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort,
 						priority + 1, sdnmudProvider.getSrcMatchTable());
 			} else if ((!fromDevice) && direction.getName().equals(Direction.FromDevice.getName())) {
-				flowId = IdUtils.createFlowId(mudUri + "/" + aclName + "/" + aceName + "/"  + SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND);
+				flowId = IdUtils.createFlowId(mudUri.hashCode() + "/" + aclName + "/" + aceName + "/"  + SdnMudConstants.DROP_ON_TCP_SYN_OUTBOUND);
 
 				this.registerTcpSynFlagCheck(flowId, cookie, node, metadata, metadataMask, destinationPort, srcPort,
 						 priority + 1, sdnmudProvider.getSrcMatchTable());
@@ -990,15 +993,16 @@ public class MudFlowsInstaller {
 		String nodeId = IdUtils.getNodeUri(node);
 
 		FlowCookie flowCookie = SdnMudConstants.DNS_REQUEST_FLOW_COOKIE;
-		FlowId flowId = IdUtils.createFlowId("DNS_REQUEST_PASS_THROUGH");
+		FlowId flowId = IdUtils.createFlowId("DNS_REQUEST_PASS_THROUGH:" + address.getValue());
 
-		// Under qurantene, devices may access DNS and dhcp.
+		// devices always have access to dns and dhcp.
+		
 		FlowBuilder flowBuilder = FlowUtils.createDestAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
 				sdnmudProvider.getSrcMatchTable(), sdnmudProvider.getNormalRulesTable(), SdnMudConstants.MAX_PRIORITY,
 				sendToController, flowId, flowCookie);
 		sdnmudProvider.getFlowCommitWrapper().writeFlow(flowBuilder, node);
 
-		flowId = IdUtils.createFlowId("DNS_RESPONSE_PASS_THROUGH");
+		flowId = IdUtils.createFlowId("DNS_RESPONSE_PASS_THROUGH:" + address.getValue() );
 		flowCookie = SdnMudConstants.DNS_RESPONSE_FLOW_COOKIE;
 		flowBuilder = FlowUtils.createSrcAddressPortProtocolMatchGoToNextFlow(address, port, protocol,
 				sdnmudProvider.getSrcMatchTable(), sdnmudProvider.getNormalRulesTable(), SdnMudConstants.MAX_PRIORITY,
@@ -1436,7 +1440,7 @@ public class MudFlowsInstaller {
 			InstanceIdentifier<FlowCapableNode> flowCapableNode = this.sdnmudProvider.getNode(uri);
 			if (flowCapableNode != null) {
 				for (Mud mud : this.sdnmudProvider.getMudProfiles()) {
-					String uriPrefix = mud.getMudUrl().getValue() + "/sdnmud";
+					String uriPrefix = mud.getMudUrl().getValue(); 
 					short table = sdnmudProvider.getSrcMatchTable();
 					this.sdnmudProvider.getFlowCommitWrapper().deleteFlows(flowCapableNode, uriPrefix, table, null,
 							null);

@@ -299,7 +299,7 @@ public class SdnmudServiceImpl implements SdnmudService {
 
 		if (flows != null) {
 			for (Flow flow : flows) {
-				if (flow.getId().getValue().startsWith(mudUrl.getValue())) {
+				if (flow.getId().getValue().startsWith(String.valueOf(mudUrl.getValue().hashCode()))) {
 					FlowRuleBuilder frBuilder = new FlowRuleBuilder();
 					BigInteger metadata = flow.getMatch().getMetadata().getMetadata();
 					BigInteger metadataMask = flow.getMatch().getMetadata().getMetadataMask();
@@ -405,13 +405,15 @@ public class SdnmudServiceImpl implements SdnmudService {
 			}
 		}
 
-		// Sort the results by priority.
+		
+		// Sort the results by priority within a table.
 		if (flowRules != null) {
 			Collections.sort(flowRules, new Comparator<FlowRule>() {
 				@Override
 				public int compare(FlowRule fl1, FlowRule fl2) {
-					return Long.compare(fl1.getPriority()*fl1.getTableId(),fl2.getPriority()*fl2.getTableId() 
-							);
+					if (fl1.getTableId() < fl2.getTableId() ) return -1;
+					else if (fl2.getTableId() < fl1.getTableId() ) return 1;
+					else return -Long.compare(fl1.getPriority(),fl2.getPriority());
 				}
 			});
 		}
