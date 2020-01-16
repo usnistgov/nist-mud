@@ -85,8 +85,11 @@ Note: Your switches should support OpenFlow 1.5. Detailed configuration informat
 ### SYSTEM CONFIGURATION DETAIL ###
 
 
+[Here is a detailed configuration guide with examples](https://www.nccoe.nist.gov/publication/1800-15/VolC/index.html#build-4-product-installation-guides)
 
-[See the instructions in the doc/config directory](docs/config/README.md)
+[Also see the instructions in the doc/config directory](docs/config/README.md)
+
+
 
 
 ## Try it out  ##

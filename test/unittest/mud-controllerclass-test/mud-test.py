@@ -345,8 +345,8 @@ if __name__ == '__main__':
         print "url ", url
         r = requests.put(url, data=json.dumps(data), headers=headers , auth=('admin', 'admin'))
         print "response ", r
-	if suffix == "sdnmud:sdnmud-config" :
-		time.sleep(10)
+        if suffix == "sdnmud:sdnmud-config" :
+            time.sleep(10)
 
     print "uploaded mud rules ", str(r)
     add_controller(controller_addr, "10.0.0.7", "https://controller.nist.local", "openflow:1")
