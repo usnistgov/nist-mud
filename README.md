@@ -29,7 +29,10 @@ using OpenDaylight as the SDN controller.
 
 ## Read a short paper about it ##
 
+
 [A paper that describes this implementation](https://github.com/usnistgov/nist-mud/blob/master/docs/arch/icn2019-r7.pdf)
+
+[A detailed explanation of the design with some examples. This corrects an error the paper above. ](https://www.nccoe.nist.gov/publication/1800-15/VolB/index.html#build-4)
 
 ## OpendDaylight Components ##
 
