@@ -15,6 +15,8 @@ This repository publishes a public domain scalable implementation of
 the  IETF MUD standard.  MUD is implemented on SDN capable switches
 using OpenDaylight as the SDN controller.
 
+This project is part of the [Trustworthy Networks of Things](https://www.nist.gov/programs-projects/trustworthy-networks-things) project at NIST.
+
 
 ## Implementation Highlights ##
 
