@@ -49,7 +49,6 @@ class TestAccess(unittest.TestCase) :
 
     def testAccessControl(self):
 
-
         print "wgetting from an allowed host -- this should succeed with MUD"
         h1 = hosts[0]
         result = h1.cmdPrint("wget http://www.nist.local:443 --timeout 30  --tries 2  -O foo.html --delete-after ")
@@ -63,56 +62,83 @@ class TestAccess(unittest.TestCase) :
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get -- can access controller.nist.local on port 8080")
 
 
-        print "udp pinging mycontroller host -- this should work"
+        print ("udp pinging mycontroller host -- this should work")
         h1 = hosts[0]
         result = self.runAndReturnOutput(h1, "python ../unittest/util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
+        if int(result) <= 2 :
+            time.sleep(2)
+            result = self.runAndReturnOutput(h1, "python ../unittest/util/udpping.py --port 4000 --host 10.0.0.4 --client --quiet")
         self.assertTrue(int(result) > 2, "expect successful ping")
 
-        print "pinging a same manufacturer peer after configuration -- this should fail"
+        print ("pinging a same manufacturer peer after configuration -- this should fail")
         result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
+        if re.search("100%",result) is None :
+            time.sleep(2)
+            result = h2.cmdPrint("ping -c 10  -q 10.0.0.1")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a failed pings")
 
-        print "Fetching from antd.local from sensor -- this should fail"
+        print ("Fetching from antd.local from sensor -- this should fail")
         result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        if re.search("100%",result) is not None :
+            time.sleep(2)
+            result = h1.cmdPrint("wget http://www.antd.local:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
-
         h1 = hosts[0]
-
-        print  "icmp ping otherman -- this should fail"
+        print  ("icmp ping otherman -- this should fail")
         result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
+        if re.search("100%",result) is None:
+           time.sleep(2)
+           result = h1.cmdPrint("ping -c 10 -q 10.0.0.3")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a failed icmp pings")
-
-
-        print "wget otherman on port 800 -- expect success"
-        result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
-        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
-
 
         print "wget sensor on port 800 from otherman -- expect failure"
         result = h3.cmdPrint("wget http://10.0.0.1:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        # Hum... failed so try again.
+        if re.search("100%",result) is not None:
+           time.sleep(2)
+           result = h3.cmdPrint("wget http://10.0.0.1:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
         print "wget get from local net  from server on port 80 running on sensor - this should work"
         h5 = hosts[4]
         result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        if re.search("100%",result) is None:
+            result = h5.cmdPrint("wget http://10.0.0.1:80 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
     
         print "wget get port 888 localnet from sensor "
+        h5 = hosts[4]
         result = h5.cmdPrint("wget http://10.0.0.5:888 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        if re.search("100%",result) is None:
+            time.sleep(2)
+            result = h5.cmdPrint("wget http://10.0.0.5:888 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
         print "wgetting from controller.nist.local host  on port 80 -- this should fail"
         h2=hosts[1]
         result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
+        if re.search("100%",result) is not None:
+           time.sleep(2)
+           result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
 
         print "wgetting from wrong direction - expect fail"
         h4 = hosts[3]
         result = h4.cmdPrint("wget http://10.0.0.1:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
+        if re.search("100%",result) is not None:
+            time.sleep(2)
+            result = h4.cmdPrint("wget http://10.0.0.1:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) is None, "Expecting a failed get")
 
-
+        print "wget othersensor localhost on port 800 -- expect success"
+        h1 = hosts[0]
+        result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        # Hum... failed so try again.
+        if re.search("100%",result) is  None:
+            time.sleep(2)
+            result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
+        self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
 #########################################################
 

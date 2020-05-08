@@ -1,26 +1,26 @@
 {
 "controllerclass-mapping" :  {
-    "switch-id" : "openflow:123917682138002",
+    "switch-id" : "openflow:1",
     "controller" : [
     	{
          	"uri" :  "urn:ietf:params:mud:dns",
-         	"address-list" : [ "10.0.41.1" ]
+         	"address-list" : [ "10.0.0.1" ]
      	},
     	{
          	"uri" :  "urn:ietf:params:mud:dhcp",
-         	"address-list" : [ "10.0.41.1" ]
+         	"address-list" : [ "10.0.0.1" ]
      	},
         {
         "uri" :  "https://controller.nist.local",
-		"address-list" : [ "10.0.41.1" ]
+		"address-list" : [ "10.0.0.1" ]
 	    },
         {
        	"uri" :  "https://sensor.nist.local/nistmud1",
-		"address-list" : [ "10.0.41.1" ]
+		"address-list" : [ "10.0.0.1" ]
 	   }
    ],
-   "local-networks": [ "10.0.41.1/24" ],
-   "local-networks-excluded-hosts" : ["10.0.41.1"],
-   "wireless" : true
+   "local-networks": [ "10.0.0.1/24" ],
+   "local-networks-excluded-hosts" : ["10.0.0.1"],
+   "wireless" : false
  }
 }

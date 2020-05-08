@@ -37,3 +37,7 @@ openssl cms -verify -binary  -in $MANUFACTURER_SIGNATURE  -signer $MANUFACTURER_
 sudo -E $JAVA_HOME/bin/keytool -delete -alias $MANUFACTURER_ALIAS -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 sudo -E $JAVA_HOME/bin/keytool -importcert -file $CACRT -alias $MANUFACTURER_ALIAS -keystore $JAVA_HOME/jre/lib/security/cacerts -storepass changeit
 
+echo "**************************"
+echo "JAVA_HOME is set to "
+echo $JAVA_HOME
+echo "**************************"

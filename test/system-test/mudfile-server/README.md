@@ -1,3 +1,5 @@
+Set the JAVA_HOME environ variable to point to where your java is set up.
+
 Run the following
 
     sh sign-and-import.sh
