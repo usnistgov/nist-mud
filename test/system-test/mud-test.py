@@ -115,14 +115,6 @@ class TestAccess(unittest.TestCase) :
             result = h5.cmdPrint("wget http://10.0.0.5:888 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
 
-        print "wgetting from controller.nist.local host  on port 80 -- this should fail"
-        h2=hosts[1]
-        result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
-        if re.search("100%",result) is not None:
-           time.sleep(2)
-           result = h2.cmdPrint("wget http://10.0.0.4 --tries 2 --timeout 30 -O foo.html --delete-after")
-        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
-
         print "wgetting from wrong direction - expect fail"
         h4 = hosts[3]
         result = h4.cmdPrint("wget http://10.0.0.1:8080 --tries 2 --timeout 30 -O foo.html --delete-after")
@@ -139,6 +131,14 @@ class TestAccess(unittest.TestCase) :
             time.sleep(2)
             result = h1.cmdPrint("wget http://10.0.0.3:800 --tries 2 --timeout 20   -O foo.html --delete-after ")
         self.assertTrue(re.search("100%",result) is not None, "Expecting a successful get")
+
+        print "wgetting from controller.nist.local host  on port 80 -- this should fail"
+        h2=hosts[1]
+        result = h2.cmdPrint("wget http://10.0.0.4:80 --tries 2 --timeout 30 -O foo.html --delete-after")
+        if re.search("100%",result) is not None:
+           time.sleep(2)
+           result = h2.cmdPrint("wget http://10.0.0.4:80 --tries 2 --timeout 30 -O foo.html --delete-after")
+        self.assertTrue(re.search("100%",result) is None, "Expecting a failed get -- wrong port")
 
 #########################################################
 
@@ -329,6 +329,7 @@ def setupServers():
     sameman.cmdPrint("python -m SimpleHTTPServer 8888&")
     localnet.cmdPrint("python -m SimpleHTTPServer 888&")
     localnet.cmdPrint("python -m SimpleHTTPServer 80&")
+    time.sleep(5)
 
 
 
