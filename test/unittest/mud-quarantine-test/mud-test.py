@@ -343,7 +343,9 @@ if __name__ == '__main__':
 
 
     if os.environ.get("UNITTEST") is not None and os.environ.get("UNITTEST") == '1' :
+        print("Found UNITTEST=1. ")
         unittest.main()
     else:
+        print("Cannot find UNITTEST=1 - open up cli")
         cli()
 

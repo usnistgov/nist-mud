@@ -429,11 +429,13 @@ rpc get-dst-mac-classification {
 
 
   rpc get-flow-rules {
+
      description
         "Get the MUD flow rules from the given switch ID for to the 
          given MUD URL";
+
      input {
-         
+
           leaf mud-url {
              description 
                 "The MUD URL of interest";
@@ -445,13 +447,16 @@ rpc get-dst-mac-classification {
                     "The Switch ID eg. openflow:123";
               type inet:uri;
            }
+
        }
 
        output {
 
           list flow-rule {
+
             description
                 "Human readable flow rules";
+
             leaf masked-metadata-match {
                description 
                 "The raw HEX masked metdata to match on";
@@ -463,31 +468,37 @@ rpc get-dst-mac-classification {
                        "Src Manufacturer url";
                 type string;
             }
+
             leaf src-model {
                 description
                        "Src Model";
                 type inet:uri;
             }
+
             leaf dst-model {
                 description
                        "Dst Model";
                 type inet:uri;
             }
+
             leaf dst-manufacturer {
                 description 
                        "Dst Manufacturer";
                 type string;
             }
+
             leaf src-local-networks-flag {
                 type boolean;
                 description 
                      "Local networks flag";
             }
+
             leaf dst-local-networks-flag {
                 description 
                      "Local networks flag";
                 type boolean;
             }
+
             leaf src-quarantine-flag {
                 description 
                      "Qurarantene flag networks match";
@@ -528,7 +539,6 @@ rpc get-dst-mac-classification {
                  description
                      "Flow descriptive name";
                  type string;
-
             }
     
             leaf table-id {
@@ -541,14 +551,12 @@ rpc get-dst-mac-classification {
                 description
                     "The formated flow rule";
                 type string;
-    
             }
 
             leaf packet-count {
                 description
                     "The packet count";
                 type uint64;
-
             }
 
             leaf byte-count {
@@ -556,7 +564,6 @@ rpc get-dst-mac-classification {
                     "The byte count";
                 type uint64;
             }
-
          }
        }
    }
@@ -564,10 +571,10 @@ rpc get-dst-mac-classification {
    rpc get-mud-reports {
       input {
         leaf mud-url {
-	   description
+	    description
                "The mud uri for which to deliver the report";
-           type inet:uri;
-	}
+        type inet:uri;
+       }
       }
 
       output {

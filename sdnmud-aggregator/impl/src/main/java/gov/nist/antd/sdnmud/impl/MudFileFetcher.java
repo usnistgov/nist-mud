@@ -416,9 +416,22 @@ public class MudFileFetcher {
 				// FILE URLs are supported for testing purposes.
 				String fileName = System.getProperty("karaf.home") + "/etc/mudprofiles/" + parts[1].substring(2);
 				File file = new File(fileName);
-				if (file.length() > max_length) {
+				if (file.exists() && file.length() > max_length) {
 					LOG.error("MUD File is too large -- exitting");
 					return null;
+				}
+				// Put a json at the end and try again.
+				if (!file.exists()) {
+					fileName = fileName + ".json";
+					file = new File(fileName);
+					if (!file.exists()) {
+						LOG.error("Could not find MUD File - exitting");
+						return null;
+					}
+					if (file.length() > max_length ) {
+						LOG.error("File is too big - exitting");
+						return null;
+					}
 				}
 
 				if (file.exists() && file.isFile()) {

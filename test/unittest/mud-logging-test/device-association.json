@@ -1,0 +1,9 @@
+{
+ "mapping":
+   { 
+     "device-id": [ "00:00:00:00:00:d1",
+		    "00:00:00:00:00:d2",
+		    "00:00:00:00:00:d3" ],
+     "mud-url": "file://mudfile-mylogging-test.nist.local"
+   }
+}
