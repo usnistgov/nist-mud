@@ -229,8 +229,8 @@ public class MudReportGenerator {
 						GetFlowStatisticsOutput output = sdnmudProvider.getDirectStatisticsService()
 								.getFlowStatistics(inputBuilder.build()).get().getResult();
 						if (output != null && output.getFlowAndStatisticsMapList() != null) {
-							LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
-							LOG.info("flow ID = " + flow.getId());
+							//LOG.info("flowstatisticsMapList : " + output.getFlowAndStatisticsMapList().size());
+							//LOG.info("flow ID = " + flow.getId());
 							for (FlowAndStatisticsMapList fmaplist : output.getFlowAndStatisticsMapList()) {
 								if (flow.getId().getValue().indexOf(SdnMudConstants.NO_FROM_DEV_ACE_MATCH_DROP) != -1) {
 									DropCountsBuilder dcb1 = new DropCountsBuilder();
@@ -303,7 +303,6 @@ public class MudReportGenerator {
 									}
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									LOG.info("flow.getId().getValue() " + flow.getId().getValue());
 									String[] aceNames = flow.getId().getValue().split("/");
 									String aceName = aceNames[0] + "/" + aceNames[1];
 									mcb.setAceName(aceName);							
@@ -329,6 +328,8 @@ public class MudReportGenerator {
 			Collection<MacAddress> macAddresses = sdnmudProvider.getMappingDataStoreListener().getMacs(mud.getMudUrl());
 
 			List<String> opaqueIdentifiers = new ArrayList<String>();
+			// TODO -- this can't be ALL mac addresses - only those with
+			// MAC addresses that match.
 			for (MacAddress macAddress : macAddresses) {
 				opaqueIdentifiers.add(getMd5(macAddress.getValue()));
 			}

@@ -12,11 +12,11 @@ def is_part(some_string, target):
 
 if __name__ == "__main__" :
     parser = argparse.ArgumentParser()
-    parser.add_argument("-m", help="Metadata/mask in hex with a leading 0x. Cut and paste from dump-flows")
+    parser.add_argument("-m", help="metadata mask  ")
     args = parser.parse_args()
     srcmac = args.m
     if srcmac == None :
-       print("Please provide src mac")
+       print("Please provide metadata mask.")
        sys.exit()
 
     argmap = {}
@@ -44,7 +44,7 @@ if __name__ == "__main__" :
         r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
         js = json.loads(r.content)
         print("*************************************************")
-        print(js)
+        print(json.dumps(js,indent=4))
         time.sleep(10)
         
 
