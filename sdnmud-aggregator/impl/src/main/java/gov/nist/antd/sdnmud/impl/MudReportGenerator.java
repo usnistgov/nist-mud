@@ -208,9 +208,10 @@ public class MudReportGenerator {
 			MatchCountsBuilder mcb = new MatchCountsBuilder();
 
 			if (flows != null) {
-				int beginIndex = mud.getMudUrl().getValue().length() + 1;
 
 				for (Flow flow : flows) {
+					//int beginIndex = mud.getMudUrl().getValue().length() + 1;
+
 					if (flow.getId().getValue().startsWith(Integer.toString(mud.getMudUrl().getValue().hashCode()))
 							&& (flow.getTableId() == sdnmudProvider.getSrcMatchTable()
 									|| flow.getTableId() == sdnmudProvider.getDstMatchTable())) {
@@ -268,7 +269,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.ToDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									String[] aceNames = flow.getId().getValue().split("/");
 									String aceName = aceNames[0] + "/" + aceNames[1];
 									bb.setAceName(aceName);
 									dcb1.setDropReason(bb.build());
@@ -287,7 +288,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.FromDevice);
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
-									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									String[] aceNames = flow.getId().getValue().split("/");
 									String aceName = aceNames[0] + "/" + aceNames[1];
 									bb.setAceName(aceName);
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
@@ -302,7 +303,8 @@ public class MudReportGenerator {
 									}
 								} else {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									String[] aceNames = flow.getId().getValue().substring(beginIndex).split("/");
+									LOG.info("flow.getId().getValue() " + flow.getId().getValue());
+									String[] aceNames = flow.getId().getValue().split("/");
 									String aceName = aceNames[0] + "/" + aceNames[1];
 									mcb.setAceName(aceName);							
 									if (matchCountsSet.get(flow.getId().getValue()) == null	) {

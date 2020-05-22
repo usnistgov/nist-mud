@@ -585,4 +585,24 @@ rpc get-dst-mac-classification {
       }
    }
 
+   rpc add-controller-wait-input {
+      input {
+        leaf mud-url {
+	        description
+               "The mud uri for which to wait till ready";
+            type inet:uri;
+        }
+      }
+
+      output {
+         container report {
+            description "Success or failure. If the device does not exist then failure.";
+            leaf success-flag {
+                description "MUD report. This could be success if the device exists or failure";
+                type boolean;
+            }
+         }
+      }
+   }
+
 }

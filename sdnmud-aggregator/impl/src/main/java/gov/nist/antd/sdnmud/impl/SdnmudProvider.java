@@ -347,7 +347,7 @@ public class SdnmudProvider {
 
 		// Latency of 10 seconds for the scan.
 		new Timer(true).schedule(stateChangeScanner, 0, 5 * 1000);
-		
+
 		LOG.info("start() <--");
 
 	}
@@ -401,7 +401,7 @@ public class SdnmudProvider {
 		this.sdnmudServiceRegistration.close();
 		this.mudProfileRegistration.close();
 		this.quaranteneDevicesListenerRegistration.close();
-		if ( mudReporter != null) {
+		if (mudReporter != null) {
 			this.mudReporter.cancel();
 		}
 	}
@@ -698,8 +698,6 @@ public class SdnmudProvider {
 	public Map<String, List<Ipv4Address>> getControllerClassMap(String nodeUri) {
 		return controllerMap.get(nodeUri);
 	}
-	
-	
 
 	public Collection<String> getLocalNetworks(String nodeUri) {
 		if (controllerClassMaps.get(nodeUri) == null)
@@ -727,9 +725,9 @@ public class SdnmudProvider {
 	public void clearConfigStateChanged() {
 		this.configStateChanged--;
 	}
-	
+
 	public void updateConfigStateChanged() {
-		this.configStateChanged ++;
+		this.configStateChanged++;
 	}
 
 	/**
@@ -737,10 +735,11 @@ public class SdnmudProvider {
 	 */
 	public void setSdnmudConfig(SdnmudConfig sdnmudConfig) {
 		this.sdnmudConfig = sdnmudConfig;
-		if ( sdnmudConfig.getReporterFrequency() != null) {
-			this.mudReporter = new MudReportSender(this);
-			new Timer(true).schedule(mudReporter, sdnmudConfig.getReporterFrequency()/2*1000, 
-					sdnmudConfig.getReporterFrequency()/2*1000);
+        // TODO -- check this. Why?
+		this.mudReporter = new MudReportSender(this);
+		if (sdnmudConfig.getReporterFrequency() != null) {
+			new Timer(true).schedule(mudReporter, sdnmudConfig.getReporterFrequency() / 2 * 1000,
+					sdnmudConfig.getReporterFrequency() / 2 * 1000);
 		}
 	}
 
@@ -788,11 +787,11 @@ public class SdnmudProvider {
 	public OpendaylightFlowStatisticsService getFlowStatisticsService() {
 		return this.flowStatisticsService;
 	}
-	
+
 	public int getMudReporterMinTimeout() {
 		return this.sdnmudConfig.getMfgIdRuleCacheTimeout().intValue();
 	}
-	
+
 	public Mud getMud(Uri mudUrl) {
 		return this.uriToMudMap.get(mudUrl.getValue());
 	}
@@ -803,6 +802,10 @@ public class SdnmudProvider {
 
 	public HashMap<String, List<Ipv4Address>> getControllerMap(String nodeId) {
 		return this.controllerMap.get(nodeId);
+	}
+
+	public boolean findMud(String mudUrl) {
+		return this.uriToMudMap.containsKey(mudUrl);
 	}
 
 }

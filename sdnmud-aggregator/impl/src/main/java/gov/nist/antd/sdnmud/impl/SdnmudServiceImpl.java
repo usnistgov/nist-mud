@@ -34,7 +34,7 @@ import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.inet.types.rev130715.Uri;
 //import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.collector.rev190621.post.mud.report.input.MudReport;
 
-import 	org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
+import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.mud.reporter.grouping.MudReport;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.extension.rev190621.mud.reporter.extension.ReporterBuilder;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.reporter.rev190621.MudReporter;
 import org.opendaylight.yang.gen.v1.urn.ietf.params.xml.ns.yang.ietf.mud.rev190128.Mud;
@@ -48,6 +48,9 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.flow.statistics.rev130819.f
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.NodeRef;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.inventory.rev130819.nodes.Node;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.AddControllerMappingInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.AddControllerWaitInputInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.AddControllerWaitInputOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.AddControllerWaitInputOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearCacheOutputBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.ClearMudRulesOutput;
@@ -78,6 +81,7 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.QuarantineInput;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.SdnmudService;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.UnquarantineInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.add.controller.wait.input.output.Report;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRule;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRuleBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.reports.output.ReportBuilder;
@@ -88,6 +92,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.Futures;
+
+import jline.internal.Log;
 
 /**
  * @author mranga@nist.gov
@@ -405,15 +411,17 @@ public class SdnmudServiceImpl implements SdnmudService {
 			}
 		}
 
-		
 		// Sort the results by priority within a table.
 		if (flowRules != null) {
 			Collections.sort(flowRules, new Comparator<FlowRule>() {
 				@Override
 				public int compare(FlowRule fl1, FlowRule fl2) {
-					if (fl1.getTableId() < fl2.getTableId() ) return -1;
-					else if (fl2.getTableId() < fl1.getTableId() ) return 1;
-					else return -Long.compare(fl1.getPriority(),fl2.getPriority());
+					if (fl1.getTableId() < fl2.getTableId())
+						return -1;
+					else if (fl2.getTableId() < fl1.getTableId())
+						return 1;
+					else
+						return -Long.compare(fl1.getPriority(), fl2.getPriority());
 				}
 			});
 		}
@@ -543,12 +551,12 @@ public class SdnmudServiceImpl implements SdnmudService {
 	@Override
 	public Future<RpcResult<GetMudReportsOutput>> getMudReports(GetMudReportsInput input) {
 		Uri mudUrl = input.getMudUrl();
-		
+
 		GetMudReportsOutputBuilder gmrob = new GetMudReportsOutputBuilder();
 		ReportBuilder reportBuilder = new ReportBuilder();
 		reportBuilder.setMudurl(mudUrl);
 		Mud mud = sdnmudProvider.getMud(mudUrl);
-		if ( mud != null ) {
+		if (mud != null) {
 			List<MudReport> mudReports = new MudReportGenerator(sdnmudProvider).getMudReports(mud);
 			reportBuilder.setMudReport(mudReports);
 		} else {
@@ -558,6 +566,30 @@ public class SdnmudServiceImpl implements SdnmudService {
 		gmrob.setReport(reportBuilder.build());
 		RpcResult<GetMudReportsOutput> result = RpcResultBuilder.success(gmrob).build();
 		return new CompletedFuture<RpcResult<GetMudReportsOutput>>(result);
+	}
+
+	@Override
+	public Future<RpcResult<AddControllerWaitInputOutput>> addControllerWaitInput(AddControllerWaitInputInput input) {
+		Uri mudUrl = input.getMudUrl();
+		Mud mud = null;
+		while (mud == null) {
+			try {
+				if (!sdnmudProvider.findMud(mudUrl.getValue())) {
+					return Futures.immediateFailedFuture(new NullPointerException());
+				}
+			} catch (Exception ex) {
+				LOG.info("Exception encoundered while trying to find MUD file");
+				return null;
+			}
+			mud = sdnmudProvider.getMud(mudUrl);
+		}
+		AddControllerWaitInputOutput result = null;
+		AddControllerWaitInputOutputBuilder gmrioutbuilder = new AddControllerWaitInputOutputBuilder();
+		RpcResult<AddControllerWaitInputOutput> res = null;
+		result = gmrioutbuilder.build();
+		res = RpcResultBuilder.success(result).build();
+		return Futures.immediateFuture(res);
+
 	}
 
 }

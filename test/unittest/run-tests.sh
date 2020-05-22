@@ -2,7 +2,7 @@
 echo " RUN THIS FROM THE EMULATION HOST "
 echo "************** mud-logging-test ************"
 cd mud-logging-test;sudo mn -c;sudo -E python mud-test.py; cd ../
-exit(0)
+exit 0
 echo "************** mud-local-and-same-mfg-test ************"
 cd mud-local-and-same-mfg-test;sudo mn -c;sudo -E python mud-test.py; cd ../
 echo "************** mud-local-and-same-mfg-test1 ************"

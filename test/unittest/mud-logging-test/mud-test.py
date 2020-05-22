@@ -43,6 +43,10 @@ class TestAccess(unittest.TestCase) :
         pieces = retval.group(0).split('=')
         rc = pieces[1].split(']')[0]
         return rc
+
+    def sendMessageToServer(self):
+        output = host.cmdPrint("python ../util/tcp-client.py --port 8000 --host 10.0.0.8 --delete-after")
+        return output
     
     def testNonIotHostHttpGetExpectPass(self):
         h4 = hosts[3]
@@ -87,6 +91,12 @@ class TestAccess(unittest.TestCase) :
         # Check to see if the result was unsuccessful.
         result = h1.cmdPrint("wget http://www.antd.local --timeout 20  --tries 1 -O foo.html --delete-after")
         self.assertTrue(re.search("100%",result) == None, "Expecting a failed get")
+
+    def testZZZZSignalTestingDone(self):
+        print "Signal to the server that testing is done. This should trigger a logging event"
+        result = "foobar"
+        self.assertTrue(re.search("100%",result) != None, sendMessageToServer("Done"))
+
 
 
 
