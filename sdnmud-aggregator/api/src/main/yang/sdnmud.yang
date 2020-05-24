@@ -605,4 +605,24 @@ rpc get-dst-mac-classification {
       }
    }
 
+   rpc get-mud-urls {
+      input {
+        leaf-list mud-url {
+	        description
+               "The mud uri for which to wait till ready";
+            type string;
+        }
+      }
+
+      output {
+         container report {
+            description "Return true with a URL of any missing MUD urls.";
+            leaf mud-url {
+                description "MUD URL that are present and missing in the input. ";
+                type string;
+            }
+         }
+      }
+   }
+
 }

@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -85,6 +87,10 @@ import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.r
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRule;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.flow.rules.output.FlowRuleBuilder;
 import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.reports.output.ReportBuilder;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudReportsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUrlsInput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUrlsOutput;
+import org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.GetMudUrlsOutputBuilder;
 import org.opendaylight.yangtools.yang.binding.InstanceIdentifier;
 import org.opendaylight.yangtools.yang.common.RpcResult;
 import org.opendaylight.yangtools.yang.common.RpcResultBuilder;
@@ -93,7 +99,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.Futures;
 
-import jline.internal.Log;
 
 /**
  * @author mranga@nist.gov
@@ -583,12 +588,32 @@ public class SdnmudServiceImpl implements SdnmudService {
 			}
 			mud = sdnmudProvider.getMud(mudUrl);
 		}
-		AddControllerWaitInputOutput result = null;
 		AddControllerWaitInputOutputBuilder gmrioutbuilder = new AddControllerWaitInputOutputBuilder();
-		RpcResult<AddControllerWaitInputOutput> res = null;
-		result = gmrioutbuilder.build();
-		res = RpcResultBuilder.success(result).build();
+		AddControllerWaitInputOutput result = gmrioutbuilder.build();
+		RpcResult<AddControllerWaitInputOutput> res = RpcResultBuilder.success(result).build();
 		return Futures.immediateFuture(res);
+
+	}
+
+	@Override
+	public Future<RpcResult<GetMudUrlsOutput>> getMudUrls(GetMudUrlsInput input) {
+		HashSet<String> mudUrls = sdnmudProvider.findMuds();
+		for (String mudUrl : mudUrls) {
+			if (input.getMudUrl() == null  || !input.getMudUrl().contains(mudUrl)) {
+				org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.urls.output.Report report = 
+						new org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.urls.output.ReportBuilder()
+						.setMudUrl(mudUrl).build();
+				GetMudUrlsOutputBuilder outputBuilder = new GetMudUrlsOutputBuilder();
+				outputBuilder.setReport(report);
+				RpcResultBuilder<GetMudUrlsOutput> result = RpcResultBuilder.success(outputBuilder.build());
+				return new CompletedFuture<RpcResult<GetMudUrlsOutput>>(result.build());
+			}
+		}
+
+		LOG.info("getMUDURls");
+		GetMudUrlsOutputBuilder outputBuilder = new GetMudUrlsOutputBuilder();
+		RpcResultBuilder<GetMudUrlsOutput> result = RpcResultBuilder.success(outputBuilder.build());
+		return new CompletedFuture<RpcResult<GetMudUrlsOutput>>(result.build());
 
 	}
 

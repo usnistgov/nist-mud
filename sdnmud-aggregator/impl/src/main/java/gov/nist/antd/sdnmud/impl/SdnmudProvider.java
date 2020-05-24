@@ -807,5 +807,13 @@ public class SdnmudProvider {
 	public boolean findMud(String mudUrl) {
 		return this.uriToMudMap.containsKey(mudUrl);
 	}
+	
+	public HashSet<String> findMuds() {
+		HashSet<String> retval = new HashSet<String>();
+		for (String i : uriToMudMap.keySet()) {
+			retval.add(i);
+		}
+		return retval;
+	}
 
 }
