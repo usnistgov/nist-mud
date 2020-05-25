@@ -94,6 +94,7 @@ public class MudReportGenerator {
 
 	public MudReport getMudReport(Mud mud, String switchId) {
 
+		
 		MudReportBuilder mudReportBuilder = new MudReportBuilder();
 
 		mudReportBuilder.setTime(new Timestamp(System.currentTimeMillis() / 1000 / 60));
@@ -205,10 +206,8 @@ public class MudReportGenerator {
 
 		try {
 			Collection<Flow> flows = sdnmudProvider.getFlowCommitWrapper().getFlows(node);
-			MatchCountsBuilder mcb = new MatchCountsBuilder();
 
 			if (flows != null) {
-
 				for (Flow flow : flows) {
 					//int beginIndex = mud.getMudUrl().getValue().length() + 1;
 
@@ -244,6 +243,7 @@ public class MudReportGenerator {
 									} else {
 										if ( dcb1.getDropCount().longValue() >  
 										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.remove(flow.getId().getValue());
 											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
 										}
 									}
@@ -260,6 +260,7 @@ public class MudReportGenerator {
 									} else {
 										if ( dcb1.getDropCount().longValue() >  
 										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.remove(flow.getId().getValue());
 											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
 										}
 									}
@@ -270,7 +271,8 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									String[] aceNames = flow.getId().getValue().split("/");
-									String aceName = aceNames[0] + "/" + aceNames[1];
+									// caution, the aceNames must be unique.
+									String aceName = aceNames[0] + "/" + aceNames[1]+ "/" + aceNames[2];
 									bb.setAceName(aceName);
 									dcb1.setDropReason(bb.build());
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
@@ -278,7 +280,8 @@ public class MudReportGenerator {
 										dropCountsSet.put(flow.getId().getValue(),dcb1.build());
 									} else {
 										if ( dcb1.getDropCount().longValue() >  
-										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {											
+											dropCountsSet.remove(flow.getId().getValue());
 											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
 										}
 									}
@@ -289,7 +292,7 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									String[] aceNames = flow.getId().getValue().split("/");
-									String aceName = aceNames[0] + "/" + aceNames[1];
+									String aceName = aceNames[0] + "/" + aceNames[1] + "/" + aceNames[2];
 									bb.setAceName(aceName);
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
 									dcb1.setDropReason(bb.build());
@@ -298,20 +301,24 @@ public class MudReportGenerator {
 									} else {
 										if ( dcb1.getDropCount().longValue() >  
 										dropCountsSet.get(flow.getId().getValue()).getDropCount().longValue()) {
+											dropCountsSet.remove(flow.getId().getValue());
 											dropCountsSet.put(flow.getId().getValue(), dcb1.build());
 										}
 									}
 								} else {
+									MatchCountsBuilder mcb = new MatchCountsBuilder();
+									//LOG.info("MatchCount " + flow.getId().getValue() + " this mudUrl " + mud.getMudUrl().getValue());
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
-									String[] aceNames = flow.getId().getValue().split("/");
-									String aceName = aceNames[0] + "/" + aceNames[1];
+									// need the full aceName here. Can't go [0], [1], [2] as above
+									String aceName = flow.getId().getValue() ;
+									// Set the ace name
 									mcb.setAceName(aceName);							
 									if (matchCountsSet.get(flow.getId().getValue()) == null	) {
 										matchCountsSet.put(flow.getId().getValue(), mcb.build());
-									} else if (fmaplist.getPacketCount().getValue().longValue() > 
+									} else if (fmaplist.getPacketCount().getValue().longValue() <
 									     matchCountsSet.get(flow.getId().getValue()).getPacketCount().longValue()) {
+										matchCountsSet.remove(flow.getId().getValue());
 										matchCountsSet.put(flow.getId().getValue(), mcb.build());
-
 									}
 								}
 							}

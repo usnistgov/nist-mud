@@ -610,7 +610,6 @@ public class SdnmudServiceImpl implements SdnmudService {
 			}
 		}
 
-		LOG.info("getMUDURls");
 		GetMudUrlsOutputBuilder outputBuilder = new GetMudUrlsOutputBuilder();
 		RpcResultBuilder<GetMudUrlsOutput> result = RpcResultBuilder.success(outputBuilder.build());
 		return new CompletedFuture<RpcResult<GetMudUrlsOutput>>(result.build());
