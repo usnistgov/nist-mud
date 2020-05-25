@@ -990,7 +990,7 @@ public class MudFlowsInstaller {
 
 		LOG.info("installPermitPacketsFromToServer :  address = " + address.getValue());
 
-		String nodeId = IdUtils.getNodeUri(node);
+		//String nodeId = IdUtils.getNodeUri(node);
 
 		FlowCookie flowCookie = SdnMudConstants.DNS_REQUEST_FLOW_COOKIE;
 		FlowId flowId = IdUtils.createFlowId("DNS_REQUEST_PASS_THROUGH:" + address.getValue());
