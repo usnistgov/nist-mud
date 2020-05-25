@@ -599,7 +599,9 @@ public class SdnmudServiceImpl implements SdnmudService {
 	public Future<RpcResult<GetMudUrlsOutput>> getMudUrls(GetMudUrlsInput input) {
 		HashSet<String> mudUrls = sdnmudProvider.findMuds();
 		for (String mudUrl : mudUrls) {
-			if (input.getMudUrl() == null  || !input.getMudUrl().contains(mudUrl)) {
+			LOG.info("mudUrl " + mudUrl + "\n");
+			LOG.info("input " + input + "\n");
+			if (input == null || input.getMudUrl() == null  || !input.getMudUrl().contains(mudUrl)) {
 				org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.urls.output.Report report = 
 						new org.opendaylight.yang.gen.v1.urn.opendaylight.params.xml.ns.yang.sdnmud.rev170915.get.mud.urls.output.ReportBuilder()
 						.setMudUrl(mudUrl).build();

@@ -38,16 +38,19 @@ if __name__ == "__main__" :
     #r = requests.post(url,headers=headers , auth=('admin', 'admin'),data=jsonStr)
     print("Pulling the logs.")
     while True:
-        jsonStr = json.dumps(argmap, indent=4)
-        r = requests.post(url,headers=headers , auth=('admin', 'admin'), data=jsonStr)
-        js = json.loads(r.content)
-        print("*************************************************")
-        print(json.dumps(js,indent=4))
-        # TODO -- pull all the reports in. For now just one.
-        if "report" in js["output"] :
-            innerMap["mud-url"] = [js["output"]["report"]["mud-url"]]
-            time.sleep(10)
-        else :
-            break
+        try:
+            jsonStr = json.dumps(argmap, indent=4)
+            r = requests.post(url,headers=headers , auth=('admin', 'admin'),data=jsonStr)
+            js = json.loads(r.content)
+            print("*************************************************")
+            print(json.dumps(js,indent=4))
+            # TODO -- pull all the reports in. For now just one.
+            if "report" in js["output"] :
+                innerMap["mud-url"] = [js["output"]["report"]["mud-url"]]
+                time.sleep(10)
+            else:
+                time.sleep(10)
+        except:
+            print(r.content)
         
-
+    print(js["output"]["report"]["mud-report"]["drop-counts"][0])
