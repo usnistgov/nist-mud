@@ -317,8 +317,11 @@ public class MudReportGenerator {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
 									// need the full aceName here.
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[0] + "/" + pieces[1] + "/" + pieces[2];
-									mcb.setAceName(id);							
+									String id = pieces[0] + "/" + pieces[1] + "/" + pieces[2] ;
+									mcb.setAceName(id);	
+									// TcpBlockedBuilder bb = new TcpBlockedBuilder();
+									// bb.setAceName(id);
+
 									if (matchCountsSet.get(id) == null	) {
 										matchCountsSet.put(id, mcb.build());
 									} else if (fmaplist.getPacketCount().getValue().longValue() >

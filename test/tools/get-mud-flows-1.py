@@ -49,8 +49,8 @@ if __name__ == "__main__" :
                 innerMap["mud-url"] = [js["output"]["report"]["mud-url"]]
                 time.sleep(10)
             else:
-                time.sleep(10)
+                break
         except:
             print(r.content)
         
-    print(js["output"]["report"]["mud-report"]["drop-counts"][0])
+    print("Done")
