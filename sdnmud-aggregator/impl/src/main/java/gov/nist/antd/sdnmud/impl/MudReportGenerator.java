@@ -239,7 +239,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.FromDevice);
 									dcb1.setReason(DropCount.Reason.Nomatch);
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[1] + "/" + pieces[2];
+									String id = pieces[0] + "/" + pieces[1];
 									if ( dropCountsSet.get(id) == null ) {
 										dropCountsSet.put(id,dcb1.build());
 									} else {
@@ -258,7 +258,7 @@ public class MudReportGenerator {
 									dcb1.setDirection(Direction.ToDevice);
 									dcb1.setReason(DropCount.Reason.Nomatch);
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[1] + "/" + pieces[2];
+									String id = pieces[0] + "/" + pieces[1];
 								
 									if ( dropCountsSet.get(id) == null ) {
 										dropCountsSet.put(id,dcb1.build());
@@ -277,7 +277,7 @@ public class MudReportGenerator {
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									// caution, the aceNames must be unique.
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[1] + "/" + pieces[2];
+									String id = pieces[0] + "/" + pieces[1];
 									bb.setAceName(id);
 									dcb1.setDropReason(bb.build());
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
@@ -298,7 +298,7 @@ public class MudReportGenerator {
 									dcb1.setDropCount(fmaplist.getPacketCount().getValue());
 									TcpBlockedBuilder bb = new TcpBlockedBuilder();
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[1] + "/" + pieces[2];
+									String id = pieces[0] + "/" + pieces[1];
 									bb.setAceName(id);
 								
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
@@ -318,7 +318,7 @@ public class MudReportGenerator {
 									mcb.setPacketCount(fmaplist.getPacketCount().getValue());
 									// need the full aceName here.
 									String[] pieces = flow.getId().getValue().split("/");
-									String id = pieces[1] + "/" + pieces[2] + "/" + pieces[3];
+									String id = pieces[0] + "/" + pieces[1] + "/" + pieces[2];
 									mcb.setAceName(id);							
 									if (matchCountsSet.get(id) == null	) {
 										matchCountsSet.put(id, mcb.build());
