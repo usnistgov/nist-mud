@@ -300,7 +300,6 @@ public class MudReportGenerator {
 									String[] pieces = flow.getId().getValue().split("/");
 									String id = pieces[0] + "/" + pieces[1];
 									bb.setAceName(id);
-								
 									dcb1.setReason(DropCount.Reason.ConnectionBlock);
 									dcb1.setDropReason(bb.build());
 									if ( dropCountsSet.get(id) == null ) {
